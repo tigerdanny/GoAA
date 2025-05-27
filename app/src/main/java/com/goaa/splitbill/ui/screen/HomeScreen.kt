@@ -81,7 +81,7 @@ fun HomeScreen(
                 containerColor = Secondary,
                 contentColor = OnSecondary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "創建群組")
+                Icon(Icons.Default.Add, contentDescription = "建立帳目")
             }
         }
     ) { paddingValues ->
@@ -105,10 +105,10 @@ fun HomeScreen(
                 )
             }
             
-            // Groups section
+            // Account records section
             item {
                 Text(
-                    text = "我的群組",
+                    text = "帳目列表",
                     style = MaterialTheme.typography.titleMedium,
                     color = OnBackground,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -117,7 +117,7 @@ fun HomeScreen(
             
             if (groups.isEmpty()) {
                 item {
-                    EmptyGroupsCard(onCreateGroup = onCreateGroup)
+                    EmptyAccountsCard(onCreateAccount = onCreateGroup)
                 }
             } else {
                 items(groups) { group ->
@@ -196,16 +196,7 @@ fun WelcomeCard() {
                 )
             }
             
-            // 装饰性设计元素
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(48.dp)
-                    .background(
-                        color = OnPrimary.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    )
-            )
+
         }
     }
 }
@@ -253,7 +244,7 @@ fun QuickActionsSection(
             ) {
                 QuickActionRow(
                     icon = Icons.Default.Add,
-                    text = "創建群組",
+                    text = "建立帳目",
                     subtitle = "開始新的分帳",
                     onClick = onCreateGroup,
                     backgroundColor = Color(0xFFF5A623)
@@ -261,7 +252,7 @@ fun QuickActionsSection(
                 
                 QuickActionRow(
                     icon = Icons.Default.GroupAdd,
-                    text = "加入群組",
+                    text = "加入帳目",
                     subtitle = "參與朋友分帳",
                     onClick = onJoinGroup,
                     backgroundColor = Color(0xFF00BCD4)
@@ -476,7 +467,7 @@ fun GroupCard(
                 
                 Icon(
                     Icons.Default.ChevronRight,
-                    contentDescription = "進入群組",
+                    contentDescription = "進入帳目",
                     tint = OnSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
@@ -486,8 +477,8 @@ fun GroupCard(
 }
 
 @Composable
-fun EmptyGroupsCard(
-    onCreateGroup: () -> Unit
+fun EmptyAccountsCard(
+    onCreateAccount: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -512,13 +503,13 @@ fun EmptyGroupsCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "還沒有群組",
+                text = "還沒有帳目",
                 style = MaterialTheme.typography.titleMedium,
                 color = OnSurface
             )
             
             Text(
-                text = "創建第一個分帳群組開始使用",
+                text = "建立第一個分帳帳目開始使用",
                 style = MaterialTheme.typography.bodyMedium,
                 color = OnSurfaceVariant
             )
@@ -526,14 +517,14 @@ fun EmptyGroupsCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             Button(
-                onClick = onCreateGroup,
+                onClick = onCreateAccount,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Secondary
                 )
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("創建群組")
+                Text("建立帳目")
             }
         }
     }
