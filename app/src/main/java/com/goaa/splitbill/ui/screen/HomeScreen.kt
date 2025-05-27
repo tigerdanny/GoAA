@@ -196,46 +196,16 @@ fun WelcomeCard() {
                 )
             }
             
-            // Logo元素
-            Row(
+            // 装饰性设计元素
+            Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = Color(0xFF00BCD4).copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(6.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$",
-                        color = OnPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                    .size(48.dp)
+                    .background(
+                        color = OnPrimary.copy(alpha = 0.1f),
+                        shape = CircleShape
                     )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = Color(0xFF00BCD4).copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(6.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "$",
-                        color = OnPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            )
         }
     }
 }
@@ -276,11 +246,12 @@ fun QuickActionsSection(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
+            // 改为竖向布局以避免横向布局问题
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickActionButton(
+                QuickActionRow(
                     icon = Icons.Default.Add,
                     text = "創建群組",
                     subtitle = "開始新的分帳",
@@ -288,7 +259,7 @@ fun QuickActionsSection(
                     backgroundColor = Color(0xFFF5A623)
                 )
                 
-                QuickActionButton(
+                QuickActionRow(
                     icon = Icons.Default.GroupAdd,
                     text = "加入群組",
                     subtitle = "參與朋友分帳",
@@ -296,10 +267,10 @@ fun QuickActionsSection(
                     backgroundColor = Color(0xFF00BCD4)
                 )
                 
-                QuickActionButton(
+                QuickActionRow(
                     icon = Icons.Default.Calculate,
-                    text = "快速計算",
-                    subtitle = "簡單分帳計算",
+                    text = "快捷計算器",
+                    subtitle = "臨時分帳計算",
                     onClick = { /* TODO */ },
                     backgroundColor = Color(0xFF1B5E7E)
                 )
@@ -309,50 +280,70 @@ fun QuickActionsSection(
 }
 
 @Composable
-fun QuickActionButton(
+fun QuickActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     subtitle: String,
     onClick: () -> Unit,
     backgroundColor: Color
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Card(
         modifier = Modifier
-            .clickable { onClick() }
-            .padding(8.dp)
+            .fillMaxWidth()
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor.copy(alpha = 0.08f)
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(backgroundColor)
-                .padding(2.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(backgroundColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = text,
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = OnSurface,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OnSurfaceVariant
+                )
+            }
+            
             Icon(
-                icon,
-                contentDescription = text,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
+                Icons.Default.ChevronRight,
+                contentDescription = "執行",
+                tint = OnSurfaceVariant,
+                modifier = Modifier.size(20.dp)
             )
         }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = OnSurface,
-            fontWeight = FontWeight.Medium
-        )
-        
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = OnSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
     }
 }
 
