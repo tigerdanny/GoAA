@@ -13,13 +13,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.goaa.splitbill.ui.viewmodel.ProfileViewModel
 import com.goaa.splitbill.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
+    onNavigateToPasswordSettings: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val user by viewModel.user.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,6 +49,14 @@ fun ProfileScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
             // User info card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -69,14 +87,14 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = "我的帳戶",
+                        text = user?.name ?: "我的帳戶",
                         style = MaterialTheme.typography.titleLarge,
                         color = OnPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     
                     Text(
-                        text = "user@example.com",
+                        text = user?.email ?: "user@example.com",
                         style = MaterialTheme.typography.bodyMedium,
                         color = OnPrimary.copy(alpha = 0.8f)
                     )
@@ -102,32 +120,24 @@ fun ProfileScreen(
                     ProfileMenuItem(
                         icon = Icons.Default.Person,
                         title = "編輯個人資料",
-                        onClick = { /* TODO */ }
+                        onClick = onNavigateToEditProfile
                     )
                     
                     ProfileMenuItem(
-                        icon = Icons.Default.Notifications,
-                        title = "通知設置",
-                        onClick = { /* TODO */ }
-                    )
-                    
-                    ProfileMenuItem(
-                        icon = Icons.Default.Security,
-                        title = "隱私與安全",
-                        onClick = { /* TODO */ }
-                    )
-                    
-                    ProfileMenuItem(
-                        icon = Icons.Default.Help,
-                        title = "幫助與支持",
-                        onClick = { /* TODO */ }
+                        icon = Icons.Default.Lock,
+                        title = if (user?.hasPassword == true) "密碼管理" else "設置密碼",
+                        subtitle = if (user?.hasPassword == true) {
+                            if (user?.isBiometricEnabled == true) "已啟用密碼和生物識別" else "已啟用密碼"
+                        } else "建立密碼保護",
+                        onClick = onNavigateToPasswordSettings
                     )
                     
                     ProfileMenuItem(
                         icon = Icons.Default.Info,
                         title = "關於 GoAA",
-                        onClick = { /* TODO */ }
+                        onClick = onNavigateToAbout
                     )
+                }
                 }
             }
         }
@@ -138,6 +148,7 @@ fun ProfileScreen(
 fun ProfileMenuItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
+    subtitle: String? = null,
     onClick: () -> Unit
 ) {
     TextButton(
@@ -158,12 +169,21 @@ fun ProfileMenuItem(
             
             Spacer(modifier = Modifier.width(16.dp))
             
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = OnSurface,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = OnSurface
+                )
+                
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant
+                    )
+                }
+            }
             
             Icon(
                 Icons.Default.ChevronRight,

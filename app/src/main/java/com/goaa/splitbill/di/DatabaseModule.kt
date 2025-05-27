@@ -6,6 +6,9 @@ import com.goaa.splitbill.data.database.GoAADatabase
 import com.goaa.splitbill.data.database.dao.AccountDao
 import com.goaa.splitbill.data.database.dao.ExpenseDao
 import com.goaa.splitbill.data.database.dao.MemberDao
+import com.goaa.splitbill.data.database.dao.UserDao
+import com.goaa.splitbill.data.database.dao.UserSettingsDao
+import com.goaa.splitbill.data.database.dao.SecuritySettingsDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -42,5 +45,20 @@ object DatabaseModule {
     @Provides
     fun provideMemberDao(database: GoAADatabase): MemberDao {
         return database.memberDao()
+    }
+    
+    @Provides
+    fun provideUserDao(database: GoAADatabase): UserDao {
+        return database.userDao()
+    }
+    
+    @Provides
+    fun provideUserSettingsDao(database: GoAADatabase): UserSettingsDao {
+        return database.userSettingsDao()
+    }
+    
+    @Provides
+    fun provideSecuritySettingsDao(database: GoAADatabase): SecuritySettingsDao {
+        return database.securitySettingsDao()
     }
 } 

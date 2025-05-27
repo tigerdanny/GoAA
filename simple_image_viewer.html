@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAA 圖片查看器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1B5E7E;
+            margin-bottom: 30px;
+        }
+        
+        .image-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .image-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #F5A623;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #F5A623;
+            padding-bottom: 5px;
+        }
+        
+        .image-display {
+            text-align: center;
+            margin: 20px 0;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .logo-image {
+            max-width: 100%;
+            max-height: 400px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .file-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #1B5E7E;
+            margin-top: 15px;
+        }
+        
+        .file-path {
+            font-family: monospace;
+            background: #333;
+            color: #00BCD4;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        
+        .description {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 GoAA 項目圖片展示</h1>
+        
+        <!-- 主要Logo (根目錄) -->
+        <div class="image-section">
+            <div class="image-title">📍 主要品牌Logo (項目根目錄)</div>
+            <div class="image-display">
+                <img src="ChatGPT Image 2025年5月26日 下午01_27_25.png" 
+                     alt="GoAA 主要Logo" 
+                     class="logo-image"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; color:#999; padding:40px;">
+                    ⚠️ 圖片載入失敗<br>
+                    請確保圖片文件存在於正確位置
+                </div>
+            </div>
+            <div class="file-info">
+                <div class="file-path">📁 ./ChatGPT Image 2025年5月26日 下午01_27_25.png</div>
+                <div class="description">
+                    <strong>用途：</strong>GoAA應用的主要品牌標識<br>
+                    <strong>格式：</strong>PNG圖片<br>
+                    <strong>特點：</strong>包含"Go"和"AA"字樣，象徵朋友間的分帳合作<br>
+                    <strong>設計元素：</strong>握手、金錢符號等分帳相關視覺元素
+                </div>
+            </div>
+        </div>
+        
+        <!-- Drawable中的Logo -->
+        <div class="image-section">
+            <div class="image-title">📱 應用資源中的Logo</div>
+            <div class="image-display">
+                <img src="app/src/main/res/drawable/logo_goaa.png" 
+                     alt="GoAA Drawable Logo" 
+                     class="logo-image"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; color:#999; padding:40px;">
+                    ⚠️ 圖片載入失敗<br>
+                    這個圖片位於Android項目的drawable資源中
+                </div>
+            </div>
+            <div class="file-info">
+                <div class="file-path">📁 app/src/main/res/drawable/logo_goaa.png</div>
+                <div class="description">
+                    <strong>用途：</strong>Android應用內使用的Logo<br>
+                    <strong>位置：</strong>drawable資源目錄<br>
+                    <strong>功能：</strong>在應用界面中顯示品牌標識<br>
+                    <strong>說明：</strong>與主Logo相同，複製到Android資源目錄中
+                </div>
+            </div>
+        </div>
+        
+        <!-- 設計說明 -->
+        <div class="image-section">
+            <div class="image-title">🎨 設計概念說明</div>
+            <div class="description" style="padding: 15px;">
+                <h3 style="color: #1B5E7E;">GoAA品牌設計理念</h3>
+                <p><strong>名稱含義：</strong></p>
+                <ul>
+                    <li><strong>"Go"</strong> - 代表行動、開始、積極的態度</li>
+                    <li><strong>"AA"</strong> - 代表平分費用、公平分攤的概念</li>
+                </ul>
+                
+                <p><strong>視覺元素：</strong></p>
+                <ul>
+                    <li>🤝 <strong>握手圖案</strong> - 象徵朋友間的信任與合作</li>
+                    <li>💰 <strong>金錢符號</strong> - 直接表達分帳的功能</li>
+                    <li>🎯 <strong>現代設計</strong> - 簡潔、專業的視覺風格</li>
+                </ul>
+                
+                <p><strong>色彩運用：</strong></p>
+                <ul>
+                    <li><span style="color: #1B5E7E; font-weight: bold;">深藍色 (#1B5E7E)</span> - 專業、可靠、值得信賴</li>
+                    <li><span style="color: #F5A623; font-weight: bold;">金黃色 (#F5A623)</span> - 溫暖、友好、積極向上</li>
+                    <li><span style="color: #00BCD4; font-weight: bold;">青色 (#00BCD4)</span> - 清新、現代、科技感</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 使用說明 -->
+        <div class="image-section">
+            <div class="image-title">📋 使用說明</div>
+            <div class="description" style="padding: 15px;">
+                <p><strong>如何查看圖片：</strong></p>
+                <ol>
+                    <li>確保HTML文件與圖片文件在正確的相對位置</li>
+                    <li>使用瀏覽器打開此HTML文件</li>
+                    <li>如果圖片無法顯示，請檢查文件路徑是否正確</li>
+                </ol>
+                
+                <p><strong>圖片文件位置：</strong></p>
+                <ul>
+                    <li>主Logo：項目根目錄</li>
+                    <li>應用Logo：<code>app/src/main/res/drawable/</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

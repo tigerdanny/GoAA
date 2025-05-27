@@ -131,6 +131,39 @@ fun GoAANavigation(navController: NavHostController) {
             ProfileScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToEditProfile = {
+                    navController.navigate("edit_profile")
+                },
+                onNavigateToPasswordSettings = {
+                    navController.navigate("password_settings")
+                },
+                onNavigateToAbout = {
+                    navController.navigate("about")
+                }
+            )
+        }
+        
+        composable("edit_profile") {
+            EditProfileScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        
+        composable("password_settings") {
+            PasswordSettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        
+        composable("about") {
+            AboutScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
