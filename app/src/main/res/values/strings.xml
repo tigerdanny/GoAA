@@ -1,0 +1,87 @@
+<resources>
+    <string name="app_name">GoAA</string>
+    <string name="app_description">輕鬆分帳，精準AA</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">首頁</string>
+    <string name="nav_groups">群組</string>
+    <string name="nav_profile">個人</string>
+    
+    <!-- Common -->
+    <string name="ok">確定</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
+    <string name="delete">刪除</string>
+    <string name="edit">編輯</string>
+    <string name="add">添加</string>
+    <string name="back">返回</string>
+    <string name="next">下一步</string>
+    <string name="done">完成</string>
+    
+    <!-- Home -->
+    <string name="welcome_title">歡迎使用 GoAA</string>
+    <string name="welcome_subtitle">讓分帳變得簡單明瞭</string>
+    <string name="quick_actions">快速操作</string>
+    <string name="create_group">創建群組</string>
+    <string name="join_group">加入群組</string>
+    <string name="my_groups">我的群組</string>
+    <string name="no_groups">還沒有群組</string>
+    <string name="create_first_group">創建第一個分帳群組開始使用</string>
+    
+    <!-- Group -->
+    <string name="group_summary">群組總覽</string>
+    <string name="total_expenses">總消費</string>
+    <string name="my_balance">我的餘額</string>
+    <string name="view_settlement">查看結算</string>
+    <string name="expense_records">消費記錄</string>
+    <string name="add_expense">添加消費</string>
+    <string name="no_expenses">還沒有消費記錄</string>
+    <string name="add_first_expense">開始記錄第一筆消費</string>
+    
+    <!-- Expense -->
+    <string name="basic_info">基本信息</string>
+    <string name="expense_item">消費項目</string>
+    <string name="amount">金額</string>
+    <string name="category">消費類別</string>
+    <string name="payer">付款人</string>
+    <string name="split_method">分攤方式</string>
+    <string name="expense_summary">消費摘要</string>
+    <string name="equal_split">平均分攤</string>
+    
+    <!-- Settlement -->
+    <string name="settlement_details">結算詳情</string>
+    <string name="settlement_report">結算報告</string>
+    <string name="user_balances">個人餘額</string>
+    <string name="settlement_plan">結算方案</string>
+    <string name="optimal_settlement">最佳結算方案</string>
+    <string name="mark_as_settled">標記為已結算</string>
+    <string name="all_settled">全部結清！</string>
+    <string name="all_settled_desc">所有帳務都已結算完成</string>
+    
+    <!-- Profile -->
+    <string name="profile">個人資料</string>
+    <string name="my_account">我的帳戶</string>
+    <string name="settings">設置</string>
+    <string name="edit_profile">編輯個人資料</string>
+    <string name="notification_settings">通知設置</string>
+    <string name="privacy_security">隱私與安全</string>
+    <string name="help_support">幫助與支持</string>
+    <string name="about_goaa">關於 GoAA</string>
+    
+    <!-- Members -->
+    <string name="group_members">群組成員</string>
+    <string name="add_member">添加成員</string>
+    <string name="admin">管理員</string>
+    <string name="invite_friends">邀請朋友加入群組，一起輕鬆分帳</string>
+    
+    <!-- Categories -->
+    <string name="category_food">餐飲</string>
+    <string name="category_transport">交通</string>
+    <string name="category_accommodation">住宿</string>
+    <string name="category_entertainment">娛樂</string>
+    <string name="category_shopping">購物</string>
+    <string name="category_utilities">水電費</string>
+    <string name="category_groceries">日用品</string>
+    <string name="category_medical">醫療</string>
+    <string name="category_other">其他</string>
+</resources> 
