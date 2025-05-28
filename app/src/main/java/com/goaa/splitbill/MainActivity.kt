@@ -152,7 +152,8 @@ fun GoAANavigation(navController: NavHostController) {
                 },
                 onNavigateToAvatarPicker = { selectedAvatarId ->
                     navController.navigate("avatar_picker?selectedId=${selectedAvatarId ?: ""}")
-                }
+                },
+                navController = navController
             )
         }
         

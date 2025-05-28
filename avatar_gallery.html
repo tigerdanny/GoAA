@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoAA 頭像選擇器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #1B5E7E, #00BCD4);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+        }
+
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .tab-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .avatar-item {
+            background: white;
+            border-radius: 15px;
+            border: 3px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+
+        .avatar-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+
+        .avatar-item.selected {
+            border-color: #28a745;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .avatar-emoji {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .avatar-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .avatar-desc {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .selected .avatar-desc {
+            opacity: 1;
+        }
+
+        .action-buttons {
+            padding: 30px;
+            text-align: center;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,123,255,0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .search-box {
+            margin: 20px 30px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #007bff;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .category-count {
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .avatar-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .avatar-emoji {
+                font-size: 3rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 選擇您的專屬頭像</h1>
+            <p>挑選一個代表您個性的可愛頭像吧！</p>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="搜尋頭像..." id="searchInput">
+            <span class="search-icon">🔍</span>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showCategory('male')">
+                <span class="tab-icon">👨</span>
+                男性角色
+                <span class="category-count">5</span>
+            </button>
+            <button class="tab" onclick="showCategory('female')">
+                <span class="tab-icon">👩</span>
+                女性角色
+                <span class="category-count">5</span>
+            </button>
+            <button class="tab" onclick="showCategory('cat')">
+                <span class="tab-icon">🐱</span>
+                貓咪萌寵
+                <span class="category-count">5</span>
+            </button>
+            <button class="tab" onclick="showCategory('dog')">
+                <span class="tab-icon">🐶</span>
+                狗狗夥伴
+                <span class="category-count">5</span>
+            </button>
+        </div>
+
+        <div class="avatar-grid" id="avatarGrid">
+            <!-- 頭像將通過 JavaScript 動態生成 -->
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="clearSelection()">清除選擇</button>
+            <button class="btn btn-primary" onclick="confirmSelection()">確認選擇</button>
+        </div>
+    </div>
+
+    <script>
+        const avatars = {
+            male: [
+                { id: 'male_01', emoji: '👨', name: '商務男士', desc: '專業可靠' },
+                { id: 'male_02', emoji: '🧑', name: '年輕潮男', desc: '活力四射' },
+                { id: 'male_03', emoji: '👱‍♂️', name: '金髮男神', desc: '魅力十足' },
+                { id: 'male_04', emoji: '🧔', name: '鬍鬚大叔', desc: '成熟穩重' },
+                { id: 'male_05', emoji: '👨‍💼', name: '精英白領', desc: '事業有成' }
+            ],
+            female: [
+                { id: 'female_01', emoji: '👩', name: '甜美女孩', desc: '溫柔可人' },
+                { id: 'female_02', emoji: '👱‍♀️', name: '金髮女神', desc: '優雅迷人' },
+                { id: 'female_03', emoji: '👩‍💼', name: '職場女強人', desc: '獨立自信' },
+                { id: 'female_04', emoji: '👩‍🎓', name: '學霸美女', desc: '智慧與美貌並存' },
+                { id: 'female_05', emoji: '🧕', name: '神秘佳人', desc: '優雅神秘' }
+            ],
+            cat: [
+                { id: 'cat_01', emoji: '🐱', name: '萌萌小貓', desc: '超級可愛' },
+                { id: 'cat_02', emoji: '😸', name: '笑臉貓咪', desc: '開心快樂' },
+                { id: 'cat_03', emoji: '😺', name: '快樂貓貓', desc: '心情愉悅' },
+                { id: 'cat_04', emoji: '😻', name: '愛心眼貓', desc: '滿滿愛意' },
+                { id: 'cat_05', emoji: '🙀', name: '驚訝貓咪', desc: '表情豐富' }
+            ],
+            dog: [
+                { id: 'dog_01', emoji: '🐶', name: '可愛小狗', desc: '忠誠友善' },
+                { id: 'dog_02', emoji: '🐕', name: '活潑狗狗', desc: '精力充沛' },
+                { id: 'dog_03', emoji: '🦮', name: '導盲犬', desc: '聰明可靠' },
+                { id: 'dog_04', emoji: '🐕‍🦺', name: '工作犬', desc: '盡職盡責' },
+                { id: 'dog_05', emoji: '🐩', name: '貴賓犬', desc: '優雅高貴' }
+            ]
+        };
+
+        let currentCategory = 'male';
+        let selectedAvatar = null;
+
+        function showCategory(category) {
+            currentCategory = category;
+            
+            // 更新標籤狀態
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.closest('.tab').classList.add('active');
+            
+            // 渲染頭像
+            renderAvatars(avatars[category]);
+        }
+
+        function renderAvatars(avatarList) {
+            const grid = document.getElementById('avatarGrid');
+            grid.innerHTML = '';
+            
+            avatarList.forEach(avatar => {
+                const avatarItem = document.createElement('div');
+                avatarItem.className = 'avatar-item';
+                avatarItem.innerHTML = `
+                    <span class="avatar-emoji">${avatar.emoji}</span>
+                    <div class="avatar-name">${avatar.name}</div>
+                    <div class="avatar-desc">${avatar.desc}</div>
+                `;
+                
+                avatarItem.onclick = () => selectAvatar(avatar, avatarItem);
+                grid.appendChild(avatarItem);
+            });
+        }
+
+        function selectAvatar(avatar, element) {
+            // 清除之前的選擇
+            document.querySelectorAll('.avatar-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 選擇新頭像
+            element.classList.add('selected');
+            selectedAvatar = avatar;
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.avatar-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            selectedAvatar = null;
+        }
+
+        function confirmSelection() {
+            if (selectedAvatar) {
+                alert(`您選擇了：${selectedAvatar.name} (${selectedAvatar.desc})\nID: ${selectedAvatar.id}`);
+                // 這裡可以添加實際的選擇處理邏輯
+                // 例如：將選擇結果傳回到 Android 應用
+                console.log('Selected avatar:', selectedAvatar);
+            } else {
+                alert('請先選擇一個頭像！');
+            }
+        }
+
+        // 搜尋功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const currentAvatars = avatars[currentCategory];
+            
+            if (searchTerm === '') {
+                renderAvatars(currentAvatars);
+            } else {
+                const filteredAvatars = currentAvatars.filter(avatar => 
+                    avatar.name.toLowerCase().includes(searchTerm) ||
+                    avatar.desc.toLowerCase().includes(searchTerm)
+                );
+                renderAvatars(filteredAvatars);
+            }
+        });
+
+        // 初始化顯示男性頭像
+        renderAvatars(avatars.male);
+    </script>
+</body>
+</html> 
