@@ -73,15 +73,15 @@ class ProfileViewModel @Inject constructor(
         }
     }
     
-    fun updateUserProfile(name: String, email: String, phoneNumber: String?) {
+    fun updateUserProfile(name: String, avatarId: String?) {
         viewModelScope.launch {
             try {
                 userRepository.updateUserProfile(
                     userId = currentUserId,
                     name = name,
-                    email = email,
-                    avatarUrl = _user.value?.avatarUrl,
-                    phoneNumber = phoneNumber
+                    email = _user.value?.email ?: "user@example.com",
+                    avatarUrl = avatarId,
+                    phoneNumber = null
                 )
                 
                 // Reload user data

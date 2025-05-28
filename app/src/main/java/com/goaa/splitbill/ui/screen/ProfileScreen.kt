@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goaa.splitbill.ui.viewmodel.ProfileViewModel
+import com.goaa.splitbill.ui.components.AvatarDisplay
 import com.goaa.splitbill.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,20 +70,10 @@ fun ProfileScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(OnPrimary.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "我",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = OnPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    AvatarDisplay(
+                        avatarId = user?.avatarUrl,
+                        size = 80.dp
+                    )
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     

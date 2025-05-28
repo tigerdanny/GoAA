@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -146,6 +147,23 @@ fun GoAANavigation(navController: NavHostController) {
         
         composable("edit_profile") {
             EditProfileScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToAvatarPicker = { selectedAvatarId ->
+                    navController.navigate("avatar_picker?selectedId=${selectedAvatarId ?: ""}")
+                }
+            )
+        }
+        
+        composable("avatar_picker?selectedId={selectedId}") { backStackEntry ->
+            val selectedId = backStackEntry.arguments?.getString("selectedId")?.takeIf { it.isNotEmpty() }
+            AvatarPickerScreen(
+                selectedAvatarId = selectedId,
+                onAvatarSelected = { avatar ->
+                    // Update user avatar and navigate back
+                    navController.previousBackStackEntry?.savedStateHandle?.set("selected_avatar", avatar.id)
+                },
                 onNavigateBack = {
                     navController.popBackStack()
                 }

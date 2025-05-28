@@ -1,6 +1,8 @@
 package com.goaa.splitbill.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -8,10 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.goaa.splitbill.data.model.DefaultAvatars
+import com.goaa.splitbill.data.model.AvatarType
 import com.goaa.splitbill.ui.viewmodel.ProfileViewModel
 import com.goaa.splitbill.ui.theme.*
 
@@ -19,21 +24,20 @@ import com.goaa.splitbill.ui.theme.*
 @Composable
 fun EditProfileScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAvatarPicker: (String?) -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
+    var selectedAvatarId by remember { mutableStateOf<String?>(null) }
     
     // Initialize fields when user data loads
     LaunchedEffect(user) {
         user?.let {
             name = it.name
-            email = it.email
-            phoneNumber = it.phoneNumber ?: ""
+            selectedAvatarId = it.avatarUrl
         }
     }
     
@@ -61,7 +65,7 @@ fun EditProfileScreen(
                 actions = {
                     TextButton(
                         onClick = {
-                            viewModel.updateUserProfile(name, email, phoneNumber.ifBlank { null })
+                            viewModel.updateUserProfile(name, selectedAvatarId)
                             onNavigateBack()
                         }
                     ) {
@@ -100,62 +104,95 @@ fun EditProfileScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
-                                .padding(8.dp),
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(OnSurfaceVariant.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "頭像",
-                                modifier = Modifier.size(48.dp),
-                                tint = OnSurfaceVariant
-                            )
+                            // Show selected avatar or default
+                            val avatar = selectedAvatarId?.let { DefaultAvatars.getAvatarById(it) }
+                            if (avatar != null) {
+                                Text(
+                                    text = when (avatar.type) {
+                                        AvatarType.MALE -> when (avatar.id.last()) {
+                                            '1' -> "👨"
+                                            '2' -> "🧑"
+                                            '3' -> "👱‍♂️"
+                                            '4' -> "🧔"
+                                            '5' -> "👨‍💼"
+                                            else -> "👨"
+                                        }
+                                        AvatarType.FEMALE -> when (avatar.id.last()) {
+                                            '1' -> "👩"
+                                            '2' -> "👱‍♀️"
+                                            '3' -> "👩‍💼"
+                                            '4' -> "👩‍🎓"
+                                            '5' -> "🧕"
+                                            else -> "👩"
+                                        }
+                                        AvatarType.CAT -> when (avatar.id.last()) {
+                                            '1' -> "🐱"
+                                            '2' -> "😸"
+                                            '3' -> "😺"
+                                            '4' -> "😻"
+                                            '5' -> "🙀"
+                                            else -> "🐱"
+                                        }
+                                        AvatarType.DOG -> when (avatar.id.last()) {
+                                            '1' -> "🐶"
+                                            '2' -> "🐕"
+                                            '3' -> "🦮"
+                                            '4' -> "🐕‍🦺"
+                                            '5' -> "🐩"
+                                            else -> "🐶"
+                                        }
+                                    },
+                                    style = MaterialTheme.typography.displayMedium
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = "頭像",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = OnSurfaceVariant
+                                )
+                            }
                         }
                         
-                        TextButton(
-                            onClick = { /* TODO: Implement photo picker */ }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        OutlinedButton(
+                            onClick = { onNavigateToAvatarPicker(selectedAvatarId) }
                         ) {
-                            Text("更換照片")
+                            Icon(Icons.Default.Edit, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("選擇頭像")
                         }
                     }
                 }
                 
-                // Form fields
+                // Name field
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Surface),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(16.dp)
                     ) {
+                        Text(
+                            text = "基本資料",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
                             label = { Text("姓名") },
                             leadingIcon = {
                                 Icon(Icons.Default.Person, contentDescription = null)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { email = it },
-                            label = { Text("電子郵件") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Email, contentDescription = null)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        OutlinedTextField(
-                            value = phoneNumber,
-                            onValueChange = { phoneNumber = it },
-                            label = { Text("電話號碼（選填）") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Phone, contentDescription = null)
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -182,7 +219,7 @@ fun EditProfileScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         
                         Text(
-                            text = "您的個人資料將用於帳目分享和通知功能",
+                            text = "選擇一個可愛的頭像來代表您的身份，姓名將顯示在分帳記錄中",
                             style = MaterialTheme.typography.bodySmall,
                             color = OnSurfaceVariant
                         )
