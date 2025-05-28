@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoAA 頭像選擇器</title>
+    <title>GoAA 日式動漫頭像選擇器</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF6B9D 0%, #C44569 50%, #F8B500 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -22,185 +22,255 @@
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
             overflow: hidden;
+            border: 3px solid #FFD700;
         }
 
         .header {
-            background: linear-gradient(45deg, #1B5E7E, #00BCD4);
+            background: linear-gradient(45deg, #FF6B9D, #C44569, #F8B500);
             color: white;
             text-align: center;
-            padding: 30px 20px;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '✨';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 2rem;
+            animation: sparkle 2s infinite;
+        }
+
+        .header::after {
+            content: '🌸';
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 2rem;
+            animation: sparkle 2s infinite 1s;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
+            font-size: 1.3rem;
+            opacity: 0.95;
+            font-weight: 500;
         }
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #FFE5F1, #FFF8DC);
+            border-bottom: 3px solid #FFD700;
         }
 
         .tab {
             flex: 1;
-            padding: 20px;
+            padding: 25px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             border: none;
             background: none;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #6c757d;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #8B4584;
+            position: relative;
         }
 
         .tab:hover {
-            background: #e9ecef;
+            background: linear-gradient(135deg, #FFB6C1, #FFF0F5);
+            transform: translateY(-2px);
         }
 
         .tab.active {
-            background: #007bff;
+            background: linear-gradient(45deg, #FF69B4, #FF1493);
             color: white;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
         }
 
         .tab-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+            font-size: 2rem;
+            margin-bottom: 8px;
             display: block;
         }
 
         .avatar-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 20px;
-            padding: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 25px;
+            padding: 40px;
+            background: linear-gradient(135deg, #FFF8DC, #FFE5F1);
         }
 
         .avatar-item {
             background: white;
-            border-radius: 15px;
-            border: 3px solid #e9ecef;
+            border-radius: 20px;
+            border: 4px solid #FFB6C1;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             text-align: center;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            padding: 25px;
+            box-shadow: 0 8px 16px rgba(255,182,193,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-item::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #FF69B4, #FFD700, #FF69B4);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .avatar-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-color: #007bff;
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(255,105,180,0.4);
+        }
+
+        .avatar-item:hover::before {
+            opacity: 1;
         }
 
         .avatar-item.selected {
-            border-color: #28a745;
-            background: linear-gradient(45deg, #28a745, #20c997);
+            border-color: #FF1493;
+            background: linear-gradient(45deg, #FF69B4, #FFB6C1);
             color: white;
+            transform: scale(1.1);
+        }
+
+        .avatar-item.selected::before {
+            opacity: 1;
         }
 
         .avatar-emoji {
-            font-size: 4rem;
-            margin-bottom: 10px;
+            font-size: 5rem;
+            margin-bottom: 15px;
             display: block;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
         }
 
         .avatar-name {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 5px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #8B4584;
+        }
+
+        .selected .avatar-name {
+            color: white;
         }
 
         .avatar-desc {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             opacity: 0.8;
+            color: #C44569;
+            font-weight: 500;
         }
 
         .selected .avatar-desc {
             opacity: 1;
+            color: white;
         }
 
         .action-buttons {
-            padding: 30px;
+            padding: 35px;
             text-align: center;
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
+            background: linear-gradient(135deg, #FFE5F1, #FFF8DC);
+            border-top: 3px solid #FFD700;
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 15px 40px;
             border: none;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 0 10px;
+            margin: 0 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #007bff, #0056b3);
+            background: linear-gradient(45deg, #FF69B4, #FF1493);
             color: white;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0,123,255,0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255,20,147,0.4);
         }
 
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: linear-gradient(45deg, #FFB6C1, #FFC0CB);
+            color: #8B4584;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            transform: translateY(-3px);
         }
 
         .search-box {
-            margin: 20px 30px;
+            margin: 25px 40px;
             position: relative;
         }
 
         .search-input {
             width: 100%;
-            padding: 15px 50px 15px 20px;
-            border: 2px solid #e9ecef;
-            border-radius: 25px;
-            font-size: 1rem;
+            padding: 18px 60px 18px 25px;
+            border: 3px solid #FFB6C1;
+            border-radius: 30px;
+            font-size: 1.1rem;
             outline: none;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
+            background: white;
         }
 
         .search-input:focus {
-            border-color: #007bff;
+            border-color: #FF69B4;
+            box-shadow: 0 0 15px rgba(255,105,180,0.3);
         }
 
         .search-icon {
             position: absolute;
-            right: 20px;
+            right: 25px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6c757d;
+            font-size: 1.3rem;
         }
 
         .category-count {
-            background: #007bff;
-            color: white;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #8B4584;
             border-radius: 50%;
-            padding: 2px 8px;
-            font-size: 0.8rem;
-            margin-left: 10px;
+            padding: 4px 10px;
+            font-size: 0.9rem;
+            margin-left: 12px;
+            font-weight: 800;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         @media (max-width: 768px) {
@@ -209,17 +279,17 @@
             }
             
             .avatar-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-                gap: 15px;
-                padding: 20px;
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 20px;
+                padding: 25px;
             }
             
             .avatar-emoji {
-                font-size: 3rem;
+                font-size: 4rem;
             }
             
             .header h1 {
-                font-size: 2rem;
+                font-size: 2.2rem;
             }
         }
     </style>
@@ -227,34 +297,34 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎨 選擇您的專屬頭像</h1>
-            <p>挑選一個代表您個性的可愛頭像吧！</p>
+            <h1>🌸 日式動漫頭像選擇器 🌸</h1>
+            <p>選擇您最喜愛的動漫風格頭像！</p>
         </div>
 
         <div class="search-box">
-            <input type="text" class="search-input" placeholder="搜尋頭像..." id="searchInput">
+            <input type="text" class="search-input" placeholder="搜尋您的理想頭像..." id="searchInput">
             <span class="search-icon">🔍</span>
         </div>
 
         <div class="tabs">
             <button class="tab active" onclick="showCategory('male')">
-                <span class="tab-icon">👨</span>
-                男性角色
+                <span class="tab-icon">😊</span>
+                動漫男主
                 <span class="category-count">5</span>
             </button>
             <button class="tab" onclick="showCategory('female')">
-                <span class="tab-icon">👩</span>
-                女性角色
+                <span class="tab-icon">🥺</span>
+                動漫女主
                 <span class="category-count">5</span>
             </button>
             <button class="tab" onclick="showCategory('cat')">
                 <span class="tab-icon">🐱</span>
-                貓咪萌寵
+                萌系貓咪
                 <span class="category-count">5</span>
             </button>
             <button class="tab" onclick="showCategory('dog')">
-                <span class="tab-icon">🐶</span>
-                狗狗夥伴
+                <span class="tab-icon">🐕</span>
+                可愛狗狗
                 <span class="category-count">5</span>
             </button>
         </div>
@@ -265,39 +335,39 @@
 
         <div class="action-buttons">
             <button class="btn btn-secondary" onclick="clearSelection()">清除選擇</button>
-            <button class="btn btn-primary" onclick="confirmSelection()">確認選擇</button>
+            <button class="btn btn-primary" onclick="confirmSelection()">確認選擇 ✨</button>
         </div>
     </div>
 
     <script>
         const avatars = {
             male: [
-                { id: 'male_01', emoji: '👨', name: '商務男士', desc: '專業可靠' },
-                { id: 'male_02', emoji: '🧑', name: '年輕潮男', desc: '活力四射' },
-                { id: 'male_03', emoji: '👱‍♂️', name: '金髮男神', desc: '魅力十足' },
-                { id: 'male_04', emoji: '🧔', name: '鬍鬚大叔', desc: '成熟穩重' },
-                { id: 'male_05', emoji: '👨‍💼', name: '精英白領', desc: '事業有成' }
+                { id: 'male_01', emoji: '😊', name: '陽光少年', desc: '活力滿滿的熱血青春' },
+                { id: 'male_02', emoji: '😎', name: '酷帥男主', desc: '冷酷外表溫暖內心' },
+                { id: 'male_03', emoji: '🥰', name: '溫柔王子', desc: '紳士風度迷人魅力' },
+                { id: 'male_04', emoji: '😤', name: '熱血青春', desc: '永不放棄的戰鬥精神' },
+                { id: 'male_05', emoji: '😏', name: '神秘騎士', desc: '深藏不露的強大力量' }
             ],
             female: [
-                { id: 'female_01', emoji: '👩', name: '甜美女孩', desc: '溫柔可人' },
-                { id: 'female_02', emoji: '👱‍♀️', name: '金髮女神', desc: '優雅迷人' },
-                { id: 'female_03', emoji: '👩‍💼', name: '職場女強人', desc: '獨立自信' },
-                { id: 'female_04', emoji: '👩‍🎓', name: '學霸美女', desc: '智慧與美貌並存' },
-                { id: 'female_05', emoji: '🧕', name: '神秘佳人', desc: '優雅神秘' }
+                { id: 'female_01', emoji: '🥺', name: '甜美少女', desc: '純真可愛的小天使' },
+                { id: 'female_02', emoji: '😆', name: '元氣女孩', desc: '充滿活力的陽光少女' },
+                { id: 'female_03', emoji: '👸', name: '優雅公主', desc: '高貴典雅的完美女神' },
+                { id: 'female_04', emoji: '🤓', name: '學園女神', desc: '智慧與美貌並存' },
+                { id: 'female_05', emoji: '✨', name: '魔法少女', desc: '擁有神奇力量的守護者' }
             ],
             cat: [
-                { id: 'cat_01', emoji: '🐱', name: '萌萌小貓', desc: '超級可愛' },
-                { id: 'cat_02', emoji: '😸', name: '笑臉貓咪', desc: '開心快樂' },
-                { id: 'cat_03', emoji: '😺', name: '快樂貓貓', desc: '心情愉悅' },
-                { id: 'cat_04', emoji: '😻', name: '愛心眼貓', desc: '滿滿愛意' },
-                { id: 'cat_05', emoji: '🙀', name: '驚訝貓咪', desc: '表情豐富' }
+                { id: 'cat_01', emoji: '🐱', name: '招財喵喵', desc: '帶來好運的小天使' },
+                { id: 'cat_02', emoji: '😽', name: '賣萌小貓', desc: '可愛到犯規的萌物' },
+                { id: 'cat_03', emoji: '😾', name: '傲嬌貓主', desc: '高冷外表柔軟內心' },
+                { id: 'cat_04', emoji: '😻', name: '愛心貓咪', desc: '滿滿愛意的甜蜜寶貝' },
+                { id: 'cat_05', emoji: '😴', name: '睡眠貓神', desc: '療癒系的夢幻存在' }
             ],
             dog: [
-                { id: 'dog_01', emoji: '🐶', name: '可愛小狗', desc: '忠誠友善' },
-                { id: 'dog_02', emoji: '🐕', name: '活潑狗狗', desc: '精力充沛' },
-                { id: 'dog_03', emoji: '🦮', name: '導盲犬', desc: '聰明可靠' },
-                { id: 'dog_04', emoji: '🐕‍🦺', name: '工作犬', desc: '盡職盡責' },
-                { id: 'dog_05', emoji: '🐩', name: '貴賓犬', desc: '優雅高貴' }
+                { id: 'dog_01', emoji: '🐕', name: '忠犬小八', desc: '忠誠可靠的最佳夥伴' },
+                { id: 'dog_02', emoji: '🐕‍🦺', name: '柴犬君君', desc: '呆萌可愛的日系犬' },
+                { id: 'dog_03', emoji: '🦮', name: '秋田美男', desc: '帥氣優雅的紳士犬' },
+                { id: 'dog_04', emoji: '🐶', name: '萌犬王子', desc: '可愛到爆表的小王子' },
+                { id: 'dog_05', emoji: '😇', name: '療癒天使', desc: '溫暖人心的治癒系' }
             ]
         };
 
@@ -353,12 +423,12 @@
 
         function confirmSelection() {
             if (selectedAvatar) {
-                alert(`您選擇了：${selectedAvatar.name} (${selectedAvatar.desc})\nID: ${selectedAvatar.id}`);
+                alert(`✨ 您選擇了：${selectedAvatar.name} ✨\n${selectedAvatar.desc}\nID: ${selectedAvatar.id}`);
                 // 這裡可以添加實際的選擇處理邏輯
                 // 例如：將選擇結果傳回到 Android 應用
                 console.log('Selected avatar:', selectedAvatar);
             } else {
-                alert('請先選擇一個頭像！');
+                alert('🌸 請先選擇一個頭像喔！ 🌸');
             }
         }
 
