@@ -71,7 +71,6 @@ GoAA/
 │   ├── assets/                # 資源文件
 │   ├── test/                  # 測試文件
 │   └── pubspec.yaml           # 依賴配置
-├── app/                       # Android原生專案 (參考)
 ├── docs/                      # 專案文檔
 └── README.md                  # 本文件
 ```
