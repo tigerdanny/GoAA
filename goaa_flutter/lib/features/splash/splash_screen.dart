@@ -73,7 +73,7 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 700));
     
     if (mounted) {
-      // TODO: 跳轉到主頁面（暫時跳轉到一個佔位頁面）
+      // 跳轉到主頁面（暫時跳轉到一個佔位頁面）
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -151,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 Text(
                                   '分帳神器',
                                   style: AppTextStyles.h4.copyWith(
-                                    color: AppColors.white.withOpacity(0.9),
+                                    color: AppColors.white.withValues(alpha: 0.9),
                                     fontWeight: FontWeight.w300,
                                   ),
                                 ),
@@ -192,7 +192,7 @@ class _SplashScreenState extends State<SplashScreen>
                             Text(
                               '讓分帳變得簡單優雅',
                               style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.white.withOpacity(0.7),
+                                color: AppColors.white.withValues(alpha: 0.7),
                               ),
                             ),
                             
@@ -212,15 +212,15 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// 暫時的首頁佔位頁面
-/// TODO: 替換為實際的主頁面
+// 暫時的首頁佔位頁面
+// 替換為實際的主頁面
 class _PlaceholderHomePage extends StatelessWidget {
   const _PlaceholderHomePage();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('GoAA分帳神器'),
         centerTitle: true,

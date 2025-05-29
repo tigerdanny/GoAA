@@ -131,22 +131,22 @@ class AppColors {
 
   // === 透明度變體 === //
   /// 主色 - 10% 透明度
-  static Color get primaryWithOpacity10 => primary.withOpacity(0.1);
+  static Color get primaryWithOpacity10 => primary.withValues(alpha: 0.1);
   
   /// 主色 - 20% 透明度
-  static Color get primaryWithOpacity20 => primary.withOpacity(0.2);
+  static Color get primaryWithOpacity20 => primary.withValues(alpha: 0.2);
   
   /// 主色 - 50% 透明度
-  static Color get primaryWithOpacity50 => primary.withOpacity(0.5);
+  static Color get primaryWithOpacity50 => primary.withValues(alpha: 0.5);
   
   /// 黑色 - 10% 透明度
-  static Color get blackWithOpacity10 => black.withOpacity(0.1);
+  static Color get blackWithOpacity10 => black.withValues(alpha: 0.1);
   
   /// 黑色 - 20% 透明度
-  static Color get blackWithOpacity20 => black.withOpacity(0.2);
+  static Color get blackWithOpacity20 => black.withValues(alpha: 0.2);
   
   /// 白色 - 90% 透明度
-  static Color get whiteWithOpacity90 => white.withOpacity(0.9);
+  static Color get whiteWithOpacity90 => white.withValues(alpha: 0.9);
 
   // === 漸層色彩 === //
   /// 主要漸層 - 品牌色漸層
@@ -179,11 +179,11 @@ class AppColors {
 
   // === 陰影色彩 === //
   /// 輕微陰影色
-  static Color get shadowLight => black.withOpacity(0.08);
+  static Color get shadowLight => black.withValues(alpha: 0.08);
   
   /// 中等陰影色
-  static Color get shadowMedium => black.withOpacity(0.16);
+  static Color get shadowMedium => black.withValues(alpha: 0.16);
   
   /// 深色陰影色
-  static Color get shadowDark => black.withOpacity(0.24);
+  static Color get shadowDark => black.withValues(alpha: 0.24);
 } 

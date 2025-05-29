@@ -74,16 +74,14 @@ class AppTheme {
     secondary: AppColors.secondary,
     tertiary: AppColors.info,
     surface: AppColors.surface,
-    background: AppColors.background,
     error: AppColors.error,
     onPrimary: AppColors.onPrimary,
     onSecondary: AppColors.onSecondary,
     onSurface: AppColors.onSurface,
-    onBackground: AppColors.onSurface,
     onError: AppColors.onError,
     outline: AppColors.outline,
     outlineVariant: AppColors.outlineVariant,
-    surfaceVariant: AppColors.surfaceVariant,
+    surfaceContainerHighest: AppColors.surfaceVariant,
     onSurfaceVariant: AppColors.onSurfaceVariant,
   );
 
@@ -92,16 +90,14 @@ class AppTheme {
     secondary: AppColors.secondary,
     tertiary: AppColors.info,
     surface: AppColors.surfaceDark,
-    background: Color(0xFF0A0A0A),
     error: AppColors.error,
     onPrimary: AppColors.onPrimary,
     onSecondary: AppColors.onSecondary,
     onSurface: AppColors.white,
-    onBackground: AppColors.white,
     onError: AppColors.onError,
     outline: AppColors.neutral600,
     outlineVariant: AppColors.neutral700,
-    surfaceVariant: AppColors.neutral800,
+    surfaceContainerHighest: AppColors.neutral800,
     onSurfaceVariant: AppColors.neutral300,
   );
 
@@ -309,8 +305,8 @@ class AppTheme {
   static NavigationBarThemeData get _navigationBarTheme => NavigationBarThemeData(
     backgroundColor: AppColors.surface,
     indicatorColor: AppColors.primaryWithOpacity20,
-    labelTextStyle: MaterialStatePropertyAll(AppTextStyles.navigation),
-    iconTheme: const MaterialStatePropertyAll(
+    labelTextStyle: WidgetStatePropertyAll(AppTextStyles.navigation),
+    iconTheme: const WidgetStatePropertyAll(
       IconThemeData(color: AppColors.onSurfaceVariant, size: AppDimensions.iconM),
     ),
   );
@@ -318,10 +314,10 @@ class AppTheme {
   static NavigationBarThemeData get _navigationBarThemeDark => NavigationBarThemeData(
     backgroundColor: AppColors.surfaceDark,
     indicatorColor: AppColors.primaryWithOpacity20,
-    labelTextStyle: const MaterialStatePropertyAll(
+    labelTextStyle: const WidgetStatePropertyAll(
       TextStyle(fontSize: 14, color: AppColors.neutral400),
     ),
-    iconTheme: const MaterialStatePropertyAll(
+    iconTheme: const WidgetStatePropertyAll(
       IconThemeData(color: AppColors.neutral400, size: AppDimensions.iconM),
     ),
   );
@@ -376,28 +372,28 @@ class AppTheme {
   );
 
   static SwitchThemeData get _switchTheme => SwitchThemeData(
-    thumbColor: MaterialStateProperty.resolveWith((states) {
-      if (states.contains(MaterialState.selected)) return AppColors.primary;
+    thumbColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
       return AppColors.neutral400;
     }),
-    trackColor: MaterialStateProperty.resolveWith((states) {
-      if (states.contains(MaterialState.selected)) return AppColors.primaryWithOpacity20;
+    trackColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primaryWithOpacity20;
       return AppColors.neutral200;
     }),
   );
 
   static CheckboxThemeData get _checkboxTheme => CheckboxThemeData(
-    fillColor: MaterialStateProperty.resolveWith((states) {
-      if (states.contains(MaterialState.selected)) return AppColors.primary;
+    fillColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
       return Colors.transparent;
     }),
-    checkColor: MaterialStateProperty.all(AppColors.onPrimary),
+    checkColor: WidgetStateProperty.all(AppColors.onPrimary),
     shape: RoundedRectangleBorder(borderRadius: AppDimensions.borderRadiusS),
   );
 
   static RadioThemeData get _radioTheme => RadioThemeData(
-    fillColor: MaterialStateProperty.resolveWith((states) {
-      if (states.contains(MaterialState.selected)) return AppColors.primary;
+    fillColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primary;
       return AppColors.neutral400;
     }),
   );
