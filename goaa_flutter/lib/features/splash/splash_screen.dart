@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
-import '../../core/theme/app_dimensions.dart';
 
-/// GoAA啟動畫面
-/// 複製Android版本的設計，包含品牌標誌和漸層背景
+/// 啟動畫面
+/// 展示品牌Logo並執行初始化
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -16,77 +14,100 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _logoController;
-  late AnimationController _fadeController;
-  late Animation<double> _logoAnimation;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _textController;
+  late Animation<double> _logoScaleAnimation;
+  late Animation<double> _logoOpacityAnimation;
+  late Animation<double> _textOpacityAnimation;
+  late Animation<Offset> _textSlideAnimation;
 
   @override
   void initState() {
     super.initState();
-    
-    // 標誌動畫控制器
-    _logoController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    
-    // 淡入動畫控制器
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-    
-    // 標誌縮放動畫
-    _logoAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _logoController,
-      curve: Curves.easeOutBack,
-    ));
-    
-    // 淡入動畫
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeIn,
-    ));
-    
-    // 開始動畫序列
+    _initializeAnimations();
     _startAnimationSequence();
   }
 
+  void _initializeAnimations() {
+    // Logo動畫控制器
+    _logoController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    // 文字動畫控制器
+    _textController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // Logo縮放動畫
+    _logoScaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoController,
+      curve: const Interval(0.0, 0.7, curve: Curves.elasticOut),
+    ));
+
+    // Logo透明度動畫
+    _logoOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    ));
+
+    // 文字透明度動畫
+    _textOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _textController,
+      curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+    ));
+
+    // 文字滑動動畫
+    _textSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _textController,
+      curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+    ));
+  }
+
   void _startAnimationSequence() async {
-    // 等待一小段時間
-    await Future.delayed(const Duration(milliseconds: 200));
-    
-    // 開始淡入動畫
-    _fadeController.forward();
-    
-    // 稍後開始標誌動畫
-    await Future.delayed(const Duration(milliseconds: 300));
+    // 設置狀態欄樣式
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+
+    // 啟動Logo動畫
     _logoController.forward();
-    
-    // 總等待時間約1.2秒後跳轉到主頁面
-    await Future.delayed(const Duration(milliseconds: 700));
-    
+
+    // 延遲啟動文字動畫
+    await Future.delayed(const Duration(milliseconds: 800));
+    _textController.forward();
+
+    // 動畫完成後導航
+    await Future.delayed(const Duration(milliseconds: 3500));
     if (mounted) {
-      // 跳轉到主頁面（暫時跳轉到一個佔位頁面）
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const _PlaceholderHomePage(),
-        ),
-      );
+      _navigateToHome();
     }
+  }
+
+  void _navigateToHome() {
+    Navigator.of(context).pushReplacementNamed('/home');
   }
 
   @override
   void dispose() {
     _logoController.dispose();
-    _fadeController.dispose();
+    _textController.dispose();
     super.dispose();
   }
 
@@ -94,159 +115,148 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // 使用漸層背景，與Android版本保持一致
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: AppColors.splashGradient,
+          gradient: AppColors.primaryGradient,
         ),
         child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // 主要標誌區域
-                Expanded(
-                  flex: 3,
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _logoAnimation,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Transform.scale(
-                            scale: _logoAnimation.value,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // 應用圖標
-                                Container(
-                                  width: 120,
-                                  height: 120,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white,
-                                    borderRadius: BorderRadius.circular(24),
-                                    boxShadow: AppDimensions.shadowXL,
-                                  ),
-                                  child: const Icon(
-                                    Icons.group_work_rounded,
-                                    size: 64,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                
-                                const SizedBox(height: AppDimensions.space32),
-                                
-                                // 應用名稱
-                                Text(
-                                  'GoAA',
-                                  style: AppTextStyles.h1.copyWith(
-                                    color: AppColors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 48,
-                                  ),
-                                ),
-                                
-                                const SizedBox(height: AppDimensions.space8),
-                                
-                                // 副標題
-                                Text(
-                                  '分帳神器',
-                                  style: AppTextStyles.h4.copyWith(
-                                    color: AppColors.white.withValues(alpha: 0.9),
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                
-                // 底部區域
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: Column(
-                          children: [
-                            // 載入指示器
-                            const SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.white,
-                                ),
-                                strokeWidth: 2,
-                              ),
-                            ),
-                            
-                            const SizedBox(height: AppDimensions.space16),
-                            
-                            // 版本資訊
-                            Text(
-                              '讓分帳變得簡單優雅',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.white.withValues(alpha: 0.7),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: AppDimensions.space24),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 2),
+              
+              // Logo區域
+              _buildLogoSection(),
+              
+              const SizedBox(height: 40),
+              
+              // 文字區域
+              _buildTextSection(),
+              
+              const Spacer(flex: 2),
+              
+              // 載入指示器
+              _buildLoadingSection(),
+              
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),
     );
   }
-}
 
-// 暫時的首頁佔位頁面
-// 替換為實際的主頁面
-class _PlaceholderHomePage extends StatelessWidget {
-  const _PlaceholderHomePage();
+  /// 構建Logo區域
+  Widget _buildLogoSection() {
+    return AnimatedBuilder(
+      animation: _logoController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _logoScaleAnimation.value,
+          child: Opacity(
+            opacity: _logoOpacityAnimation.value,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Image.asset(
+                  'assets/images/goaa_logo.png',
+                  width: 128,
+                  height: 128,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: const Text('GoAA分帳神器'),
-        centerTitle: true,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.construction,
-              size: 64,
-              color: AppColors.primary,
+  /// 構建文字區域
+  Widget _buildTextSection() {
+    return AnimatedBuilder(
+      animation: _textController,
+      builder: (context, child) {
+        return SlideTransition(
+          position: _textSlideAnimation,
+          child: FadeTransition(
+            opacity: _textOpacityAnimation,
+            child: Column(
+              children: [
+                // 應用名稱
+                Text(
+                  'GOAA分帳神器',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 32,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                // 應用描述
+                Text(
+                  '讓分帳變得簡單優雅',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            SizedBox(height: AppDimensions.space16),
-            Text(
-              '正在開發中...',
-              style: AppTextStyles.h4,
-            ),
-            SizedBox(height: AppDimensions.space8),
-            Text(
-              'Flutter版本即將完成',
-              style: AppTextStyles.bodyMedium,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 構建載入指示器
+  Widget _buildLoadingSection() {
+    return AnimatedBuilder(
+      animation: _textController,
+      builder: (context, child) {
+        return FadeTransition(
+          opacity: _textOpacityAnimation,
+          child: Column(
+            children: [
+              // 載入指示器
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // 載入文字
+              Text(
+                '正在載入...',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 } 

@@ -1,0 +1,468 @@
+{
+  "@@locale": "zh",
+  
+  "appName": "GOAA分帳神器",
+  "@appName": {
+    "description": "應用程式名稱"
+  },
+  
+  "appDescription": "跨平台分帳應用，讓分帳變得簡單優雅",
+  "@appDescription": {
+    "description": "應用程式描述"
+  },
+  
+  "goodMorning": "早安，{name}",
+  "@goodMorning": {
+    "description": "早安問候語",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "userCode": "用戶代碼：{code}",
+  "@userCode": {
+    "description": "用戶代碼顯示",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "GA123456"
+      }
+    }
+  },
+  
+  "myGroups": "我的群組",
+  "@myGroups": {
+    "description": "我的群組標題"
+  },
+  
+  "participatedGroups": "參與群組",
+  "@participatedGroups": {
+    "description": "參與群組統計"
+  },
+  
+  "totalExpenses": "總支出",
+  "@totalExpenses": {
+    "description": "總支出統計"
+  },
+  
+  "quickBilling": "快速分帳",
+  "@quickBilling": {
+    "description": "快速分帳按鈕"
+  },
+  
+  "quickActions": "快速操作",
+  "@quickActions": {
+    "description": "快速操作標題"
+  },
+  
+  "addExpense": "添加支出",
+  "@addExpense": {
+    "description": "添加支出按鈕"
+  },
+  
+  "createGroup": "創建群組",
+  "@createGroup": {
+    "description": "創建群組按鈕"
+  },
+  
+  "scanReceipt": "掃描收據",
+  "@scanReceipt": {
+    "description": "掃描收據按鈕"
+  },
+  
+  "settlementRecords": "結算記錄",
+  "@settlementRecords": {
+    "description": "結算記錄按鈕"
+  },
+  
+  "viewAll": "查看全部",
+  "@viewAll": {
+    "description": "查看全部按鈕"
+  },
+  
+  "members": "位成員",
+  "@members": {
+    "description": "成員數量單位"
+  },
+  
+  "settled": "已結清",
+  "@settled": {
+    "description": "已結清狀態"
+  },
+  
+  "hasActivity": "有活動",
+  "@hasActivity": {
+    "description": "有活動狀態"
+  },
+  
+  "noActivity": "無活動",
+  "@noActivity": {
+    "description": "無活動狀態"
+  },
+  
+  "timeAgo_days": "{count}天前",
+  "@timeAgo_days": {
+    "description": "天前時間格式",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  
+  "timeAgo_hours": "{count}小時前",
+  "@timeAgo_hours": {
+    "description": "小時前時間格式",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  
+  "timeAgo_minutes": "{count}分鐘前",
+  "@timeAgo_minutes": {
+    "description": "分鐘前時間格式",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  
+  "timeAgo_justNow": "剛才",
+  "@timeAgo_justNow": {
+    "description": "剛才時間格式"
+  },
+  
+  "currency": "$",
+  "@currency": {
+    "description": "貨幣符號"
+  },
+  
+  "moneyFormat": "{currency}{amount}",
+  "@moneyFormat": {
+    "description": "金額格式",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "positiveMoneyFormat": "+{currency}{amount}",
+  "@positiveMoneyFormat": {
+    "description": "正數金額格式",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "negativeMoneyFormat": "-{currency}{amount}",
+  "@negativeMoneyFormat": {
+    "description": "負數金額格式",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "userName": "使用者名稱",
+  "@userName": {
+    "description": "預設使用者名稱"
+  },
+  
+  "user": "用戶",
+  "@user": {
+    "description": "用戶"
+  },
+  
+  "notAvailable": "N/A",
+  "@notAvailable": {
+    "description": "不可用狀態"
+  },
+  
+  "roommateBilling": "室友分攤",
+  "@roommateBilling": {
+    "description": "室友分攤群組名稱"
+  },
+  
+  "roommateDescription": "與室友一起分攤日常開支",
+  "@roommateDescription": {
+    "description": "室友分攤群組描述"
+  },
+  
+  "groceryShopping": "購買日用品",
+  "@groceryShopping": {
+    "description": "購買日用品支出標題"
+  },
+  
+  "groceryDescription": "衛生紙、洗衣精等",
+  "@groceryDescription": {
+    "description": "購買日用品支出描述"
+  },
+  
+  "roommateXiaoWang": "室友小王",
+  "@roommateXiaoWang": {
+    "description": "室友小王名稱"
+  },
+  
+  "roommateXiaoLi": "室友小李",
+  "@roommateXiaoLi": {
+    "description": "室友小李名稱"
+  },
+  
+  "loading": "載入中...",
+  "@loading": {
+    "description": "載入中狀態"
+  },
+  
+  "notifications": "通知功能開發中...",
+  "@notifications": {
+    "description": "通知功能提示"
+  },
+  
+  "dataLoadError": "加載數據失敗",
+  "@dataLoadError": {
+    "description": "數據載入錯誤"
+  },
+  
+  "databaseInitSuccess": "資料庫初始化成功",
+  "@databaseInitSuccess": {
+    "description": "資料庫初始化成功"
+  },
+  
+  "databaseInitError": "資料庫初始化失敗",
+  "@databaseInitError": {
+    "description": "資料庫初始化失敗"
+  },
+  
+  "language": "語言",
+  "@language": {
+    "description": "語言設置"
+  },
+  
+  "languageTraditionalChinese": "繁體中文",
+  "@languageTraditionalChinese": {
+    "description": "繁體中文語言選項"
+  },
+  
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "英文語言選項"
+  },
+  
+  "settings": "設置",
+  "@settings": {
+    "description": "設置頁面標題"
+  },
+  
+  "userProfile": "用戶資料",
+  "@userProfile": {
+    "description": "用戶資料設置"
+  },
+  
+  "accountSettings": "帳務設定",
+  "@accountSettings": {
+    "description": "帳務設定"
+  },
+  
+  "reports": "報表設定",
+  "@reports": {
+    "description": "報表設定"
+  },
+  
+  "interface": "介面設定",
+  "@interface": {
+    "description": "介面設定"
+  },
+  
+  "personalInfo": "個人資訊",
+  "@personalInfo": {
+    "description": "個人資訊設置"
+  },
+  
+  "name": "姓名",
+  "@name": {
+    "description": "姓名欄位"
+  },
+  
+  "email": "電子郵件",
+  "@email": {
+    "description": "電子郵件欄位"
+  },
+  
+  "phone": "電話號碼",
+  "@phone": {
+    "description": "電話號碼欄位"
+  },
+  
+  "avatar": "頭像",
+  "@avatar": {
+    "description": "頭像設置"
+  },
+  
+  "defaultCurrency": "預設貨幣",
+  "@defaultCurrency": {
+    "description": "預設貨幣設置"
+  },
+  
+  "autoSettlement": "自動結算",
+  "@autoSettlement": {
+    "description": "自動結算設置"
+  },
+  
+  "reminderSettings": "提醒設定",
+  "@reminderSettings": {
+    "description": "提醒設定"
+  },
+  
+  "exportData": "匯出資料",
+  "@exportData": {
+    "description": "匯出資料功能"
+  },
+  
+  "backupRestore": "備份與還原",
+  "@backupRestore": {
+    "description": "備份與還原功能"
+  },
+  
+  "themeSettings": "主題設定",
+  "@themeSettings": {
+    "description": "主題設定"
+  },
+  
+  "darkMode": "深色模式",
+  "@darkMode": {
+    "description": "深色模式設置"
+  },
+  
+  "fontSize": "字體大小",
+  "@fontSize": {
+    "description": "字體大小設置"
+  },
+  
+  "about": "關於應用",
+  "@about": {
+    "description": "關於應用"
+  },
+  
+  "version": "版本",
+  "@version": {
+    "description": "應用版本"
+  },
+  
+  "privacy": "隱私政策",
+  "@privacy": {
+    "description": "隱私政策"
+  },
+  
+  "terms": "使用條款",
+  "@terms": {
+    "description": "使用條款"
+  },
+  
+  "support": "客服支援",
+  "@support": {
+    "description": "客服支援"
+  },
+  
+  "logout": "登出",
+  "@logout": {
+    "description": "登出功能"
+  },
+  
+  "save": "儲存",
+  "@save": {
+    "description": "儲存按鈕"
+  },
+  
+  "cancel": "取消",
+  "@cancel": {
+    "description": "取消按鈕"
+  },
+  
+  "edit": "編輯",
+  "@edit": {
+    "description": "編輯按鈕"
+  },
+  
+  "comingSoon": "功能開發中...",
+  "@comingSoon": {
+    "description": "功能開發中提示"
+  },
+  
+  "enableNotifications": "啟用通知",
+  "@enableNotifications": {
+    "description": "啟用通知設置"
+  },
+  
+  "billReminders": "帳單提醒",
+  "@billReminders": {
+    "description": "帳單提醒設置"
+  },
+  
+  "settlementReminders": "結算提醒",
+  "@settlementReminders": {
+    "description": "結算提醒設置"
+  },
+  
+  "developer": "開發者",
+  "@developer": {
+    "description": "開發者"
+  },
+  
+  "developerName": "Danny Wang",
+  "@developerName": {
+    "description": "開發者姓名"
+  },
+  
+  "developerEmail": "tiger.danny@gmail.com",
+  "@developerEmail": {
+    "description": "開發者電子郵件"
+  },
+  
+  "developmentDate": "開發時間",
+  "@developmentDate": {
+    "description": "開發時間"
+  },
+  
+  "developmentDateValue": "2025年6月",
+  "@developmentDateValue": {
+    "description": "開發時間值"
+  },
+  
+  "appInfo": "應用資訊",
+  "@appInfo": {
+    "description": "應用資訊"
+  },
+  
+  "contactDeveloper": "聯繫開發者",
+  "@contactDeveloper": {
+    "description": "聯繫開發者"
+  }
+} 

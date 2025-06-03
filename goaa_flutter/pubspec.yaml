@@ -1,5 +1,5 @@
 name: goaa_flutter
-description: "GoAA分帳神器 - 跨平台分帳應用，讓分帳變得簡單優雅"
+description: "GOAA分帳神器 - 跨平台分帳應用，讓分帳變得簡單優雅"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -40,6 +40,7 @@ dependencies:
   # 狀態管理
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
+  provider: ^6.1.2
   
   # 依賴注入
   get_it: ^8.0.2
@@ -52,6 +53,7 @@ dependencies:
   
   # 本地存儲
   drift: ^2.21.0
+  sqlite3: ^2.4.6
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.4
   path: ^1.9.0
@@ -62,7 +64,6 @@ dependencies:
   local_auth: ^2.3.0
   
   # UI組件
-  flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   fl_chart: ^0.69.0
   smooth_page_indicator: ^1.2.0+3
@@ -121,6 +122,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  
+  # 國際化設置
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
@@ -157,29 +161,25 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
 
 # Flutter App Icons配置
-flutter_icons:
-  android: "launcher_icon"
+flutter_launcher_icons:
+  android: true
   ios: true
   image_path: "assets/icons/app_icon.png"
+  
+  # Android自適應圖標
+  adaptive_icon_background: "#F5F5DC"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  
+  # 移除可能有問題的設置
   min_sdk_android: 21
-  web:
-    generate: true
-    image_path: "assets/icons/app_icon.png"
-  windows:
-    generate: true
-    image_path: "assets/icons/app_icon.png"
-    icon_size: 48
-  macos:
-    generate: true
-    image_path: "assets/icons/app_icon.png"
 
 # Native Splash Screen配置
 flutter_native_splash:
-  color: "#1B5E7E"
-  image: "assets/images/splash_logo.png"
+  color: "#F5F5DC"
+  image: "assets/images/goaa_logo.png"
   
   android_12:
-    image: "assets/images/splash_logo.png"
-    color: "#1B5E7E"
+    image: "assets/images/goaa_logo.png"
+    color: "#F5F5DC"
     
   web: false

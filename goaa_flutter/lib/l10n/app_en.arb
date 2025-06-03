@@ -1,0 +1,468 @@
+{
+  "@@locale": "en",
+  
+  "appName": "GOAA Bill Splitter",
+  "@appName": {
+    "description": "Application name"
+  },
+  
+  "appDescription": "Cross-platform bill splitting app that makes splitting bills simple and elegant",
+  "@appDescription": {
+    "description": "Application description"
+  },
+  
+  "goodMorning": "Good morning, {name}",
+  "@goodMorning": {
+    "description": "Good morning greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "userCode": "User Code: {code}",
+  "@userCode": {
+    "description": "User code display",
+    "placeholders": {
+      "code": {
+        "type": "String",
+        "example": "GA123456"
+      }
+    }
+  },
+  
+  "myGroups": "My Groups",
+  "@myGroups": {
+    "description": "My groups title"
+  },
+  
+  "participatedGroups": "Groups Joined",
+  "@participatedGroups": {
+    "description": "Participated groups statistics"
+  },
+  
+  "totalExpenses": "Total Expenses",
+  "@totalExpenses": {
+    "description": "Total expenses statistics"
+  },
+  
+  "quickBilling": "Quick Split",
+  "@quickBilling": {
+    "description": "Quick billing button"
+  },
+  
+  "quickActions": "Quick Actions",
+  "@quickActions": {
+    "description": "Quick actions title"
+  },
+  
+  "addExpense": "Add Expense",
+  "@addExpense": {
+    "description": "Add expense button"
+  },
+  
+  "createGroup": "Create Group",
+  "@createGroup": {
+    "description": "Create group button"
+  },
+  
+  "scanReceipt": "Scan Receipt",
+  "@scanReceipt": {
+    "description": "Scan receipt button"
+  },
+  
+  "settlementRecords": "Settlement Records",
+  "@settlementRecords": {
+    "description": "Settlement records button"
+  },
+  
+  "viewAll": "View All",
+  "@viewAll": {
+    "description": "View all button"
+  },
+  
+  "members": " members",
+  "@members": {
+    "description": "Members count unit"
+  },
+  
+  "settled": "Settled",
+  "@settled": {
+    "description": "Settled status"
+  },
+  
+  "hasActivity": "Active",
+  "@hasActivity": {
+    "description": "Has activity status"
+  },
+  
+  "noActivity": "No Activity",
+  "@noActivity": {
+    "description": "No activity status"
+  },
+  
+  "timeAgo_days": "{count} days ago",
+  "@timeAgo_days": {
+    "description": "Days ago time format",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  
+  "timeAgo_hours": "{count} hours ago",
+  "@timeAgo_hours": {
+    "description": "Hours ago time format",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  
+  "timeAgo_minutes": "{count} minutes ago",
+  "@timeAgo_minutes": {
+    "description": "Minutes ago time format",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  
+  "timeAgo_justNow": "Just now",
+  "@timeAgo_justNow": {
+    "description": "Just now time format"
+  },
+  
+  "currency": "$",
+  "@currency": {
+    "description": "Currency symbol"
+  },
+  
+  "moneyFormat": "{currency}{amount}",
+  "@moneyFormat": {
+    "description": "Money format",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "positiveMoneyFormat": "+{currency}{amount}",
+  "@positiveMoneyFormat": {
+    "description": "Positive money format",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "negativeMoneyFormat": "-{currency}{amount}",
+  "@negativeMoneyFormat": {
+    "description": "Negative money format",
+    "placeholders": {
+      "currency": {
+        "type": "String",
+        "example": "$"
+      },
+      "amount": {
+        "type": "String",
+        "example": "123.45"
+      }
+    }
+  },
+  
+  "userName": "Username",
+  "@userName": {
+    "description": "Default username"
+  },
+  
+  "user": "User",
+  "@user": {
+    "description": "User"
+  },
+  
+  "notAvailable": "N/A",
+  "@notAvailable": {
+    "description": "Not available status"
+  },
+  
+  "roommateBilling": "Roommate Bills",
+  "@roommateBilling": {
+    "description": "Roommate billing group name"
+  },
+  
+  "roommateDescription": "Split daily expenses with roommates",
+  "@roommateDescription": {
+    "description": "Roommate billing group description"
+  },
+  
+  "groceryShopping": "Grocery Shopping",
+  "@groceryShopping": {
+    "description": "Grocery shopping expense title"
+  },
+  
+  "groceryDescription": "Toilet paper, detergent, etc.",
+  "@groceryDescription": {
+    "description": "Grocery shopping expense description"
+  },
+  
+  "roommateXiaoWang": "Roommate Wang",
+  "@roommateXiaoWang": {
+    "description": "Roommate Wang name"
+  },
+  
+  "roommateXiaoLi": "Roommate Li",
+  "@roommateXiaoLi": {
+    "description": "Roommate Li name"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading status"
+  },
+  
+  "notifications": "Notification feature under development...",
+  "@notifications": {
+    "description": "Notification feature message"
+  },
+  
+  "dataLoadError": "Failed to load data",
+  "@dataLoadError": {
+    "description": "Data loading error"
+  },
+  
+  "databaseInitSuccess": "Database initialized successfully",
+  "@databaseInitSuccess": {
+    "description": "Database initialization success"
+  },
+  
+  "databaseInitError": "Database initialization failed",
+  "@databaseInitError": {
+    "description": "Database initialization error"
+  },
+  
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  
+  "languageTraditionalChinese": "繁體中文",
+  "@languageTraditionalChinese": {
+    "description": "Traditional Chinese language option"
+  },
+  
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "English language option"
+  },
+  
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  
+  "userProfile": "User Profile",
+  "@userProfile": {
+    "description": "User profile settings"
+  },
+  
+  "accountSettings": "Account Settings",
+  "@accountSettings": {
+    "description": "Account settings"
+  },
+  
+  "reports": "Reports",
+  "@reports": {
+    "description": "Reports settings"
+  },
+  
+  "interface": "Interface",
+  "@interface": {
+    "description": "Interface settings"
+  },
+  
+  "personalInfo": "Personal Info",
+  "@personalInfo": {
+    "description": "Personal information settings"
+  },
+  
+  "name": "Name",
+  "@name": {
+    "description": "Name field"
+  },
+  
+  "email": "Email",
+  "@email": {
+    "description": "Email field"
+  },
+  
+  "phone": "Phone",
+  "@phone": {
+    "description": "Phone number field"
+  },
+  
+  "avatar": "Avatar",
+  "@avatar": {
+    "description": "Avatar settings"
+  },
+  
+  "defaultCurrency": "Default Currency",
+  "@defaultCurrency": {
+    "description": "Default currency settings"
+  },
+  
+  "autoSettlement": "Auto Settlement",
+  "@autoSettlement": {
+    "description": "Auto settlement settings"
+  },
+  
+  "reminderSettings": "Reminders",
+  "@reminderSettings": {
+    "description": "Reminder settings"
+  },
+  
+  "exportData": "Export Data",
+  "@exportData": {
+    "description": "Export data function"
+  },
+  
+  "backupRestore": "Backup & Restore",
+  "@backupRestore": {
+    "description": "Backup and restore function"
+  },
+  
+  "themeSettings": "Theme",
+  "@themeSettings": {
+    "description": "Theme settings"
+  },
+  
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode settings"
+  },
+  
+  "fontSize": "Font Size",
+  "@fontSize": {
+    "description": "Font size settings"
+  },
+  
+  "about": "About",
+  "@about": {
+    "description": "About app"
+  },
+  
+  "version": "Version",
+  "@version": {
+    "description": "App version"
+  },
+  
+  "privacy": "Privacy Policy",
+  "@privacy": {
+    "description": "Privacy policy"
+  },
+  
+  "terms": "Terms of Service",
+  "@terms": {
+    "description": "Terms of service"
+  },
+  
+  "support": "Support",
+  "@support": {
+    "description": "Customer support"
+  },
+  
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout function"
+  },
+  
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  
+  "comingSoon": "Coming Soon...",
+  "@comingSoon": {
+    "description": "Coming soon message"
+  },
+  
+  "enableNotifications": "Enable Notifications",
+  "@enableNotifications": {
+    "description": "Enable notifications setting"
+  },
+  
+  "billReminders": "Bill Reminders",
+  "@billReminders": {
+    "description": "Bill reminders setting"
+  },
+  
+  "settlementReminders": "Settlement Reminders",
+  "@settlementReminders": {
+    "description": "Settlement reminders setting"
+  },
+  
+  "developer": "Developer",
+  "@developer": {
+    "description": "Developer"
+  },
+  
+  "developerName": "Danny Wang",
+  "@developerName": {
+    "description": "Developer name"
+  },
+  
+  "developerEmail": "tiger.danny@gmail.com",
+  "@developerEmail": {
+    "description": "Developer email"
+  },
+  
+  "developmentDate": "Development Date",
+  "@developmentDate": {
+    "description": "Development date"
+  },
+  
+  "developmentDateValue": "June 2025",
+  "@developmentDateValue": {
+    "description": "Development date value"
+  },
+  
+  "appInfo": "App Information",
+  "@appInfo": {
+    "description": "App information"
+  },
+  
+  "contactDeveloper": "Contact Developer",
+  "@contactDeveloper": {
+    "description": "Contact developer"
+  }
+} 
