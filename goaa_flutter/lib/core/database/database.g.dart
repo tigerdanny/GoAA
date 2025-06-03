@@ -3290,6 +3290,340 @@ class InvitationsCompanion extends UpdateCompanion<Invitation> {
   }
 }
 
+class $DailyQuotesTable extends DailyQuotes
+    with TableInfo<$DailyQuotesTable, DailyQuote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DailyQuotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _contentZhMeta =
+      const VerificationMeta('contentZh');
+  @override
+  late final GeneratedColumn<String> contentZh = GeneratedColumn<String>(
+      'content_zh', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _contentEnMeta =
+      const VerificationMeta('contentEn');
+  @override
+  late final GeneratedColumn<String> contentEn = GeneratedColumn<String>(
+      'content_en', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+      'author', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('inspirational'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, contentZh, contentEn, author, category, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'daily_quotes';
+  @override
+  VerificationContext validateIntegrity(Insertable<DailyQuote> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('content_zh')) {
+      context.handle(_contentZhMeta,
+          contentZh.isAcceptableOrUnknown(data['content_zh']!, _contentZhMeta));
+    } else if (isInserting) {
+      context.missing(_contentZhMeta);
+    }
+    if (data.containsKey('content_en')) {
+      context.handle(_contentEnMeta,
+          contentEn.isAcceptableOrUnknown(data['content_en']!, _contentEnMeta));
+    } else if (isInserting) {
+      context.missing(_contentEnMeta);
+    }
+    if (data.containsKey('author')) {
+      context.handle(_authorMeta,
+          author.isAcceptableOrUnknown(data['author']!, _authorMeta));
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DailyQuote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DailyQuote(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      contentZh: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content_zh'])!,
+      contentEn: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content_en'])!,
+      author: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}author']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $DailyQuotesTable createAlias(String alias) {
+    return $DailyQuotesTable(attachedDatabase, alias);
+  }
+}
+
+class DailyQuote extends DataClass implements Insertable<DailyQuote> {
+  final int id;
+  final String contentZh;
+  final String contentEn;
+  final String? author;
+  final String category;
+  final DateTime createdAt;
+  const DailyQuote(
+      {required this.id,
+      required this.contentZh,
+      required this.contentEn,
+      this.author,
+      required this.category,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['content_zh'] = Variable<String>(contentZh);
+    map['content_en'] = Variable<String>(contentEn);
+    if (!nullToAbsent || author != null) {
+      map['author'] = Variable<String>(author);
+    }
+    map['category'] = Variable<String>(category);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  DailyQuotesCompanion toCompanion(bool nullToAbsent) {
+    return DailyQuotesCompanion(
+      id: Value(id),
+      contentZh: Value(contentZh),
+      contentEn: Value(contentEn),
+      author:
+          author == null && nullToAbsent ? const Value.absent() : Value(author),
+      category: Value(category),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory DailyQuote.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DailyQuote(
+      id: serializer.fromJson<int>(json['id']),
+      contentZh: serializer.fromJson<String>(json['contentZh']),
+      contentEn: serializer.fromJson<String>(json['contentEn']),
+      author: serializer.fromJson<String?>(json['author']),
+      category: serializer.fromJson<String>(json['category']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'contentZh': serializer.toJson<String>(contentZh),
+      'contentEn': serializer.toJson<String>(contentEn),
+      'author': serializer.toJson<String?>(author),
+      'category': serializer.toJson<String>(category),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  DailyQuote copyWith(
+          {int? id,
+          String? contentZh,
+          String? contentEn,
+          Value<String?> author = const Value.absent(),
+          String? category,
+          DateTime? createdAt}) =>
+      DailyQuote(
+        id: id ?? this.id,
+        contentZh: contentZh ?? this.contentZh,
+        contentEn: contentEn ?? this.contentEn,
+        author: author.present ? author.value : this.author,
+        category: category ?? this.category,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  DailyQuote copyWithCompanion(DailyQuotesCompanion data) {
+    return DailyQuote(
+      id: data.id.present ? data.id.value : this.id,
+      contentZh: data.contentZh.present ? data.contentZh.value : this.contentZh,
+      contentEn: data.contentEn.present ? data.contentEn.value : this.contentEn,
+      author: data.author.present ? data.author.value : this.author,
+      category: data.category.present ? data.category.value : this.category,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyQuote(')
+          ..write('id: $id, ')
+          ..write('contentZh: $contentZh, ')
+          ..write('contentEn: $contentEn, ')
+          ..write('author: $author, ')
+          ..write('category: $category, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, contentZh, contentEn, author, category, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DailyQuote &&
+          other.id == this.id &&
+          other.contentZh == this.contentZh &&
+          other.contentEn == this.contentEn &&
+          other.author == this.author &&
+          other.category == this.category &&
+          other.createdAt == this.createdAt);
+}
+
+class DailyQuotesCompanion extends UpdateCompanion<DailyQuote> {
+  final Value<int> id;
+  final Value<String> contentZh;
+  final Value<String> contentEn;
+  final Value<String?> author;
+  final Value<String> category;
+  final Value<DateTime> createdAt;
+  const DailyQuotesCompanion({
+    this.id = const Value.absent(),
+    this.contentZh = const Value.absent(),
+    this.contentEn = const Value.absent(),
+    this.author = const Value.absent(),
+    this.category = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  DailyQuotesCompanion.insert({
+    this.id = const Value.absent(),
+    required String contentZh,
+    required String contentEn,
+    this.author = const Value.absent(),
+    this.category = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : contentZh = Value(contentZh),
+        contentEn = Value(contentEn);
+  static Insertable<DailyQuote> custom({
+    Expression<int>? id,
+    Expression<String>? contentZh,
+    Expression<String>? contentEn,
+    Expression<String>? author,
+    Expression<String>? category,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (contentZh != null) 'content_zh': contentZh,
+      if (contentEn != null) 'content_en': contentEn,
+      if (author != null) 'author': author,
+      if (category != null) 'category': category,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  DailyQuotesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? contentZh,
+      Value<String>? contentEn,
+      Value<String?>? author,
+      Value<String>? category,
+      Value<DateTime>? createdAt}) {
+    return DailyQuotesCompanion(
+      id: id ?? this.id,
+      contentZh: contentZh ?? this.contentZh,
+      contentEn: contentEn ?? this.contentEn,
+      author: author ?? this.author,
+      category: category ?? this.category,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (contentZh.present) {
+      map['content_zh'] = Variable<String>(contentZh.value);
+    }
+    if (contentEn.present) {
+      map['content_en'] = Variable<String>(contentEn.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DailyQuotesCompanion(')
+          ..write('id: $id, ')
+          ..write('contentZh: $contentZh, ')
+          ..write('contentEn: $contentEn, ')
+          ..write('author: $author, ')
+          ..write('category: $category, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3300,6 +3634,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExpenseSplitsTable expenseSplits = $ExpenseSplitsTable(this);
   late final $SettlementsTable settlements = $SettlementsTable(this);
   late final $InvitationsTable invitations = $InvitationsTable(this);
+  late final $DailyQuotesTable dailyQuotes = $DailyQuotesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3311,7 +3646,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         expenses,
         expenseSplits,
         settlements,
-        invitations
+        invitations,
+        dailyQuotes
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -6902,6 +7238,182 @@ typedef $$InvitationsTableProcessedTableManager = ProcessedTableManager<
     (Invitation, $$InvitationsTableReferences),
     Invitation,
     PrefetchHooks Function({bool groupId, bool invitedBy})>;
+typedef $$DailyQuotesTableCreateCompanionBuilder = DailyQuotesCompanion
+    Function({
+  Value<int> id,
+  required String contentZh,
+  required String contentEn,
+  Value<String?> author,
+  Value<String> category,
+  Value<DateTime> createdAt,
+});
+typedef $$DailyQuotesTableUpdateCompanionBuilder = DailyQuotesCompanion
+    Function({
+  Value<int> id,
+  Value<String> contentZh,
+  Value<String> contentEn,
+  Value<String?> author,
+  Value<String> category,
+  Value<DateTime> createdAt,
+});
+
+class $$DailyQuotesTableFilterComposer
+    extends Composer<_$AppDatabase, $DailyQuotesTable> {
+  $$DailyQuotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get contentZh => $composableBuilder(
+      column: $table.contentZh, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get contentEn => $composableBuilder(
+      column: $table.contentEn, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get author => $composableBuilder(
+      column: $table.author, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$DailyQuotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DailyQuotesTable> {
+  $$DailyQuotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get contentZh => $composableBuilder(
+      column: $table.contentZh, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get contentEn => $composableBuilder(
+      column: $table.contentEn, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get author => $composableBuilder(
+      column: $table.author, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$DailyQuotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DailyQuotesTable> {
+  $$DailyQuotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get contentZh =>
+      $composableBuilder(column: $table.contentZh, builder: (column) => column);
+
+  GeneratedColumn<String> get contentEn =>
+      $composableBuilder(column: $table.contentEn, builder: (column) => column);
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$DailyQuotesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $DailyQuotesTable,
+    DailyQuote,
+    $$DailyQuotesTableFilterComposer,
+    $$DailyQuotesTableOrderingComposer,
+    $$DailyQuotesTableAnnotationComposer,
+    $$DailyQuotesTableCreateCompanionBuilder,
+    $$DailyQuotesTableUpdateCompanionBuilder,
+    (DailyQuote, BaseReferences<_$AppDatabase, $DailyQuotesTable, DailyQuote>),
+    DailyQuote,
+    PrefetchHooks Function()> {
+  $$DailyQuotesTableTableManager(_$AppDatabase db, $DailyQuotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DailyQuotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DailyQuotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DailyQuotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> contentZh = const Value.absent(),
+            Value<String> contentEn = const Value.absent(),
+            Value<String?> author = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              DailyQuotesCompanion(
+            id: id,
+            contentZh: contentZh,
+            contentEn: contentEn,
+            author: author,
+            category: category,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String contentZh,
+            required String contentEn,
+            Value<String?> author = const Value.absent(),
+            Value<String> category = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              DailyQuotesCompanion.insert(
+            id: id,
+            contentZh: contentZh,
+            contentEn: contentEn,
+            author: author,
+            category: category,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$DailyQuotesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $DailyQuotesTable,
+    DailyQuote,
+    $$DailyQuotesTableFilterComposer,
+    $$DailyQuotesTableOrderingComposer,
+    $$DailyQuotesTableAnnotationComposer,
+    $$DailyQuotesTableCreateCompanionBuilder,
+    $$DailyQuotesTableUpdateCompanionBuilder,
+    (DailyQuote, BaseReferences<_$AppDatabase, $DailyQuotesTable, DailyQuote>),
+    DailyQuote,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6920,4 +7432,6 @@ class $AppDatabaseManager {
       $$SettlementsTableTableManager(_db, _db.settlements);
   $$InvitationsTableTableManager get invitations =>
       $$InvitationsTableTableManager(_db, _db.invitations);
+  $$DailyQuotesTableTableManager get dailyQuotes =>
+      $$DailyQuotesTableTableManager(_db, _db.dailyQuotes);
 }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
+import 'core/services/daily_quote_service.dart';
 import 'features/splash/splash_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 
@@ -22,6 +23,14 @@ void main() async {
     debugPrint('資料庫初始化成功');
   } catch (e) {
     debugPrint('資料庫初始化失敗: $e');
+  }
+  
+  // 初始化每日金句服務
+  try {
+    await DailyQuoteService().initialize();
+    debugPrint('每日金句服務初始化成功');
+  } catch (e) {
+    debugPrint('每日金句服務初始化失敗: $e');
   }
   
   // 設置系統UI樣式

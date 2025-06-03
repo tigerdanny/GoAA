@@ -48,6 +48,7 @@ dependencies:
   
   # 網路請求
   dio: ^5.7.0
+  http: ^1.2.2
   retrofit: ^4.4.1
   json_annotation: ^4.9.0
   

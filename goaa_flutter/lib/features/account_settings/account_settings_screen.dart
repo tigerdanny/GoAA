@@ -77,7 +77,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                 child: DropdownButton<String>(
                   value: _defaultCurrency,
                   items: const [
-                    DropdownMenuItem(value: 'NT\$', child: Text('新台幣 (NT\$)')),
+                    DropdownMenuItem(value: 'NT', child: Text('新台幣 (NT)')),
                     DropdownMenuItem(value: 'USD', child: Text('美元 (USD)')),
                     DropdownMenuItem(value: 'CNY', child: Text('人民幣 (CNY)')),
                     DropdownMenuItem(value: 'JPY', child: Text('日圓 (JPY)')),

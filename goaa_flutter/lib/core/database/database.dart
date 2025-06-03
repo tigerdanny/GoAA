@@ -109,6 +109,16 @@ class Invitations extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// 每日金句表
+class DailyQuotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get contentZh => text()(); // 中文內容
+  TextColumn get contentEn => text()(); // 英文內容
+  TextColumn get author => text().nullable()(); // 作者
+  TextColumn get category => text().withDefault(const Constant('inspirational'))(); // 分類
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 // ================================
 // 資料庫類
 // ================================
@@ -121,12 +131,13 @@ class Invitations extends Table {
   ExpenseSplits,
   Settlements,
   Invitations,
+  DailyQuotes,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   // ================================
   // 用戶相關查詢
