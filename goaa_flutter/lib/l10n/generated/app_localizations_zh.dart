@@ -20,6 +20,21 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String goodAfternoon(String name) {
+    return '午安，$name';
+  }
+
+  @override
+  String goodEvening(String name) {
+    return '晚安，$name';
+  }
+
+  @override
+  String goodNight(String name) {
+    return '深夜好，$name';
+  }
+
+  @override
   String userCode(String code) {
     return '用戶代碼：$code';
   }
@@ -89,17 +104,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String moneyFormat(String currency, String amount) {
-    return '$currency$amount';
+    return '$currency$amount NT';
   }
 
   @override
   String positiveMoneyFormat(String currency, String amount) {
-    return '+$currency$amount';
+    return '+$currency$amount NT';
   }
 
   @override
   String negativeMoneyFormat(String currency, String amount) {
-    return '-$currency$amount';
+    return '-$currency$amount NT';
   }
 
   @override
@@ -266,4 +281,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get contactDeveloper => '聯繫開發者';
+
+  @override
+  String get swipeLeftForMenu => '← 往左滑可打開選單';
+
+  @override
+  String get menu => '選單';
+
+  @override
+  String get friendsInfo => '好友資訊';
+
+  @override
+  String get defaultUser => '用戶';
 }

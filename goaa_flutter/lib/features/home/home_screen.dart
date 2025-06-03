@@ -6,12 +6,29 @@ import '../../core/database/repositories/group_repository.dart';
 import '../../core/database/database.dart';
 import '../../core/widgets/language_switch_button.dart';
 import '../../l10n/generated/app_localizations.dart';
-import '../settings/settings_screen.dart';
+import '../personal_info/personal_info_screen.dart';
+import '../friends/friends_screen.dart';
+import '../about/about_screen.dart';
+import '../account_settings/account_settings_screen.dart';
+import '../reminder_settings/reminder_settings_screen.dart';
+import '../interface_settings/interface_settings_screen.dart';
 
 /// 首頁主界面
 /// 展示用戶的群組列表、快速操作和統計概覽
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  // 预加载数据
+  final User? preloadedUser;
+  final List<Group>? preloadedGroups;
+  final Map<int, Map<String, dynamic>>? preloadedGroupStats;
+  final Map<String, dynamic>? preloadedStats;
+
+  const HomeScreen({
+    super.key,
+    this.preloadedUser,
+    this.preloadedGroups,
+    this.preloadedGroupStats,
+    this.preloadedStats,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -38,7 +55,13 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _initializeAnimations();
-    _loadData();
+    
+    // 如果有预加载数据，直接使用；否则加载数据
+    if (widget.preloadedUser != null) {
+      _usePreloadedData();
+    } else {
+      _loadData();
+    }
   }
 
   void _initializeAnimations() {
@@ -64,6 +87,44 @@ class _HomeScreenState extends State<HomeScreen>
     ));
 
     _animationController.forward();
+  }
+
+  /// 使用预加载的数据
+  void _usePreloadedData() {
+    _currentUser = widget.preloadedUser;
+    _groups = widget.preloadedGroups ?? [];
+    _groupStats.clear();
+    _groupStats.addAll(widget.preloadedGroupStats ?? {});
+    _stats = widget.preloadedStats ?? {};
+    
+    setState(() => _isLoading = false);
+    _animationController.forward();
+  }
+
+  /// 获取基于时间的问候语
+  String _getTimeBasedGreeting(AppLocalizations? l10n, String userName) {
+    final now = DateTime.now();
+    final hour = now.hour;
+    
+    // 确保用户名不为空
+    final finalUserName = userName.isNotEmpty ? userName : (l10n?.defaultUser ?? '用戶');
+    
+    String greeting;
+    if (hour >= 5 && hour < 12) {
+      // 早上 5:00-11:59
+      greeting = l10n?.goodMorning(finalUserName) ?? '早安，$finalUserName';
+    } else if (hour >= 12 && hour < 17) {
+      // 下午 12:00-16:59
+      greeting = l10n?.goodAfternoon(finalUserName) ?? '午安，$finalUserName';
+    } else if (hour >= 17 && hour < 21) {
+      // 傍晚 17:00-20:59
+      greeting = l10n?.goodEvening(finalUserName) ?? '晚安，$finalUserName';
+    } else {
+      // 夜晚 21:00-4:59
+      greeting = l10n?.goodNight(finalUserName) ?? '深夜好，$finalUserName';
+    }
+    
+    return greeting;
   }
 
   /// 加載資料庫數據
@@ -111,13 +172,54 @@ class _HomeScreenState extends State<HomeScreen>
     
     if (_isLoading) {
       return Scaffold(
+        backgroundColor: AppColors.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const CircularProgressIndicator(),
+              // GOAA Logo - 填满方形容器
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/images/goaa_logo.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover, // 确保logo填满整个容器
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // 加载指示器
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
               const SizedBox(height: 16),
-              Text(l10n?.loading ?? '載入中...'),
+              Text(
+                l10n?.loading ?? '載入中...',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -125,6 +227,9 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     return Scaffold(
+      drawer: _buildDrawer(l10n),
+      drawerScrimColor: Colors.black.withValues(alpha: 0.3),
+      drawerEdgeDragWidth: 60, // 增加滑动感应区域
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -132,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen>
             position: _slideAnimation,
             child: CustomScrollView(
               slivers: [
-                _buildHeader(),
+                _buildHeader(l10n),
                 _buildQuickStats(),
                 _buildSectionTitle(l10n?.myGroups ?? '我的群組'),
                 _buildGroupsList(),
@@ -149,123 +254,342 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  /// 構建頂部標題區域
-  Widget _buildHeader() {
-    final l10n = AppLocalizations.of(context);
-    
+  /// 构建侧滑菜单 - 改善流畅度，现代化设计，优化动画
+  Widget _buildDrawer(AppLocalizations? l10n) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        // 自定义drawer的动画时长
+        drawerTheme: DrawerThemeData(
+          backgroundColor: AppColors.background,
+          elevation: 16,
+          shadowColor: Colors.black.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Drawer(
+        backgroundColor: AppColors.background,
+        elevation: 16,
+        width: MediaQuery.of(context).size.width * 0.75, // 设置drawer宽度为屏幕的75%
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 菜单头部
+              _buildDrawerHeader(l10n),
+              
+              // 菜单选项
+              Expanded(
+                child: Container(
+                  color: AppColors.background,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    physics: const ClampingScrollPhysics(), // 改善滚动性能
+                    children: [
+                      _buildDrawerItem(
+                        icon: Icons.person_outlined,
+                        title: l10n?.personalInfo ?? '個人資訊',
+                        onTap: () => _navigateToPersonalInfo(),
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.people_outlined,
+                        title: l10n?.friendsInfo ?? '好友資訊',
+                        onTap: () => _navigateToFriendsInfo(),
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.account_balance_wallet_outlined,
+                        title: l10n?.accountSettings ?? '帳務設定',
+                        onTap: () => _navigateToAccountSettings(),
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.notifications_outlined,
+                        title: l10n?.reminderSettings ?? '提醒設定',
+                        onTap: () => _navigateToReminderSettings(),
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.palette_outlined,
+                        title: l10n?.interface ?? '介面設定',
+                        onTap: () => _navigateToInterfaceSettings(),
+                      ),
+                      const Divider(height: 1),
+                      _buildDrawerItem(
+                        icon: Icons.info_outlined,
+                        title: l10n?.about ?? '關於應用',
+                        onTap: () => _navigateToAbout(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // 底部语言切换
+              Container(
+                color: AppColors.background,
+                padding: const EdgeInsets.all(16),
+                child: const LanguageSwitchButton(showLabel: true),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建侧滑菜单头部 - 现代化纯净设计
+  Widget _buildDrawerHeader(AppLocalizations? l10n) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          // 用户头像 - 纯净圆形设计
+          Hero(
+            tag: 'drawer_user_avatar',
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/goaa_logo.png',
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // 用户信息 - 现代化文字设计
+          Text(
+            _getTimeBasedGreeting(l10n, _currentUser?.name ?? l10n?.defaultUser ?? '用戶'),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              height: 1.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              l10n?.userCode(_currentUser?.userCode ?? 'N/A') ?? '用戶代碼：${_currentUser?.userCode ?? "N/A"}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建侧滑菜单项目 - 现代化卡片设计
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textPrimary.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: AppColors.primary,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(context);
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  /// 構建頂部標題區域 - 菜单图标紧贴左边缘，优化设计
+  Widget _buildHeader(AppLocalizations? l10n) {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(0, 20, 24, 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.background,
+              AppColors.background.withValues(alpha: 0.8),
+            ],
+          ),
+        ),
+        child: Row(
           children: [
-            Row(
-              children: [
-                // 用戶頭像 - 完全圓形logo，無方形背景
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
+            // 菜单按钮 - 三条横线紧贴左边缘
+            GestureDetector(
+              onTap: () {
+                Scaffold.of(context).openDrawer();
+                HapticFeedback.lightImpact();
+              },
+              behavior: HitTestBehavior.opaque, // 确保整个区域都可以点击
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(0, 12, 16, 12), // 左边距为0，让图标紧贴边缘
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16), // 给图标添加最小的左边距
+                      child: Icon(
+                        Icons.menu,
+                        color: AppColors.textSecondary,
+                        size: 24,
                       ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/goaa_logo.png',
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover, // 確保圖片填滿整個圓形，無空白邊距
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // 歡迎文字
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n != null 
-                            ? l10n.goodMorning(_currentUser?.name ?? l10n.user)
-                            : '早安，${_currentUser?.name ?? "用戶"}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n != null
-                            ? l10n.userCode(_currentUser?.userCode ?? l10n.notAvailable)
-                            : '用戶代碼：${_currentUser?.userCode ?? "N/A"}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 語言切換按鈕
-                const CompactLanguageSwitchButton(),
-                const SizedBox(width: 12),
-                // 設置按鈕
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    onPressed: () => _navigateToSettings(),
-                    icon: Icon(
-                      Icons.settings_outlined,
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right,
                       color: AppColors.textSecondary,
-                      size: 20,
+                      size: 18, // 稍微缩小箭头
                     ),
-                    padding: EdgeInsets.zero,
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                // 通知按鈕
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            
+            // 用戶頭像 - 純圓形设计
+            Hero(
+              tag: 'user_avatar',
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary,
+                      AppColors.primary.withValues(alpha: 0.8),
                     ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: IconButton(
-                    onPressed: () => _showNotifications(),
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                    padding: EdgeInsets.zero,
+                  ],
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/goaa_logo.png',
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            
+            // 歡迎文字 - 现代化布局
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getTimeBasedGreeting(l10n, _currentUser?.name ?? l10n?.defaultUser ?? '用戶'),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      l10n?.userCode(_currentUser?.userCode ?? 'N/A') ?? '用戶代碼：${_currentUser?.userCode ?? "N/A"}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -296,7 +620,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: _buildStatCard(
                 icon: Icons.account_balance_wallet,
                 title: l10n?.totalExpenses ?? '總支出',
-                amount: l10n?.moneyFormat(l10n.currency, (_stats['totalPaid'] ?? 0.0).toStringAsFixed(0)) ?? '\$${(_stats['totalPaid'] ?? 0.0).toStringAsFixed(0)}',
+                amount: l10n?.moneyFormat(l10n.currency, (_stats['totalPaid'] ?? 0.0).toStringAsFixed(2)) ?? '\$${(_stats['totalPaid'] ?? 0.0).toStringAsFixed(2)} NT',
                 color: AppColors.warning,
                 isPositive: false,
               ),
@@ -539,14 +863,14 @@ class _HomeScreenState extends State<HomeScreen>
                         ],
                       ),
                     ),
-                    // 金額
+                    // 金額 - 确保使用正确的格式
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
                           totalAmount >= 0 
-                              ? l10n?.positiveMoneyFormat(l10n.currency, totalAmount.toStringAsFixed(2)) ?? '+\$${totalAmount.toStringAsFixed(2)}'
-                              : l10n?.negativeMoneyFormat(l10n.currency, totalAmount.abs().toStringAsFixed(2)) ?? '-\$${totalAmount.abs().toStringAsFixed(2)}',
+                              ? l10n?.positiveMoneyFormat(l10n.currency, totalAmount.toStringAsFixed(2)) ?? '+\$${totalAmount.toStringAsFixed(2)} NT'
+                              : l10n?.negativeMoneyFormat(l10n.currency, totalAmount.abs().toStringAsFixed(2)) ?? '-\$${totalAmount.abs().toStringAsFixed(2)} NT',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.getMoneyColor(totalAmount),
@@ -661,14 +985,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // 交互方法
-  void _showNotifications() {
-    final l10n = AppLocalizations.of(context);
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n?.notifications ?? '通知功能開發中...')),
-    );
-  }
-
   void _viewAllGroups() {
     HapticFeedback.lightImpact();
     // 導航到群組列表頁面
@@ -832,13 +1148,46 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _navigateToSettings() {
-    HapticFeedback.lightImpact();
+  // 导航方法 - 更新为独立页面
+  void _navigateToPersonalInfo() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SettingsScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
+    );
+  }
+
+  void _navigateToFriendsInfo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FriendsScreen()),
+    );
+  }
+
+  void _navigateToAccountSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AccountSettingsScreen()),
+    );
+  }
+
+  void _navigateToReminderSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ReminderSettingsScreen()),
+    );
+  }
+
+  void _navigateToInterfaceSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const InterfaceSettingsScreen()),
+    );
+  }
+
+  void _navigateToAbout() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AboutScreen()),
     );
   }
 } 

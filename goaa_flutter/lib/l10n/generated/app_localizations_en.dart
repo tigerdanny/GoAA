@@ -21,6 +21,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goodAfternoon(String name) {
+    return 'Good afternoon, $name';
+  }
+
+  @override
+  String goodEvening(String name) {
+    return 'Good evening, $name';
+  }
+
+  @override
+  String goodNight(String name) {
+    return 'Good night, $name';
+  }
+
+  @override
   String userCode(String code) {
     return 'User Code: $code';
   }
@@ -90,17 +105,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String moneyFormat(String currency, String amount) {
-    return '$currency$amount';
+    return '$currency$amount NT';
   }
 
   @override
   String positiveMoneyFormat(String currency, String amount) {
-    return '+$currency$amount';
+    return '+$currency$amount NT';
   }
 
   @override
   String negativeMoneyFormat(String currency, String amount) {
-    return '-$currency$amount';
+    return '-$currency$amount NT';
   }
 
   @override
@@ -267,4 +282,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get contactDeveloper => 'Contact Developer';
+
+  @override
+  String get swipeLeftForMenu => '← Swipe left to open menu';
+
+  @override
+  String get menu => 'Menu';
+
+  @override
+  String get friendsInfo => 'Friends';
+
+  @override
+  String get defaultUser => 'User';
 }

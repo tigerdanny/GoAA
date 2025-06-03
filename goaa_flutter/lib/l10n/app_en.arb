@@ -22,6 +22,39 @@
     }
   },
   
+  "goodAfternoon": "Good afternoon, {name}",
+  "@goodAfternoon": {
+    "description": "Good afternoon greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "goodEvening": "Good evening, {name}",
+  "@goodEvening": {
+    "description": "Good evening greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "goodNight": "Good night, {name}",
+  "@goodNight": {
+    "description": "Good night greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
   "userCode": "User Code: {code}",
   "@userCode": {
     "description": "User code display",
@@ -146,7 +179,7 @@
     "description": "Currency symbol"
   },
   
-  "moneyFormat": "{currency}{amount}",
+  "moneyFormat": "{currency}{amount} NT",
   "@moneyFormat": {
     "description": "Money format",
     "placeholders": {
@@ -161,7 +194,7 @@
     }
   },
   
-  "positiveMoneyFormat": "+{currency}{amount}",
+  "positiveMoneyFormat": "+{currency}{amount} NT",
   "@positiveMoneyFormat": {
     "description": "Positive money format",
     "placeholders": {
@@ -176,7 +209,7 @@
     }
   },
   
-  "negativeMoneyFormat": "-{currency}{amount}",
+  "negativeMoneyFormat": "-{currency}{amount} NT",
   "@negativeMoneyFormat": {
     "description": "Negative money format",
     "placeholders": {
@@ -464,5 +497,30 @@
   "contactDeveloper": "Contact Developer",
   "@contactDeveloper": {
     "description": "Contact developer"
+  },
+  
+  "swipeLeftForMenu": "← Swipe left to open menu",
+  "@swipeLeftForMenu": {
+    "description": "Swipe left hint for drawer menu"
+  },
+  
+  "menu": "Menu",
+  "@menu": {
+    "description": "Menu title"
+  },
+  
+  "personalInfo": "Personal Info",
+  "@personalInfo": {
+    "description": "Personal information menu item"
+  },
+  
+  "friendsInfo": "Friends",
+  "@friendsInfo": {
+    "description": "Friends information menu item"
+  },
+  
+  "defaultUser": "User",
+  "@defaultUser": {
+    "description": "Default user name when none is set"
   }
 } 

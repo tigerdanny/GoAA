@@ -110,11 +110,32 @@ class UserRepository {
         throw Exception('無法生成唯一用戶代碼');
       }
       
-      final random = DateTime.now().millisecondsSinceEpoch % 1000000 + attempts;
-      userCode = 'GA${random.toString().padLeft(6, '0')}';
+      // 使用多种元素生成更唯一的用户代码
+      final now = DateTime.now();
+      
+      // 获取微秒级时间戳的后8位
+      final timeComponent = now.microsecondsSinceEpoch.toString();
+      final timeDigits = timeComponent.substring(timeComponent.length - 8);
+      
+      // 增加额外的随机性
+      final randomComponent = (now.millisecond * 1000 + attempts * 7 + now.second * 13) % 999999;
+      
+      // 组合时间和随机数生成6位数字
+      final combinedNumber = (int.parse(timeDigits.substring(2, 6)) + randomComponent) % 999999;
+      final codeNumber = combinedNumber.toString().padLeft(6, '0');
+      
+      userCode = 'GA$codeNumber';
       
       exists = await isUserCodeExists(userCode);
       attempts++;
+      
+      // 如果仍然重复，使用纯随机策略
+      if (exists && attempts > 50) {
+        final pureRandom = DateTime.now().microsecondsSinceEpoch % 999999;
+        userCode = 'GA${pureRandom.toString().padLeft(6, '0')}';
+        exists = await isUserCodeExists(userCode);
+      }
+      
     } while (exists);
 
     return userCode;

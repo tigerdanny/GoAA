@@ -110,11 +110,29 @@ abstract class AppLocalizations {
   /// **'跨平台分帳應用，讓分帳變得簡單優雅'**
   String get appDescription;
 
-  /// 早安問候語
+  /// Good morning greeting
   ///
   /// In zh, this message translates to:
   /// **'早安，{name}'**
   String goodMorning(String name);
+
+  /// Good afternoon greeting
+  ///
+  /// In zh, this message translates to:
+  /// **'午安，{name}'**
+  String goodAfternoon(String name);
+
+  /// Good evening greeting
+  ///
+  /// In zh, this message translates to:
+  /// **'晚安，{name}'**
+  String goodEvening(String name);
+
+  /// Good night greeting
+  ///
+  /// In zh, this message translates to:
+  /// **'深夜好，{name}'**
+  String goodNight(String name);
 
   /// 用戶代碼顯示
   ///
@@ -239,19 +257,19 @@ abstract class AppLocalizations {
   /// 金額格式
   ///
   /// In zh, this message translates to:
-  /// **'{currency}{amount}'**
+  /// **'{currency}{amount} NT'**
   String moneyFormat(String currency, String amount);
 
   /// 正數金額格式
   ///
   /// In zh, this message translates to:
-  /// **'+{currency}{amount}'**
+  /// **'+{currency}{amount} NT'**
   String positiveMoneyFormat(String currency, String amount);
 
   /// 負數金額格式
   ///
   /// In zh, this message translates to:
-  /// **'-{currency}{amount}'**
+  /// **'-{currency}{amount} NT'**
   String negativeMoneyFormat(String currency, String amount);
 
   /// 預設使用者名稱
@@ -583,6 +601,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'聯繫開發者'**
   String get contactDeveloper;
+
+  /// 往左滑提示開啟側滑選單
+  ///
+  /// In zh, this message translates to:
+  /// **'← 往左滑可打開選單'**
+  String get swipeLeftForMenu;
+
+  /// 選單標題
+  ///
+  /// In zh, this message translates to:
+  /// **'選單'**
+  String get menu;
+
+  /// 好友資訊選單項目
+  ///
+  /// In zh, this message translates to:
+  /// **'好友資訊'**
+  String get friendsInfo;
+
+  /// 預設用戶名稱
+  ///
+  /// In zh, this message translates to:
+  /// **'用戶'**
+  String get defaultUser;
 }
 
 class _AppLocalizationsDelegate

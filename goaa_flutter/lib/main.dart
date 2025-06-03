@@ -6,7 +6,6 @@ import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
 import 'features/splash/splash_screen.dart';
-import 'features/home/home_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 
 void main() async {
@@ -86,8 +85,7 @@ class GoAAApp extends StatelessWidget {
             // 路由配置（暫時使用簡單路由，後續會改用 go_router）
             routes: {
               '/splash': (context) => const SplashScreen(),
-              '/home': (context) => const HomeScreen(),
-              // 後續添加其他路由
+              // HomeScreen现在通过直接导航传递预加载数据，不再需要路由
             },
             
             // Material App 配置

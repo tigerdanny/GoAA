@@ -13,7 +13,40 @@
   
   "goodMorning": "早安，{name}",
   "@goodMorning": {
-    "description": "早安問候語",
+    "description": "Good morning greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "goodAfternoon": "午安，{name}",
+  "@goodAfternoon": {
+    "description": "Good afternoon greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "goodEvening": "晚安，{name}",
+  "@goodEvening": {
+    "description": "Good evening greeting",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Danny"
+      }
+    }
+  },
+  
+  "goodNight": "深夜好，{name}",
+  "@goodNight": {
+    "description": "Good night greeting",
     "placeholders": {
       "name": {
         "type": "String",
@@ -146,7 +179,7 @@
     "description": "貨幣符號"
   },
   
-  "moneyFormat": "{currency}{amount}",
+  "moneyFormat": "{currency}{amount} NT",
   "@moneyFormat": {
     "description": "金額格式",
     "placeholders": {
@@ -161,7 +194,7 @@
     }
   },
   
-  "positiveMoneyFormat": "+{currency}{amount}",
+  "positiveMoneyFormat": "+{currency}{amount} NT",
   "@positiveMoneyFormat": {
     "description": "正數金額格式",
     "placeholders": {
@@ -176,7 +209,7 @@
     }
   },
   
-  "negativeMoneyFormat": "-{currency}{amount}",
+  "negativeMoneyFormat": "-{currency}{amount} NT",
   "@negativeMoneyFormat": {
     "description": "負數金額格式",
     "placeholders": {
@@ -464,5 +497,25 @@
   "contactDeveloper": "聯繫開發者",
   "@contactDeveloper": {
     "description": "聯繫開發者"
+  },
+  
+  "swipeLeftForMenu": "← 往左滑可打開選單",
+  "@swipeLeftForMenu": {
+    "description": "往左滑提示開啟側滑選單"
+  },
+  
+  "menu": "選單",
+  "@menu": {
+    "description": "選單標題"
+  },
+  
+  "friendsInfo": "好友資訊",
+  "@friendsInfo": {
+    "description": "好友資訊選單項目"
+  },
+  
+  "defaultUser": "用戶",
+  "@defaultUser": {
+    "description": "預設用戶名稱"
   }
 } 
