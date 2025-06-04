@@ -139,6 +139,28 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 2;
 
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        // 建立所有表格
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        // 處理從版本1到版本2的升級
+        if (from < 2) {
+          // 如果需要添加新表格或修改表格，在這裡處理
+          // 目前我們重新創建所有表格
+          await m.createAll();
+        }
+      },
+      beforeOpen: (details) async {
+        // 啟用外鍵約束
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
+    );
+  }
+
   // ================================
   // 用戶相關查詢
   // ================================

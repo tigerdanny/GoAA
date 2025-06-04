@@ -54,6 +54,7 @@ class DatabaseService {
     
     // 生成用戶代碼
     final userCode = _generateUserCode();
+    debugPrint('生成新用戶代碼: $userCode');
     
     final user = UsersCompanion.insert(
       userCode: userCode,
@@ -62,8 +63,12 @@ class DatabaseService {
       isCurrentUser: Value(true),
     );
     
-    await db.insertOrUpdateUser(user);
-    debugPrint('創建初始用戶: $userCode');
+    final userId = await db.insertOrUpdateUser(user);
+    debugPrint('創建初始用戶成功 - ID: $userId, 代碼: $userCode, 名稱: 使用者名稱');
+    
+    // 验证用户是否创建成功
+    final createdUser = await db.getCurrentUser();
+    debugPrint('驗證當前用戶: ${createdUser?.name ?? 'null'}, 代碼: ${createdUser?.userCode ?? 'null'}');
   }
 
   /// 創建示例數據（僅限開發模式）

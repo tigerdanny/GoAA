@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../../../core/database/database.dart';
+
+/// 抽屜用戶代碼行組件
+/// 包含用戶代碼和QR碼操作按鈕
+class DrawerUserCodeRow extends StatelessWidget {
+  final User? currentUser;
+  final VoidCallback onShowQRCode;
+  final VoidCallback onScanQRCode;
+
+  const DrawerUserCodeRow({
+    super.key,
+    required this.currentUser,
+    required this.onShowQRCode,
+    required this.onScanQRCode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildUserCode(),
+        const SizedBox(width: 12),
+        _buildQRCodeButton(context),
+        const SizedBox(width: 8),
+        _buildScanButton(context),
+      ],
+    );
+  }
+
+  /// 建構用戶代碼文字
+  Widget _buildUserCode() {
+    return Text(
+      currentUser?.userCode ?? 'N/A',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  /// 建構QR碼按鈕 - 無背景，純圖示
+  Widget _buildQRCodeButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onShowQRCode();
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          Icons.qr_code,
+          size: 20,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  /// 建構掃描按鈕 - 無背景，純圖示
+  Widget _buildScanButton(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        Navigator.pop(context);
+        onScanQRCode();
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          LucideIcons.scan,
+          size: 20,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}

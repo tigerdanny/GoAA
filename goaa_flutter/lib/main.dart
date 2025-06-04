@@ -21,6 +21,10 @@ void main() async {
   try {
     await DatabaseService.instance.initialize();
     debugPrint('資料庫初始化成功');
+    
+    // 验证用户是否创建成功
+    final testUser = await DatabaseService.instance.database.getCurrentUser();
+    debugPrint('驗證當前用戶: ${testUser?.name ?? 'null'}, 代碼: ${testUser?.userCode ?? 'null'}');
   } catch (e) {
     debugPrint('資料庫初始化失敗: $e');
   }

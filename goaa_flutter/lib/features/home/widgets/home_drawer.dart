@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/database/database.dart';
-import '../../../core/services/daily_quote_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import 'drawer/index.dart' as drawer_components;
 
-/// 首页侧边栏菜单组件
+/// 首頁側邊選單組件
+/// 根據 GOAA 設計指南實現的完整導航系統
+/// 採用模組化設計，每個子組件都獨立管理
 class HomeDrawer extends StatelessWidget {
   final User? currentUser;
   final DailyQuote? dailyQuote;
@@ -28,21 +30,27 @@ class HomeDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context, l10n),
+            // 抽屜頭部
+            drawer_components.DrawerHeader(
+              currentUser: currentUser,
+              dailyQuote: dailyQuote,
+              onShowQRCode: onShowQRCode,
+              onScanQRCode: onScanQRCode,
+            ),
+            
+            // 選單內容
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.person_outlined, color: AppColors.primary),
-                    title: Text(l10n?.personalInfo ?? '個人資訊'),
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.settings_outlined, color: AppColors.primary),
-                    title: Text(l10n?.settings ?? '設定'),
-                    onTap: () => Navigator.pop(context),
-                  ),
+                  _buildPersonalInfoSection(context, l10n),
+                  const SizedBox(height: 16),
+                  _buildAccountSection(context, l10n),
+                  const SizedBox(height: 16),
+                  _buildSystemSection(context, l10n),
+                  const SizedBox(height: 16),
+                  _buildSupportSection(context, l10n),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -52,144 +60,85 @@ class HomeDrawer extends StatelessWidget {
     );
   }
 
-  /// 构建菜单头部
-  Widget _buildHeader(BuildContext context, AppLocalizations? l10n) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.border.withValues(alpha: 0.2),
-          ),
+  /// 建構個人資訊區段
+  Widget _buildPersonalInfoSection(BuildContext context, AppLocalizations? l10n) {
+    return drawer_components.DrawerMenuSection(
+      title: l10n?.personalInfo ?? '個人資訊',
+      items: [
+        drawer_components.DrawerMenuItem(
+          icon: Icons.person_outline,
+          title: l10n?.friendsInfo ?? '好友資訊',
+          subtitle: '管理好友和聯繫人',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToFriends(context),
         ),
-      ),
-      child: Column(
-        children: [
-          // 用户头像
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/goaa_logo.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // 问候语和金句
-          Text(
-            _getGreeting(l10n),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          
-          // 用户名
-          Text(
-            currentUser?.name ?? '用戶',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // 用户代码行
-          _buildUserCodeRow(),
-        ],
-      ),
+        drawer_components.DrawerMenuItem(
+          icon: Icons.account_circle_outlined,
+          title: '個人檔案',
+          subtitle: '編輯個人資料',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToProfile(context),
+        ),
+      ],
     );
   }
 
-  /// 获取问候语
-  String _getGreeting(AppLocalizations? l10n) {
-    final now = DateTime.now();
-    final hour = now.hour;
-    
-    String timeGreeting;
-    if (hour >= 5 && hour < 12) {
-      timeGreeting = '早安~';
-    } else if (hour >= 12 && hour < 17) {
-      timeGreeting = '午安~';
-    } else if (hour >= 17 && hour < 21) {
-      timeGreeting = '晚安~';
-    } else {
-      timeGreeting = '深夜好~';
-    }
-
-    String quoteContent = '';
-    if (dailyQuote != null) {
-      final languageCode = l10n?.localeName ?? 'zh';
-      quoteContent = DailyQuoteService().getQuoteContent(dailyQuote!, languageCode);
-    } else {
-      final localeName = l10n?.localeName;
-      quoteContent = (localeName != null && localeName.startsWith('zh'))
-          ? '每一天都是新的開始，充滿無限可能。'
-          : 'Every day is a new beginning full of infinite possibilities.';
-    }
-
-    return '$timeGreeting $quoteContent';
+  /// 建構帳務設定區段
+  Widget _buildAccountSection(BuildContext context, AppLocalizations? l10n) {
+    return drawer_components.DrawerMenuSection(
+      title: l10n?.accountSettings ?? '帳務設定',
+      items: [
+        drawer_components.DrawerMenuItem(
+          icon: Icons.account_balance_wallet_outlined,
+          title: l10n?.accountSettings ?? '帳務設定',
+          subtitle: '貨幣、備份、匯出',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToAccountSettings(context),
+        ),
+        drawer_components.DrawerMenuItem(
+          icon: Icons.analytics_outlined,
+          title: '統計報表',
+          subtitle: '查看支出分析',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToAnalytics(context),
+        ),
+      ],
+    );
   }
 
-  /// 构建用户代码行
-  Widget _buildUserCodeRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          currentUser?.userCode ?? 'N/A',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+  /// 建構系統設定區段
+  Widget _buildSystemSection(BuildContext context, AppLocalizations? l10n) {
+    return drawer_components.DrawerMenuSection(
+      title: '系統設定',
+      items: [
+        drawer_components.DrawerMenuItem(
+          icon: Icons.settings_outlined,
+          title: l10n?.settings ?? '設定',
+          subtitle: '介面、語言、主題',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToSettings(context),
         ),
-        const SizedBox(width: 8),
-        
-        // 二维码图标
-        GestureDetector(
-          onTap: onShowQRCode,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              Icons.qr_code,
-              size: 16,
-              color: AppColors.primary,
-            ),
-          ),
+        drawer_components.DrawerMenuItem(
+          icon: Icons.notifications_outlined,
+          title: '提醒設定',
+          subtitle: '通知和提醒管理',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToReminderSettings(context),
         ),
-        const SizedBox(width: 8),
-        
-        // 扫描图标
-        GestureDetector(
-          onTap: onScanQRCode,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(
-              Icons.qr_code_scanner,
-              size: 16,
-              color: AppColors.primary,
-            ),
-          ),
+      ],
+    );
+  }
+
+  /// 建構說明與支援區段
+  Widget _buildSupportSection(BuildContext context, AppLocalizations? l10n) {
+    return drawer_components.DrawerMenuSection(
+      title: '說明與支援',
+      items: [
+        drawer_components.DrawerMenuItem(
+          icon: Icons.help_outline,
+          title: '說明',
+          subtitle: '使用指南和常見問題',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToHelp(context),
+        ),
+        drawer_components.DrawerMenuItem(
+          icon: Icons.info_outline,
+          title: l10n?.about ?? '關於',
+          subtitle: '版本資訊和開發者',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToAbout(context),
         ),
       ],
     );
