@@ -9,14 +9,12 @@ import 'drawer/index.dart' as drawer_components;
 /// 採用模組化設計，每個子組件都獨立管理
 class HomeDrawer extends StatelessWidget {
   final User? currentUser;
-  final DailyQuote? dailyQuote;
   final VoidCallback onShowQRCode;
   final VoidCallback onScanQRCode;
 
   const HomeDrawer({
     super.key,
     required this.currentUser,
-    required this.dailyQuote,
     required this.onShowQRCode,
     required this.onScanQRCode,
   });
@@ -33,7 +31,6 @@ class HomeDrawer extends StatelessWidget {
             // 抽屜頭部
             drawer_components.DrawerHeader(
               currentUser: currentUser,
-              dailyQuote: dailyQuote,
               onShowQRCode: onShowQRCode,
               onScanQRCode: onScanQRCode,
             ),
@@ -66,16 +63,16 @@ class HomeDrawer extends StatelessWidget {
       title: l10n?.personalInfo ?? '個人資訊',
       items: [
         drawer_components.DrawerMenuItem(
-          icon: Icons.person_outline,
-          title: l10n?.friendsInfo ?? '好友資訊',
-          subtitle: '管理好友和聯繫人',
-          onTap: () => drawer_components.DrawerNavigationService.navigateToFriends(context),
-        ),
-        drawer_components.DrawerMenuItem(
           icon: Icons.account_circle_outlined,
           title: '個人檔案',
           subtitle: '編輯個人資料',
           onTap: () => drawer_components.DrawerNavigationService.navigateToProfile(context),
+        ),
+        drawer_components.DrawerMenuItem(
+          icon: Icons.person_outline,
+          title: l10n?.friendsInfo ?? '好友資訊',
+          subtitle: '管理好友和聯繫人',
+          onTap: () => drawer_components.DrawerNavigationService.navigateToFriends(context),
         ),
       ],
     );

@@ -230,7 +230,6 @@ class _HomeScreenState extends State<HomeScreen>
       key: _scaffoldKey,
       drawer: HomeDrawer(
         currentUser: _currentUser,
-        dailyQuote: _dailyQuote,
         onShowQRCode: _showQRCode,
         onScanQRCode: _scanQRCode,
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/database/database.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// 抽屜用戶代碼行組件
 /// 包含用戶代碼和QR碼操作按鈕
@@ -36,14 +37,14 @@ class DrawerUserCodeRow extends StatelessWidget {
     return Text(
       currentUser?.userCode ?? 'N/A',
       style: const TextStyle(
-        color: Colors.white,
+        color: AppColors.textPrimary,
         fontSize: 14,
         fontWeight: FontWeight.w600,
       ),
     );
   }
 
-  /// 建構QR碼按鈕 - 無背景，純圖示
+  /// 建構QR碼按鈕 - 適配白色背景
   Widget _buildQRCodeButton(BuildContext context) {
     return InkWell(
       onTap: () {
@@ -51,18 +52,22 @@ class DrawerUserCodeRow extends StatelessWidget {
         onShowQRCode();
       },
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Icon(
           Icons.qr_code,
           size: 20,
-          color: Colors.white,
+          color: AppColors.primary,
         ),
       ),
     );
   }
 
-  /// 建構掃描按鈕 - 無背景，純圖示
+  /// 建構掃描按鈕 - 適配白色背景
   Widget _buildScanButton(BuildContext context) {
     return InkWell(
       onTap: () {
@@ -71,12 +76,16 @@ class DrawerUserCodeRow extends StatelessWidget {
         onScanQRCode();
       },
       borderRadius: BorderRadius.circular(8),
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Icon(
           LucideIcons.scan,
           size: 20,
-          color: Colors.white,
+          color: AppColors.primary,
         ),
       ),
     );

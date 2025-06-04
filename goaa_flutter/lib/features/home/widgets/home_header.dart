@@ -195,12 +195,8 @@ class HomeHeader extends StatelessWidget {
           // 二维码图标
           GestureDetector(
             onTap: onShowQRCode,
-            child: Container(
+            child: Padding(
               padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
               child: Icon(
                 Icons.qr_code,
                 size: 16,
@@ -213,12 +209,8 @@ class HomeHeader extends StatelessWidget {
           // 扫描图标
           GestureDetector(
             onTap: onScanQRCode,
-            child: Container(
+            child: Padding(
               padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
               child: Icon(
                 LucideIcons.scan,
                 size: 16,
