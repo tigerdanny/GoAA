@@ -29,7 +29,7 @@ class DatabaseService {
       final db = database;
       
       // 檢查是否已有當前用戶
-      final currentUser = await db.getCurrentUser();
+      final currentUser = await db.userQueries.getCurrentUser();
       
       if (currentUser == null) {
         // 創建初始用戶
@@ -63,50 +63,50 @@ class DatabaseService {
       isCurrentUser: Value(true),
     );
     
-    final userId = await db.insertOrUpdateUser(user);
+    final userId = await db.userQueries.insertOrUpdateUser(user);
     debugPrint('創建初始用戶成功 - ID: $userId, 代碼: $userCode, 名稱: 使用者名稱');
     
     // 验证用户是否创建成功
-    final createdUser = await db.getCurrentUser();
+    final createdUser = await db.userQueries.getCurrentUser();
     debugPrint('驗證當前用戶: ${createdUser?.name ?? 'null'}, 代碼: ${createdUser?.userCode ?? 'null'}');
   }
 
   /// 創建示例數據（僅限開發模式）
   Future<void> _createSampleData() async {
     final db = database;
-    final currentUser = await db.getCurrentUser();
+    final currentUser = await db.userQueries.getCurrentUser();
     if (currentUser == null) return;
 
     try {
       // 創建示例群組
-      final groupId = await db.createGroup(GroupsCompanion.insert(
+      final groupId = await db.groupQueries.createGroup(GroupsCompanion.insert(
         name: '室友分攤',
         description: Value('與室友一起分攤日常開支'),
         createdBy: currentUser.id,
       ));
 
       // 將當前用戶添加到群組（作為管理員）
-      await db.addGroupMember(groupId, currentUser.id, role: 'admin');
+      await db.groupQueries.addGroupMember(groupId, currentUser.id, role: 'admin');
 
       // 創建其他示例用戶
-      final user2Id = await db.insertOrUpdateUser(UsersCompanion.insert(
+      final user2Id = await db.userQueries.insertOrUpdateUser(UsersCompanion.insert(
         userCode: _generateUserCode(),
         name: '室友小王',
         avatarType: Value('female_01'),
       ));
 
-      final user3Id = await db.insertOrUpdateUser(UsersCompanion.insert(
+      final user3Id = await db.userQueries.insertOrUpdateUser(UsersCompanion.insert(
         userCode: _generateUserCode(),
         name: '室友小李',
         avatarType: Value('male_02'),
       ));
 
       // 將其他用戶添加到群組
-      await db.addGroupMember(groupId, user2Id);
-      await db.addGroupMember(groupId, user3Id);
+      await db.groupQueries.addGroupMember(groupId, user2Id);
+      await db.groupQueries.addGroupMember(groupId, user3Id);
 
       // 創建示例支出
-      final expenseId = await db.createExpense(ExpensesCompanion.insert(
+      final expenseId = await db.expenseQueries.createExpense(ExpensesCompanion.insert(
         groupId: groupId,
         paidBy: currentUser.id,
         title: '購買日用品',
@@ -116,7 +116,7 @@ class DatabaseService {
       ));
 
       // 創建支出分攤
-      await db.createExpenseSplits([
+      await db.expenseQueries.createExpenseSplits([
         ExpenseSplitsCompanion.insert(
           expenseId: expenseId,
           userId: currentUser.id,

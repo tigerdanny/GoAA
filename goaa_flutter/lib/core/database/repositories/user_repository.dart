@@ -8,12 +8,12 @@ class UserRepository {
 
   /// 獲取當前用戶
   Future<User?> getCurrentUser() {
-    return _db.getCurrentUser();
+    return _db.userQueries.getCurrentUser();
   }
 
   /// 通過用戶代碼查找用戶
   Future<User?> findUserByCode(String userCode) {
-    return _db.findUserByCode(userCode);
+    return _db.userQueries.findUserByCode(userCode);
   }
 
   /// 更新用戶資料
@@ -34,7 +34,7 @@ class UserRepository {
       updatedAt: Value(DateTime.now()),
     );
 
-    return _db.updateUser(id, companion);
+    return _db.userQueries.updateUser(id, companion);
   }
 
   /// 創建新用戶
@@ -57,18 +57,16 @@ class UserRepository {
       isCurrentUser: Value(isCurrentUser),
     );
 
-    return _db.insertOrUpdateUser(companion);
+    return _db.userQueries.insertOrUpdateUser(companion);
   }
 
   /// 設置當前用戶
   Future<void> setCurrentUser(int userId) async {
     // 先將所有用戶設為非當前用戶
-    await (_db.update(_db.users)
-      ..where((u) => u.isCurrentUser.equals(true)))
-      .write(const UsersCompanion(isCurrentUser: Value(false)));
+    await _db.userQueries.clearAllCurrentUserStatus();
 
     // 設置指定用戶為當前用戶
-    await _db.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
+    await _db.userQueries.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
   }
 
   /// 搜索用戶（通過名稱或用戶代碼）

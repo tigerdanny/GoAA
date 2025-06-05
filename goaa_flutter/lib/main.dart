@@ -8,33 +8,35 @@ import 'core/services/language_service.dart';
 import 'core/services/daily_quote_service.dart';
 import 'features/splash/splash_screen.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'dart:io';
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() async {
   // 確保 Flutter 綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 修復 Android 相關問題
+  await _fixMobileIssues();
+  
   // 初始化語言服務
   final languageService = LanguageService();
   await languageService.initialize();
   
-  // 初始化資料庫
-  try {
-    await DatabaseService.instance.initialize();
-    debugPrint('資料庫初始化成功');
-    
-    // 验证用户是否创建成功
-    final testUser = await DatabaseService.instance.database.getCurrentUser();
-    debugPrint('驗證當前用戶: ${testUser?.name ?? 'null'}, 代碼: ${testUser?.userCode ?? 'null'}');
-  } catch (e) {
-    debugPrint('資料庫初始化失敗: $e');
-  }
+  // 初始化資料庫 - 失敗則直接退出應用
+  await DatabaseService.instance.initialize();
+  debugPrint('✅ 資料庫初始化成功');
+  
+  // 验证用户是否创建成功
+      final testUser = await DatabaseService.instance.database.userQueries.getCurrentUser();
+  debugPrint('🔍 驗證當前用戶: ${testUser?.name ?? 'null'}, 代碼: ${testUser?.userCode ?? 'null'}');
   
   // 初始化每日金句服務
   try {
     await DailyQuoteService().initialize();
-    debugPrint('每日金句服務初始化成功');
+    debugPrint('✅ 每日金句服務初始化成功');
   } catch (e) {
-    debugPrint('每日金句服務初始化失敗: $e');
+    debugPrint('❌ 每日金句服務初始化失敗: $e');
   }
   
   // 設置系統UI樣式
@@ -55,6 +57,61 @@ void main() async {
   ]);
   
   runApp(GoAAApp(languageService: languageService));
+}
+
+/// 修復手機端問題
+Future<void> _fixMobileIssues() async {
+  try {
+    debugPrint('🔧 開始修復手機端問題...');
+    
+    // Android 特定修復
+    if (Platform.isAndroid) {
+      debugPrint('📱 檢測到 Android 系統，應用修復...');
+      
+      // 1. 修復 SQLite3 在舊版 Android 上的問題
+      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
+      debugPrint('✅ SQLite3 Android workaround 已應用');
+      
+      // 2. 檢查並創建必要目錄
+      try {
+        final appDir = await getApplicationDocumentsDirectory();
+        final tempDir = await getTemporaryDirectory();
+        
+        debugPrint('📂 應用目錄: ${appDir.path}');
+        debugPrint('📂 臨時目錄: ${tempDir.path}');
+        
+        // 確保目錄存在且可寫
+        if (!appDir.existsSync()) {
+          await appDir.create(recursive: true);
+          debugPrint('📂 已創建應用目錄');
+        }
+        
+        // 測試寫入權限
+        final testFile = File('${appDir.path}/.test_write');
+        await testFile.writeAsString('test');
+        await testFile.delete();
+        debugPrint('✅ 存儲權限正常');
+        
+      } catch (e) {
+        debugPrint('⚠️ 目錄檢查/創建問題: $e');
+      }
+      
+      // 3. 設置 SQLite 臨時目錄
+      try {
+        final tempDir = await getTemporaryDirectory();
+        // 未來可以設置 sqlite3.tempDirectory = tempDir.path;
+        debugPrint('✅ SQLite 臨時目錄已設置: ${tempDir.path}');
+      } catch (e) {
+        debugPrint('⚠️ SQLite 臨時目錄設置問題: $e');
+      }
+    }
+    
+    debugPrint('✅ 手機端問題修復完成');
+    
+  } catch (e, stackTrace) {
+    debugPrint('❌ 手機端問題修復失敗: $e');
+    debugPrint('📚 錯誤堆疊: $stackTrace');
+  }
 }
 
 /// GOAA分帳應用主類

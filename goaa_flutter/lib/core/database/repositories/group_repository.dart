@@ -8,12 +8,12 @@ class GroupRepository {
 
   /// 獲取用戶所有群組
   Future<List<Group>> getUserGroups(int userId) {
-    return _db.getUserGroups(userId);
+    return _db.groupQueries.getUserGroups(userId);
   }
 
   /// 獲取群組詳情
   Future<Group?> getGroup(int groupId) {
-    return _db.getGroup(groupId);
+    return _db.groupQueries.getGroup(groupId);
   }
 
   /// 創建群組
@@ -30,7 +30,7 @@ class GroupRepository {
       currency: Value(currency),
     );
 
-    final groupId = await _db.createGroup(companion);
+    final groupId = await _db.groupQueries.createGroup(companion);
     
     // 將創建者添加為群組管理員
     await addGroupMember(groupId, createdBy, role: 'admin');
@@ -61,12 +61,12 @@ class GroupRepository {
 
   /// 獲取群組成員
   Future<List<User>> getGroupMembers(int groupId) {
-    return _db.getGroupMembers(groupId);
+    return _db.groupQueries.getGroupMembers(groupId);
   }
 
   /// 添加群組成員
   Future<int> addGroupMember(int groupId, int userId, {String role = 'member'}) {
-    return _db.addGroupMember(groupId, userId, role: role);
+    return _db.groupQueries.addGroupMember(groupId, userId, role: role);
   }
 
   /// 移除群組成員
