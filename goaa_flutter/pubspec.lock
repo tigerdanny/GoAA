@@ -420,7 +420,7 @@ packages:
     source: hosted
     version: "2.4.6"
   flutter_plugin_android_lifecycle:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_plugin_android_lifecycle
       sha256: f948e346c12f8d5480d2825e03de228d0eb8c3a737e4cdaa122267b89c022b5e
