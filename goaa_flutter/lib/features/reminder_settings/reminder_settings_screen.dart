@@ -363,8 +363,8 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
     );
   }
 
-  Future<void> _selectTime() async {
-    final time = await showTimePicker(
+  void _selectTime() {
+    showTimePicker(
       context: context,
       initialTime: _reminderTime,
       builder: (context, child) {
@@ -377,12 +377,12 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
           child: child!,
         );
       },
-    );
-    
-    if (time != null) {
-      setState(() => _reminderTime = time);
-      HapticFeedback.lightImpact();
-    }
+    ).then((selectedTime) {
+      if (selectedTime != null) {
+        setState(() => _reminderTime = selectedTime);
+        HapticFeedback.lightImpact();
+      }
+    });
   }
 
   void _sendTestNotification() {

@@ -16,13 +16,13 @@ class GroupRepository {
     return _db.groupQueries.getGroup(groupId);
   }
 
-  /// 創建群組
+  /// 創建群組（簡化版）
   Future<int> createGroup({
     required String name,
     String? description,
     required int createdBy,
     String currency = 'TWD',
-  }) async {
+  }) {
     final companion = GroupsCompanion.insert(
       name: name,
       description: Value(description),
@@ -30,21 +30,19 @@ class GroupRepository {
       currency: Value(currency),
     );
 
-    final groupId = await _db.groupQueries.createGroup(companion);
-    
-    // 將創建者添加為群組管理員
-    await addGroupMember(groupId, createdBy, role: 'admin');
-    
-    return groupId;
+    return _db.groupQueries.createGroup(companion).then((groupId) {
+      // 將創建者添加為群組管理員
+      return addGroupMember(groupId, createdBy, role: 'admin').then((_) => groupId);
+    });
   }
 
-  /// 更新群組資料
+  /// 更新群組資料（簡化版）
   Future<bool> updateGroup(int groupId, {
     String? name,
     String? description,
     String? currency,
     bool? isActive,
-  }) async {
+  }) {
     final companion = GroupsCompanion(
       id: Value(groupId),
       name: name != null ? Value(name) : const Value.absent(),
@@ -54,9 +52,10 @@ class GroupRepository {
       updatedAt: Value(DateTime.now()),
     );
 
-    return await (_db.update(_db.groups)
+    return (_db.update(_db.groups)
       ..where((g) => g.id.equals(groupId)))
-      .write(companion) > 0;
+      .write(companion)
+      .then((count) => count > 0);
   }
 
   /// 獲取群組成員

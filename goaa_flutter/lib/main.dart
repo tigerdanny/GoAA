@@ -19,25 +19,21 @@ void main() async {
   // 修復 Android 相關問題
   await _fixMobileIssues();
   
-  // 初始化語言服務
+  // 順序初始化服務，保持正確的依賴關係
   final languageService = LanguageService();
-  await languageService.initialize();
+  languageService.initialize();
+  debugPrint('✅ 語言服務初始化完成');
   
-  // 初始化資料庫 - 失敗則直接退出應用
-  await DatabaseService.instance.initialize();
-  debugPrint('✅ 資料庫初始化成功');
-  
-  // 验证用户是否创建成功
-      final testUser = await DatabaseService.instance.database.userQueries.getCurrentUser();
-  debugPrint('🔍 驗證當前用戶: ${testUser?.name ?? 'null'}, 代碼: ${testUser?.userCode ?? 'null'}');
-  
-  // 初始化每日金句服務
-  try {
-    await DailyQuoteService().initialize();
-    debugPrint('✅ 每日金句服務初始化成功');
-  } catch (e) {
-    debugPrint('❌ 每日金句服務初始化失敗: $e');
-  }
+  // 先初始化資料庫，再初始化依賴資料庫的服務
+  DatabaseService.instance.initialize().then((_) {
+    debugPrint('✅ 資料庫初始化完成');
+    
+    // 資料庫初始化完成後，才初始化每日金句服務
+    DailyQuoteService().initialize();
+    
+  }).catchError((e) {
+    debugPrint('❌ 資料庫初始化失敗: $e');
+  });
   
   // 設置系統UI樣式
   SystemChrome.setSystemUIOverlayStyle(

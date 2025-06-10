@@ -24,10 +24,9 @@ class LanguageService extends ChangeNotifier {
   /// 獲取目前語言
   Locale get currentLocale => _currentLocale;
   
-  /// 初始化語言服務
-  Future<void> initialize() async {
-    try {
-      final savedLanguage = await _storage.read(key: _languageKey);
+  /// 初始化語言服務（簡化版）
+  void initialize() {
+    _storage.read(key: _languageKey).then((savedLanguage) {
       if (savedLanguage != null) {
         final locale = Locale(savedLanguage);
         if (supportedLocales.contains(locale)) {
@@ -40,35 +39,36 @@ class LanguageService extends ChangeNotifier {
           _currentLocale = Locale(systemLocale.languageCode);
         }
       }
-    } catch (e) {
+      notifyListeners();
+    }).catchError((e) {
       debugPrint('初始化語言服務失敗: $e');
       // 使用預設語言
       _currentLocale = const Locale('zh');
-    }
-    notifyListeners();
+      notifyListeners();
+    });
   }
   
-  /// 切換語言
-  Future<void> changeLanguage(Locale locale) async {
+  /// 切換語言（簡化版）
+  Future<void> changeLanguage(Locale locale) {
     if (supportedLocales.contains(locale) && _currentLocale != locale) {
       _currentLocale = locale;
-      try {
-        await _storage.write(key: _languageKey, value: locale.languageCode);
-      } catch (e) {
-        debugPrint('保存語言設置失敗: $e');
-      }
       notifyListeners();
+      return _storage.write(key: _languageKey, value: locale.languageCode)
+          .catchError((e) {
+        debugPrint('保存語言設置失敗: $e');
+      });
     }
+    return Future.value();
   }
   
-  /// 切換到繁體中文
-  Future<void> switchToTraditionalChinese() async {
-    await changeLanguage(const Locale('zh'));
+    /// 切換到繁體中文（簡化版）
+  Future<void> switchToTraditionalChinese() {
+    return changeLanguage(const Locale('zh'));
   }
-  
-  /// 切換到英文
-  Future<void> switchToEnglish() async {
-    await changeLanguage(const Locale('en'));
+
+  /// 切換到英文（簡化版）
+  Future<void> switchToEnglish() {
+    return changeLanguage(const Locale('en'));
   }
   
   /// 獲取語言顯示名稱

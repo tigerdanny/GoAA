@@ -60,13 +60,12 @@ class UserRepository {
     return _db.userQueries.insertOrUpdateUser(companion);
   }
 
-  /// 設置當前用戶
-  Future<void> setCurrentUser(int userId) async {
-    // 先將所有用戶設為非當前用戶
-    await _db.userQueries.clearAllCurrentUserStatus();
-
-    // 設置指定用戶為當前用戶
-    await _db.userQueries.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
+  /// 設置當前用戶（簡化版）
+  Future<void> setCurrentUser(int userId) {
+    // 先將所有用戶設為非當前用戶，然後設置指定用戶為當前用戶
+    return _db.userQueries.clearAllCurrentUserStatus().then((_) {
+      _db.userQueries.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
+    });
   }
 
   /// 搜索用戶（通過名稱或用戶代碼）
@@ -90,81 +89,68 @@ class UserRepository {
     return (_db.delete(_db.users)..where((u) => u.id.equals(userId))).go();
   }
 
-  /// 檢查用戶代碼是否已存在
-  Future<bool> isUserCodeExists(String userCode) async {
-    final user = await findUserByCode(userCode);
-    return user != null;
+  /// 檢查用戶代碼是否已存在（簡化版）
+  Future<bool> isUserCodeExists(String userCode) {
+    return findUserByCode(userCode).then((user) => user != null);
   }
 
-  /// 生成唯一用戶代碼
-  Future<String> generateUniqueUserCode() async {
-    String userCode;
-    bool exists;
-    int attempts = 0;
+  /// 生成唯一用戶代碼（簡化版）
+  Future<String> generateUniqueUserCode() {
+    return _generateCodeAttempt(0);
+  }
+
+  Future<String> _generateCodeAttempt(int attempts) {
     const maxAttempts = 100;
-
-    do {
-      if (attempts >= maxAttempts) {
-        throw Exception('無法生成唯一用戶代碼');
+    
+    if (attempts >= maxAttempts) {
+      throw Exception('無法生成唯一用戶代碼');
+    }
+    
+    // 生成用戶代碼
+    final now = DateTime.now();
+    final timeComponent = now.microsecondsSinceEpoch.toString();
+    final timeDigits = timeComponent.substring(timeComponent.length - 8);
+    final randomComponent = (now.millisecond * 1000 + attempts * 7 + now.second * 13) % 999999;
+    final combinedNumber = (int.parse(timeDigits.substring(2, 6)) + randomComponent) % 999999;
+    final codeNumber = combinedNumber.toString().padLeft(6, '0');
+    final userCode = 'GA$codeNumber';
+    
+    return isUserCodeExists(userCode).then((exists) {
+      if (exists) {
+        return _generateCodeAttempt(attempts + 1);
+      } else {
+        return userCode;
       }
-      
-      // 使用多种元素生成更唯一的用户代码
-      final now = DateTime.now();
-      
-      // 获取微秒级时间戳的后8位
-      final timeComponent = now.microsecondsSinceEpoch.toString();
-      final timeDigits = timeComponent.substring(timeComponent.length - 8);
-      
-      // 增加额外的随机性
-      final randomComponent = (now.millisecond * 1000 + attempts * 7 + now.second * 13) % 999999;
-      
-      // 组合时间和随机数生成6位数字
-      final combinedNumber = (int.parse(timeDigits.substring(2, 6)) + randomComponent) % 999999;
-      final codeNumber = combinedNumber.toString().padLeft(6, '0');
-      
-      userCode = 'GA$codeNumber';
-      
-      exists = await isUserCodeExists(userCode);
-      attempts++;
-      
-      // 如果仍然重复，使用纯随机策略
-      if (exists && attempts > 50) {
-        final pureRandom = DateTime.now().microsecondsSinceEpoch % 999999;
-        userCode = 'GA${pureRandom.toString().padLeft(6, '0')}';
-        exists = await isUserCodeExists(userCode);
-      }
-      
-    } while (exists);
-
-    return userCode;
+    });
   }
 
-  /// 獲取用戶統計信息
-  Future<Map<String, dynamic>> getUserStats(int userId) async {
+  /// 獲取用戶統計信息（簡化版）
+  Future<Map<String, dynamic>> getUserStats(int userId) {
     // 獲取用戶參與的群組數量
-    final groupCount = await (_db.select(_db.groupMembers)
+    final groupCountFuture = (_db.select(_db.groupMembers)
       ..where((gm) => gm.userId.equals(userId)))
       .get()
       .then((list) => list.length);
 
-    // 獲取用戶的支出數量
-    final expenseCount = await (_db.select(_db.expenses)
+    // 獲取用戶的支出統計
+    final expenseStatsFuture = (_db.select(_db.expenses)
       ..where((e) => e.paidBy.equals(userId)))
       .get()
-      .then((list) => list.length);
+      .then((expenses) {
+        final expenseCount = expenses.length;
+        final totalPaid = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+        return {'expenseCount': expenseCount, 'totalPaid': totalPaid};
+      });
 
-    // 獲取用戶的總支出金額
-    final expenses = await (_db.select(_db.expenses)
-      ..where((e) => e.paidBy.equals(userId)))
-      .get();
-    
-    final totalPaid = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
-
-    return {
-      'groupCount': groupCount,
-      'expenseCount': expenseCount,
-      'totalPaid': totalPaid,
-    };
+    return groupCountFuture.then((groupCount) {
+      return expenseStatsFuture.then((expenseStats) {
+        return {
+          'groupCount': groupCount,
+          'expenseCount': expenseStats['expenseCount'],
+          'totalPaid': expenseStats['totalPaid'],
+        };
+      });
+    });
   }
 } 
  

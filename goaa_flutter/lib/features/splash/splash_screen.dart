@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen>
   // 数据加载状态
   User? _currentUser;
   List<Group> _groups = [];
-  Map<int, Map<String, dynamic>> _groupStats = {};
+  final Map<int, Map<String, dynamic>> _groupStats = {};
   Map<String, dynamic> _stats = {};
   
   bool _dataLoaded = false;
@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen>
     ));
   }
 
-  void _startLoadingProcess() async {
+  void _startLoadingProcess() {
     // 设置状态栏样式
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -79,48 +79,59 @@ class _SplashScreenState extends State<SplashScreen>
     // 启动logo动画
     _logoController.forward();
 
-    // 并行执行数据加载和动画
-    await Future.wait([
-      _loadAppData(),
-      _waitForMinimumDuration(),
-    ]);
-
-    // 检查是否可以导航
-    _checkNavigationReady();
+    // 順序執行數據載入和動畫，避免並發複雜度
+    _loadAppData().then((_) {
+      return _waitForMinimumDuration();
+    }).then((_) {
+      _checkNavigationReady();
+    });
   }
 
-  /// 加载应用数据
-  Future<void> _loadAppData() async {
-    try {
-      // 加载当前用户
-      _currentUser = await _userRepository.getCurrentUser();
+  /// 載入應用數據（完全簡化版，無await）
+  Future<void> _loadAppData() {
+    return _userRepository.getCurrentUser().then((user) {
+      _currentUser = user;
       
       if (_currentUser != null) {
-        // 加载用户群组
-        _groups = await _groupRepository.getUserGroups(_currentUser!.id);
+        return _groupRepository.getUserGroups(_currentUser!.id);
+      } else {
+        return Future.value(<Group>[]);
+      }
+    }).then((groups) {
+      _groups = groups;
+      
+      // 其他數據使用非阻塞載入
+      if (_currentUser != null) {
+        _userRepository.getUserStats(_currentUser!.id).then((stats) {
+          _stats = stats;
+        }).catchError((e) {
+          debugPrint('統計載入失敗: $e');
+          _stats = <String, dynamic>{};
+        });
         
-        // 加载每个群组的统计数据
-        _groupStats = {};
+        // 群組統計也改為非阻塞
         for (final group in _groups) {
-          _groupStats[group.id] = await _groupRepository.getGroupStats(group.id);
+          _groupRepository.getGroupStats(group.id).then((stats) {
+            _groupStats[group.id] = stats;
+          }).catchError((e) {
+            debugPrint('群組統計載入失敗: $e');
+            _groupStats[group.id] = <String, dynamic>{};
+          });
         }
-        
-        // 加载用户统计数据
-        _stats = await _userRepository.getUserStats(_currentUser!.id);
       }
 
       setState(() => _dataLoaded = true);
-    } catch (e) {
-      debugPrint('数据加载失败: $e');
-      // 即使加载失败也要继续，避免卡住
+    }).catchError((e) {
+      debugPrint('數據載入失敗: $e');
       setState(() => _dataLoaded = true);
-    }
+    });
   }
 
-  /// 等待最小显示时间
-  Future<void> _waitForMinimumDuration() async {
-    await Future.delayed(const Duration(milliseconds: 2000)); // 最少显示2秒
-    setState(() => _animationCompleted = true);
+  /// 等待最小显示时间（簡化版）
+  Future<void> _waitForMinimumDuration() {
+    return Future.delayed(const Duration(milliseconds: 2000)).then((_) {
+      setState(() => _animationCompleted = true);
+    });
   }
 
   /// 检查是否可以导航

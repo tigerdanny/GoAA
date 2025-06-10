@@ -12,7 +12,6 @@ class DailyQuoteService {
   factory DailyQuoteService() => _instance;
   DailyQuoteService._internal();
 
-  late final AppDatabase _database;
   final Random _random = Random();
 
   /// 預設的繁體中文金句（當無法上網且資料庫為空時使用）
@@ -22,29 +21,52 @@ class DailyQuoteService {
   /// 資料庫最大金句容量
   static const int maxQuotesInDatabase = 100;
 
-  /// 初始化服務
-  Future<void> initialize() async {
-    _database = DatabaseService.instance.database;
-    await _initializeDefaultQuotes();
+  /// 獲取資料庫實例（直接使用已初始化的資料庫）
+  AppDatabase get _database => DatabaseService.instance.database;
+
+  /// 初始化服務（簡化版，無需重複初始化資料庫）
+  void initialize() {
+    // 使用簡單的 then 而不是 await，保持一致性
+    _initializeDefaultQuotes().then((_) {
+      debugPrint('✅ 預設金句初始化完成');
+    }).catchError((e) {
+      debugPrint('⚠️ 預設金句初始化失敗: $e');
+    });
   }
 
-  /// 獲取每日金句（每日只獲取一次，優先從網路獲取）
-  Future<DailyQuote> getDailyQuote() async {
-    final today = DateTime.now();
-    final todayStart = DateTime(today.year, today.month, today.day);
+  /// 獲取每日金句（完全簡化版，無await）
+  Future<DailyQuote> getDailyQuote() {
+    debugPrint('🎲 獲取每日金句...');
     
-    // 檢查今日是否已獲取過金句
-    final todayQuote = await _getTodayQuoteFromLocal(todayStart);
-    if (todayQuote != null) {
-      debugPrint('📖 使用今日已獲取的金句: ${todayQuote.contentZh.substring(0, 20)}...');
-      return todayQuote;
-    }
+    // 1. 先檢查網路更新，然後 2. 從資料庫隨機取得金句
+    return _checkAndFetchTodayQuoteFromNetwork().then((_) {
+      return _getRandomQuoteFromLocal();
+    }).then((randomQuote) {
+      debugPrint('🎯 隨機選取: ${randomQuote.contentZh.length > 20 ? '${randomQuote.contentZh.substring(0, 20)}...' : randomQuote.contentZh}');
+      return randomQuote;
+    });
+  }
 
+  /// 檢查並從網路獲取今日新金句（修正版）
+  Future<void> _checkAndFetchTodayQuoteFromNetwork() async {
     try {
+      final today = DateTime.now();
+      final todayStart = DateTime(today.year, today.month, today.day);
+      
+      // 檢查今日是否已獲取過金句
+      final todayNetworkQuote = await _getTodayQuoteFromLocal(todayStart);
+      
+      if (todayNetworkQuote != null) {
+        debugPrint('✅ 今日已從網路獲取過金句，無需重複獲取');
+        return;
+      }
+
+      debugPrint('🌐 今日尚未從網路獲取金句，開始網路請求...');
+      
       // 嘗試從網路獲取今日新金句
       final networkQuote = await _fetchQuoteFromNetwork();
+      
       if (networkQuote != null) {
-        // 標記為今日獲取的金句
         final todayQuoteData = DailyQuote(
           id: 0,
           contentZh: networkQuote.contentZh,
@@ -54,71 +76,88 @@ class DailyQuoteService {
           createdAt: todayStart,
         );
         
-        await _saveQuoteToLocal(todayQuoteData);
-        await _maintainDatabaseSize();
-        debugPrint('🌐 從網路獲取今日金句: ${networkQuote.contentZh.substring(0, 20)}...');
-        return todayQuoteData;
+        // 保存金句（不等待完成，保持非阻塞）
+        _saveQuoteToLocal(todayQuoteData).then((_) {
+          _maintainDatabaseSize();
+          debugPrint('✅ 成功從網路獲取並存儲今日金句');
+          debugPrint('🆕 新金句: ${networkQuote.contentZh}');
+        }).catchError((saveError) {
+          debugPrint('❌ 保存今日金句失敗: $saveError');
+        });
+      } else {
+        debugPrint('⚠️  網路請求返回空結果');
       }
     } catch (e) {
-      debugPrint('❌ 網路獲取金句失敗: $e');
+      debugPrint('❌ 網路獲取今日金句失敗: $e');
     }
-
-    // 網路獲取失敗，從本地資料庫隨機選取
-    final localQuote = await _getRandomQuoteFromLocal();
-    debugPrint('📚 從本地資料庫獲取金句: ${localQuote.contentZh.substring(0, 20)}...');
-    return localQuote;
   }
 
-  /// 檢查今日是否已有金句
-  Future<DailyQuote?> _getTodayQuoteFromLocal(DateTime todayStart) async {
-    try {
-      final todayCategory = 'daily_${todayStart.millisecondsSinceEpoch}';
-      final quote = await (_database.select(_database.dailyQuotes)
-            ..where((q) => q.category.equals(todayCategory)))
-          .getSingleOrNull();
-      return quote;
-    } catch (e) {
+  /// 檢查今日是否已有金句（簡化版）
+  Future<DailyQuote?> _getTodayQuoteFromLocal(DateTime todayStart) {
+    final todayCategory = 'daily_${todayStart.millisecondsSinceEpoch}';
+    return (_database.select(_database.dailyQuotes)
+          ..where((q) => q.category.equals(todayCategory)))
+        .getSingleOrNull()
+        .catchError((e) {
       debugPrint('查詢今日金句失敗: $e');
       return null;
-    }
+    });
   }
 
-  /// 從網路獲取金句
-  Future<DailyQuote?> _fetchQuoteFromNetwork() async {
-    try {
-      // 使用免費的金句API
-      const apiUrl = 'https://api.quotable.io/random?minLength=30&maxLength=120';
+  /// 從網路獲取金句（簡化版）
+  Future<DailyQuote?> _fetchQuoteFromNetwork() {
+    const apiUrl = 'https://api.quotable.io/random?minLength=30&maxLength=120';
+    debugPrint('🌐 開始網路請求: $apiUrl');
+    
+    return http.get(
+      Uri.parse(apiUrl),
+      headers: {'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 10))
+    .then((response) {
+      debugPrint('📡 網路回應狀態: ${response.statusCode}');
       
-      final response = await http.get(
-        Uri.parse(apiUrl),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
-
       if (response.statusCode == 200) {
+        debugPrint('✅ 網路請求成功，解析回應內容...');
         final data = json.decode(response.body);
         final englishContent = data['content'] as String;
         final author = data['author'] as String;
 
-        // 獲取繁體中文翻譯（使用預設的繁體中文金句）
-        final chineseContent = await _getChineseTranslation(englishContent);
+        debugPrint('📝 原始英文金句: $englishContent');
+        debugPrint('✍️  作者: $author');
 
-        return DailyQuote(
-          id: 0, // 臨時ID
+        // 獲取繁體中文翻譯（同步版本）
+        final chineseContent = _getChineseTranslationSync(englishContent);
+        debugPrint('🈳 產生中文版本: $chineseContent');
+
+        final networkQuote = DailyQuote(
+          id: 0,
           contentZh: chineseContent,
           contentEn: englishContent,
           author: author,
           category: 'network',
           createdAt: DateTime.now(),
         );
+        
+        debugPrint('🎉 網路金句建立成功！');
+        return networkQuote;
+      } else {
+        debugPrint('❌ 網路請求失敗，狀態碼: ${response.statusCode}');
+        debugPrint('📄 回應內容: ${response.body}');
+        return null;
       }
-    } catch (e) {
-      debugPrint('網路請求失敗: $e');
-    }
-    return null;
+    }).catchError((e) {
+      debugPrint('❌ 網路請求異常: $e');
+      if (e.toString().contains('TimeoutException')) {
+        debugPrint('⏰ 請求超時，可能是網路連線問題');
+      } else if (e.toString().contains('SocketException')) {
+        debugPrint('🔌 網路連線失敗，請檢查網路狀態');
+      }
+      return null;
+    });
   }
 
-  /// 獲取繁體中文翻譯（使用預設繁體中文金句庫）
-  Future<String> _getChineseTranslation(String englishContent) async {
+  /// 獲取繁體中文翻譯（同步版本，使用預設繁體中文金句庫）
+  String _getChineseTranslationSync(String englishContent) {
     // 預設繁體中文金句庫
     final traditionalChineseQuotes = [
       '成功不是終點，失敗不是致命的，重要的是繼續前進的勇氣。',
@@ -146,59 +185,81 @@ class DailyQuoteService {
     return traditionalChineseQuotes[_random.nextInt(traditionalChineseQuotes.length)];
   }
 
-  /// 保存金句到本地資料庫
-  Future<void> _saveQuoteToLocal(DailyQuote quote) async {
-    try {
-      await _database.into(_database.dailyQuotes).insert(
-        DailyQuotesCompanion(
-          contentZh: Value(quote.contentZh),
-          contentEn: Value(quote.contentEn),
-          author: Value(quote.author),
-          category: Value(quote.category),
-          createdAt: Value(quote.createdAt),
-        ),
-      );
-    } catch (e) {
-      debugPrint('保存金句到本地失敗: $e');
-    }
+  /// 保存金句到本地資料庫（簡化版）
+  Future<void> _saveQuoteToLocal(DailyQuote quote) {
+    debugPrint('💾 開始保存金句到資料庫...');
+    debugPrint('📝 金句內容: ${quote.contentZh}');
+    debugPrint('🏷️  分類: ${quote.category}');
+    
+    return _database.into(_database.dailyQuotes).insert(
+      DailyQuotesCompanion(
+        contentZh: Value(quote.contentZh),
+        contentEn: Value(quote.contentEn),
+        author: Value(quote.author),
+        category: Value(quote.category),
+        createdAt: Value(quote.createdAt),
+      ),
+    ).then((_) {
+      debugPrint('✅ 金句保存成功！');
+      
+      // 顯示目前資料庫總數（非阻塞）
+      _database.select(_database.dailyQuotes).get().then((totalCount) {
+        debugPrint('📊 資料庫現有金句總數: ${totalCount.length}');
+      });
+    }).catchError((e) {
+      debugPrint('❌ 保存金句到本地失敗: $e');
+    });
   }
 
-  /// 維護資料庫大小（保持100句以內）
-  Future<void> _maintainDatabaseSize() async {
-    try {
-      final allQuotes = await (_database.select(_database.dailyQuotes)
-            ..orderBy([(q) => OrderingTerm.desc(q.createdAt)]))
-          .get();
-
+  /// 維護資料庫大小（簡化版，保持100句以內）
+  void _maintainDatabaseSize() {
+    (_database.select(_database.dailyQuotes)
+          ..orderBy([(q) => OrderingTerm.desc(q.createdAt)]))
+        .get()
+        .then((allQuotes) {
       if (allQuotes.length > maxQuotesInDatabase) {
         // 刪除最舊的金句，保留最新的100句
         final quotesToDelete = allQuotes.skip(maxQuotesInDatabase);
         for (final quote in quotesToDelete) {
-          await (_database.delete(_database.dailyQuotes)
+          (_database.delete(_database.dailyQuotes)
                 ..where((q) => q.id.equals(quote.id)))
               .go();
         }
         debugPrint('🗑️ 清理了 ${quotesToDelete.length} 條舊金句，保持資料庫在 $maxQuotesInDatabase 句以內');
       }
-    } catch (e) {
+    }).catchError((e) {
       debugPrint('維護資料庫大小失敗: $e');
-    }
+    });
   }
 
-  /// 從本地資料庫隨機獲取金句
-  Future<DailyQuote> _getRandomQuoteFromLocal() async {
-    try {
-      final quotes = await _database.select(_database.dailyQuotes).get();
+  /// 從本地資料庫隨機獲取金句（簡化版）
+  Future<DailyQuote> _getRandomQuoteFromLocal() {
+    debugPrint('📚 從資料庫查詢金句...');
+    return _database.select(_database.dailyQuotes).get().then((quotes) {
+      debugPrint('📊 資料庫中共有 ${quotes.length} 條金句');
       
       if (quotes.isNotEmpty) {
-        final randomQuote = quotes[_random.nextInt(quotes.length)];
+        final randomIndex = _random.nextInt(quotes.length);
+        final randomQuote = quotes[randomIndex];
+        debugPrint('🎲 隨機選擇第 ${randomIndex + 1} 條金句');
+        debugPrint('📝 選中的金句: ${randomQuote.contentZh}');
+        debugPrint('🏷️  分類: ${randomQuote.category}');
+        debugPrint('⏰ 創建時間: ${randomQuote.createdAt.toString().substring(0, 19)}');
+        
         return randomQuote;
+      } else {
+        debugPrint('⚠️  資料庫中沒有金句，使用預設金句');
+        return _getDefaultQuote();
       }
-    } catch (e) {
-      debugPrint('從本地獲取金句失敗: $e');
-    }
+    }).catchError((e) {
+      debugPrint('❌ 從本地獲取金句失敗: $e');
+      return _getDefaultQuote();
+    });
+  }
 
-    // 如果本地也沒有，返回預設繁體中文金句
+  /// 獲取預設金句
+  DailyQuote _getDefaultQuote() {
+    debugPrint('🔄 使用預設金句');
     return DailyQuote(
       id: 0,
       contentZh: defaultChineseQuote,
@@ -209,11 +270,9 @@ class DailyQuoteService {
     );
   }
 
-  /// 初始化預設金句庫（繁體中文版本）
-  Future<void> _initializeDefaultQuotes() async {
-    try {
-      // 檢查是否已有資料
-      final existingQuotes = await _database.select(_database.dailyQuotes).get();
+  /// 初始化預設金句庫（簡化版）
+  Future<void> _initializeDefaultQuotes() {
+    return _database.select(_database.dailyQuotes).get().then((existingQuotes) {
       if (existingQuotes.isNotEmpty) return;
 
       // 預設繁體中文金句庫
@@ -295,9 +354,9 @@ class DailyQuoteService {
         },
       ];
 
-      // 批量插入預設金句
+      // 簡化：順序插入預設金句，不使用await
       for (final quote in defaultQuotes) {
-        await _database.into(_database.dailyQuotes).insert(
+        _database.into(_database.dailyQuotes).insert(
           DailyQuotesCompanion(
             contentZh: Value(quote['zh']!),
             contentEn: Value(quote['en']!),
@@ -308,9 +367,9 @@ class DailyQuoteService {
       }
 
       debugPrint('📚 預設繁體中文金句庫初始化完成，共 ${defaultQuotes.length} 條金句');
-    } catch (e) {
+    }).catchError((e) {
       debugPrint('初始化預設金句庫失敗: $e');
-    }
+    });
   }
 
   /// 獲取指定語言的金句內容
@@ -318,10 +377,9 @@ class DailyQuoteService {
     return languageCode.startsWith('zh') ? quote.contentZh : quote.contentEn;
   }
 
-  /// 獲取資料庫統計資訊
-  Future<Map<String, int>> getDatabaseStats() async {
-    try {
-      final allQuotes = await _database.select(_database.dailyQuotes).get();
+  /// 獲取資料庫統計資訊（簡化版）
+  Future<Map<String, int>> getDatabaseStats() {
+    return _database.select(_database.dailyQuotes).get().then((allQuotes) {
       final Map<String, int> stats = {};
       
       for (final quote in allQuotes) {
@@ -331,28 +389,27 @@ class DailyQuoteService {
       
       stats['total'] = allQuotes.length;
       return stats;
-    } catch (e) {
+    }).catchError((e) {
       debugPrint('獲取資料庫統計失敗: $e');
       return {'total': 0};
-    }
+    });
   }
 
-  /// 清理舊的每日金句（保留最近30天）
-  Future<void> cleanupOldDailyQuotes() async {
-    try {
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-      
-      // 只刪除 daily_ 開頭的金句，保留預設金句
-      await (_database.delete(_database.dailyQuotes)
-            ..where((q) => 
-              q.category.like('daily_%') & 
-              q.createdAt.isSmallerThanValue(thirtyDaysAgo)
-            ))
-          .go();
-      
+  /// 清理舊的每日金句（簡化版，保留最近30天）
+  void cleanupOldDailyQuotes() {
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    
+    // 只刪除 daily_ 開頭的金句，保留預設金句
+    (_database.delete(_database.dailyQuotes)
+          ..where((q) => 
+            q.category.like('daily_%') & 
+            q.createdAt.isSmallerThanValue(thirtyDaysAgo)
+          ))
+        .go()
+        .then((_) {
       debugPrint('🧹 清理了30天前的每日金句');
-    } catch (e) {
+    }).catchError((e) {
       debugPrint('清理舊每日金句失敗: $e');
-    }
+    });
   }
 } 

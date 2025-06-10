@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/database/database.dart';
-import '../../../core/database/database_service.dart';
 import '../../../core/database/repositories/user_repository.dart';
 import '../../../core/database/repositories/group_repository.dart';
 import '../../../core/services/daily_quote_service.dart';
@@ -45,122 +44,88 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 載入所有數據
-  Future<void> loadData() async {
+  /// 載入所有數據（完全簡化版，無await）
+  void loadData() {
+    _isLoading = true;
+    notifyListeners();
+
+    // 1. 順序載入用戶資料
+    _loadUserData();
+    
+    // 2. 如果有用戶，順序載入群組資料
+    if (_currentUser != null) {
+      _loadGroupData();
+    }
+    
+    // 3. 載入每日金句（簡化版）
+    _loadDailyQuote();
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  /// 載入用戶資料（同步化）
+  void _loadUserData() {
     try {
-      _isLoading = true;
-      notifyListeners();
-
-      _currentUser = await _userRepository.getCurrentUser();
-      
-      // 如果没有当前用户，尝试创建一个
-      if (_currentUser == null) {
-        debugPrint('未找到當前用戶，嘗試創建新用戶');
-        await DatabaseService.instance.initialize();
-        _currentUser = await _userRepository.getCurrentUser();
-        
-        if (_currentUser == null) {
-          debugPrint('創建用戶失敗，使用默認資料');
-        } else {
-          debugPrint('成功創建用戶: ${_currentUser!.name}');
+      // 使用同步方式，避免await
+      _userRepository.getCurrentUser().then((user) {
+        _currentUser = user;
+        if (user == null) {
+          debugPrint('未找到用戶，使用預設資料');
         }
-      }
-      
-      if (_currentUser != null) {
-        _groups = await _groupRepository.getUserGroups(_currentUser!.id);
-        
-        _groupStats.clear();
-        for (final group in _groups) {
-          _groupStats[group.id] = await _groupRepository.getGroupStats(group.id);
-        }
-        
-        _stats = await _userRepository.getUserStats(_currentUser!.id);
-      }
-
-      await _loadDailyQuote();
-      
-      _isLoading = false;
-      notifyListeners();
-      
-      // 查詢並顯示資料庫中的所有每日金句
-      await _showAllDailyQuotesInDatabase();
+      }).catchError((e) {
+        debugPrint('載入用戶失敗: $e');
+      });
     } catch (e) {
-      debugPrint('加載數據失敗: $e');
-      _isLoading = false;
-      notifyListeners();
+      debugPrint('用戶資料載入錯誤: $e');
     }
   }
 
-  /// 載入每日金句
-  Future<void> _loadDailyQuote() async {
+  /// 載入群組資料（同步化）
+  void _loadGroupData() {
+    if (_currentUser == null) return;
+    
     try {
-      debugPrint('\n🌐 正在抓取今天的每日金句...');
-      _dailyQuote = await DailyQuoteService().getDailyQuote();
-      
-      if (_dailyQuote != null) {
-        debugPrint('\n📅 成功獲取今天的每日金句:');
-        debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        debugPrint('🇨🇳 中文: ${_dailyQuote!.contentZh}');
-        debugPrint('🇺🇸 英文: ${_dailyQuote!.contentEn}');
-        debugPrint('✍️  作者: ${_dailyQuote!.author ?? '未知'}');
-        debugPrint('🏷️  分類: ${_dailyQuote!.category}');
-        debugPrint('⏰ 時間: ${_dailyQuote!.createdAt.toString().substring(0, 19)}');
-        debugPrint('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      // 順序載入群組列表
+      _groupRepository.getUserGroups(_currentUser!.id).then((groups) {
+        _groups = groups;
         
-        // 測試語言切換
-        debugPrint('\n🌍 語言測試:');
-        final zhContent = DailyQuoteService().getQuoteContent(_dailyQuote!, 'zh');
-        final enContent = DailyQuoteService().getQuoteContent(_dailyQuote!, 'en');
-        debugPrint('中文版本: $zhContent');
-        debugPrint('英文版本: $enContent');
-        debugPrint('');
-      } else {
-        debugPrint('⚠️  未能獲取每日金句，將使用默認內容');
-      }
+        // 簡單的群組統計，不使用複雜的for await
+        for (final group in groups) {
+          _groupRepository.getGroupStats(group.id).then((stats) {
+            _groupStats[group.id] = stats;
+          });
+        }
+      });
+      
+      // 載入用戶統計
+      _userRepository.getUserStats(_currentUser!.id).then((stats) {
+        _stats = stats;
+      });
+      
     } catch (e) {
-      debugPrint('获取每日金句失败: $e');
-      debugPrint('❌ 獲取每日金句失敗: $e');
+      debugPrint('群組資料載入錯誤: $e');
+    }
+  }
+
+  /// 載入每日金句（簡化版，無複雜非同步）
+  void _loadDailyQuote() {
+    try {
+      // 使用簡單的 then 而不是 await，避免阻塞
+      DailyQuoteService().getDailyQuote().then((quote) {
+        _dailyQuote = quote;
+        debugPrint('✅ 每日金句載入: ${quote.contentZh}');
+        // 載入完成後通知UI更新
+        notifyListeners();
+      }).catchError((e) {
+        debugPrint('❌ 每日金句載入失敗: $e');
+        _dailyQuote = null;
+      });
+    } catch (e) {
+      debugPrint('每日金句載入錯誤: $e');
       _dailyQuote = null;
     }
   }
 
-  /// 查詢並顯示資料庫中的所有每日金句
-  Future<void> _showAllDailyQuotesInDatabase() async {
-    try {
-      final database = DatabaseService.instance.database;
-      final allQuotes = await database.select(database.dailyQuotes).get();
-      
-      debugPrint('\n📚 資料庫中的每日金句總覽:');
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('總共有 ${allQuotes.length} 條每日金句');
-      debugPrint('═══════════════════════════════════════════════\n');
-      
-      for (int i = 0; i < allQuotes.length; i++) {
-        final quote = allQuotes[i];
-        debugPrint('📝 第 ${i + 1} 條金句:');
-        debugPrint('   ID: ${quote.id}');
-        debugPrint('   🇨🇳 中文: ${quote.contentZh}');
-        debugPrint('   🇺🇸 英文: ${quote.contentEn}');
-        debugPrint('   ✍️  作者: ${quote.author ?? '未知'}');
-        debugPrint('   🏷️  分類: ${quote.category}');
-        debugPrint('   ⏰ 創建時間: ${quote.createdAt.toString().substring(0, 19)}');
-        debugPrint('   ─────────────────────────────────────────────\n');
-      }
-      
-      // 統計不同分類的金句數量
-      final Map<String, int> categoryStats = {};
-      for (final quote in allQuotes) {
-        categoryStats[quote.category] = (categoryStats[quote.category] ?? 0) + 1;
-      }
-      
-      debugPrint('📊 金句分類統計:');
-      categoryStats.forEach((category, count) {
-        debugPrint('   $category: $count 條');
-      });
-      debugPrint('═══════════════════════════════════════════════\n');
-      
-    } catch (e) {
-      debugPrint('查詢資料庫金句失敗: $e');
-    }
-  }
+
 } 
