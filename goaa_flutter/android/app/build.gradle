@@ -25,15 +25,15 @@ if (flutterVersionName == null) {
 android {
     namespace = "com.goaa.splitbill.goaa_flutter"
     compileSdk project.hasProperty('android.compileSdkVersion') ? 
-        project.property('android.compileSdkVersion').toInteger() : 34
+        project.property('android.compileSdkVersion').toInteger() : 35
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '11'
+        jvmTarget = '17'
     }
 
     defaultConfig {
@@ -41,7 +41,7 @@ android {
         minSdk project.hasProperty('android.minSdkVersion') ? 
             project.property('android.minSdkVersion').toInteger() : 23
         targetSdk project.hasProperty('android.targetSdkVersion') ? 
-            project.property('android.targetSdkVersion').toInteger() : 34
+            project.property('android.targetSdkVersion').toInteger() : 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
