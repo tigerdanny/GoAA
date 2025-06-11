@@ -214,106 +214,404 @@ class DailyQuoteService {
     }
   }
 
-  /// 🚀 新增：簡體轉繁體字典
+  /// 🚀 完整的簡體轉繁體字典
   String _convertSimplifiedToTraditional(String text) {
-    final conversionMap = <String, String>{
-      // 基本字體轉換
-      '来': '來',
-      '会': '會', 
-      '难': '難',
-      '过': '過',
-      '强': '強',
-      '坚': '堅',
-      '现': '現',
-      '时': '時',
-      '间': '間',
-      '对': '對',
-      '应': '應',
-      '业': '業',
-      '产': '產',
-      '样': '樣',
-      '这': '這',
-      '学': '學',
-      '习': '習',
-      '认': '認',
-      '识': '識',
-      '问': '問',
-      '题': '題',
-      '经': '經',
-      '历': '歷',
-      '压': '壓',
-      '达': '達',
-      '选': '選',
-      '择': '擇',
-      '钱': '錢',
-      '买': '買',
-      '卖': '賣',
-      '价': '價',
-      '错': '錯',
-      '须': '須',
-      '决': '決',
-      '确': '確',
-      '计': '計',
-      '规': '規',
-      '则': '則',
-      '质': '質',
-      '级': '級',
-      '别': '別',
-      '类': '類',
-      '种': '種',
-      '状': '狀',
-      '况': '況',
-      '条': '條',
-      '项': '項',
-      '标': '標',
-      '准': '準',
-      '备': '備',
-      '预': '預',
-      '号': '號',
-      '码': '碼',
-      '导': '導',
-      '领': '領',
-      '带': '帶',
-      '头': '頭',
-      '终': '終',
-      '结': '結',
-      '毕': '畢',
-      '败': '敗',
-      '胜': '勝',
-      '负': '負',
-      '赢': '贏',
-      '输': '輸',
-      '归': '歸',
-      '复': '復',
-      '极': '極',
-      '个': '個',
-      '气': '氣',
-      '灵': '靈',
-      '脑': '腦',
-      '脸': '臉',
-      '颜': '顏',
-      '齿': '齒',
-      // 額外的轉換（避免重複）
-      '发1': '發', // 發展的發
-      '发2': '髮', // 頭髮的髮  
-      '设1': '設', // 設置的設
-      '设2': '設', // 建設的設（同一個字）
-    };
-    
     String result = text;
     
-    // 特殊處理：發字的多種用法
-    result = result.replaceAll('发展', '發展');
-    result = result.replaceAll('发生', '發生'); 
-    result = result.replaceAll('发现', '發現');
-    result = result.replaceAll('头发', '頭髮');
-    result = result.replaceAll('发型', '髮型');
+    // 🔥 詞組優先轉換（避免字符衝突）
+    final phrases = <String, String>{
+      '发展': '發展',
+      '发生': '發生', 
+      '发现': '發現',
+      '头发': '頭髮',
+      '发型': '髮型',
+      '继续': '繼續',
+      '进入': '進入',
+      '进行': '進行',
+      '进步': '進步',
+      '终点': '終點',
+      '终于': '終於',
+      '终身': '終身',
+      '开始': '開始',
+      '开心': '開心',
+      '开放': '開放',
+      '关系': '關係',
+      '关心': '關心',
+      '关于': '關於',
+      '设计': '設計',
+      '设置': '設置',
+      '设想': '設想',
+      '建设': '建設',
+      '这个': '這個',
+      '这样': '這樣',
+      '这里': '這裡',
+      '那个': '那個',
+      '那样': '那樣',
+      '那里': '那裡',
+      '时间': '時間',
+      '时候': '時候',
+      '时刻': '時刻',
+      '学习': '學習',
+      '学生': '學生',
+      '学校': '學校',
+      '认识': '認識',
+      '认为': '認為',
+      '问题': '問題',
+      '问候': '問候',
+      '经过': '經過',
+      '经验': '經驗',
+      '经历': '經歷',
+      '历史': '歷史',
+      '历来': '歷來',
+      '压力': '壓力',
+      '压抑': '壓抑',
+      '达到': '達到',
+      '达成': '達成',
+      '选择': '選擇',
+      '选定': '選定',
+      '钱财': '錢財',
+      '买卖': '買賣',
+      '价值': '價值',
+      '价格': '價格',
+      '对于': '對於',
+      '对待': '對待',
+      '错误': '錯誤',
+      '错过': '錯過',
+      '应该': '應該',
+      '应当': '應當',
+      '须要': '須要',
+      '决定': '決定',
+      '决心': '決心',
+      '确定': '確定',
+      '确实': '確實',
+      '计划': '計劃',
+      '计算': '計算',
+      '规则': '規則',
+      '规定': '規定',
+      '质量': '質量',
+      '质疑': '質疑',
+      '级别': '級別',
+      '别人': '別人',
+      '类型': '類型',
+      '种类': '種類',
+      '状态': '狀態',
+      '状况': '狀況',
+      '条件': '條件',
+      '项目': '項目',
+      '标准': '標準',
+      '标志': '標誌',
+      '准备': '準備',
+      '预期': '預期',
+      '预计': '預計',
+      '号码': '號碼',
+      '导致': '導致',
+      '导演': '導演',
+      '领导': '領導',
+      '领域': '領域',
+      '带来': '帶來',
+      '带走': '帶走',
+      '头脑': '頭腦',
+      '头部': '頭部',
+      '终结': '終結',
+      '结果': '結果',
+      '结束': '結束',
+      '毕业': '畢業',
+      '败坏': '敗壞',
+      '胜利': '勝利',
+      '负责': '負責',
+      '赢得': '贏得',
+      '输入': '輸入',
+      '归来': '歸來',
+      '复杂': '復雜',
+      '复制': '復製',
+      '极其': '極其',
+      '极端': '極端',
+      '个人': '個人',
+      '个别': '個別',
+      '气氛': '氣氛',
+      '气质': '氣質',
+      '灵魂': '靈魂',
+      '灵感': '靈感',
+      '脑袋': '腦袋',
+      '脸色': '臉色',
+      '颜色': '顏色',
+      '齿轮': '齒輪',
+      '风暴': '風暴',
+      '风雨': '風雨',
+      '万事': '萬事',
+      '万分': '萬分',
+      '东西': '東西',
+      '东方': '東方',
+      '国家': '國家',
+      '国际': '國際',
+      '图书': '圖書',
+      '图片': '圖片',
+      '团体': '團體',
+      '团结': '團結',
+      '传统': '傳統',
+      '传说': '傳說',
+      '体验': '體驗',
+      '体会': '體會',
+      '尝试': '嘗試',
+      '尝到': '嘗到',
+      '为了': '為了',
+      '为何': '為何',
+      '乐观': '樂觀',
+      '乐趣': '樂趣',
+      '义务': '義務',
+      '义气': '義氣',
+      '杂志': '雜誌',
+      '杂乱': '雜亂',
+      '艺术': '藝術',
+      '艺人': '藝人',
+      '虽然': '雖然',
+      '实际': '實際',
+      '实现': '實現',
+      '实在': '實在',
+      '实力': '實力',
+      '实验': '實驗',
+      '实习': '實習',
+      '实用': '實用',
+      '实施': '實施',
+      '实质': '實質',
+      '实体': '實體',
+      '实事': '實事',
+      '实话': '實話',
+      '实物': '實物',
+      '实际上': '實際上',
+      '实际中': '實際中',
+      '从来': '從來',
+      '从前': '從前',
+      '从此': '從此',
+      '从而': '從而',
+      '从不': '從不',
+      '从头': '從頭',
+      '众人': '眾人',
+      '众多': '眾多',
+      '习惯': '習慣',
+      '习俗': '習俗',
+      '当然': '當然',
+      '当时': '當時',
+      '当地': '當地',
+      '当年': '當年',
+      '当代': '當代',
+      '当作': '當作',
+      '当做': '當做',
+      '当中': '當中',
+      '当初': '當初',
+      '当即': '當即',
+      '当下': '當下',
+      '满足': '滿足',
+      '满意': '滿意',
+      '满怀': '滿懷',
+      '满载': '滿載',
+      '拥有': '擁有',
+      '拥抱': '擁抱',
+      '扩大': '擴大',
+      '扩展': '擴展',
+      '担心': '擔心',
+      '担负': '擔負',
+      '担当': '擔當',
+      '担任': '擔任',
+      '挑战': '挑戰',
+      '挑选': '挑選',
+      '摆脱': '擺脫',
+      '摆放': '擺放',
+      '拟定': '擬定',
+      '拟订': '擬訂',
+      '撤退': '撤退',
+      '撤销': '撤銷',
+      '攻击': '攻擊',
+      '攻防': '攻防',
+      '护理': '護理',
+      '护士': '護士',
+      '护卫': '護衛',
+      '护送': '護送',
+      '护照': '護照',
+      '报告': '報告',
+      '报纸': '報紙',
+      '报道': '報導',
+      '报名': '報名',
+      '报酬': '報酬',
+      '报复': '報復',
+      '报答': '報答',
+      '电话': '電話',
+      '电视': '電視',
+      '电影': '電影',
+      '电脑': '電腦',
+      '电子': '電子',
+      '电力': '電力',
+      '电器': '電器',
+      '电梯': '電梯',
+      '电台': '電台',
+      '电池': '電池',
+      '电流': '電流',
+      '电压': '電壓',
+      '电灯': '電燈',
+      '电线': '電線',
+      '电缆': '電纜',
+      '电动': '電動',
+      '电气': '電氣',
+      '电量': '電量',
+      '电源': '電源',
+      '电网': '電網',
+      '电场': '電場',
+      '积极': '積極',
+      '积累': '積累',
+      '积分': '積分',
+      '积蓄': '積蓄',
+      '积压': '積壓',
+      '积木': '積木',
+      '积雪': '積雪',
+      '积水': '積水',
+      '积尘': '積塵',
+      '换句话说': '換句話說',
+      '换取': '換取',
+      '换班': '換班',
+      '换代': '換代',
+      '换新': '換新',
+      '环境': '環境',
+      '环节': '環節',
+      '环保': '環保',
+      '环球': '環球',
+      '环形': '環形',
+      '环绕': '環繞',
+      '环游': '環遊',
+      '坏事': '壞事',
+      '坏人': '壞人',
+      '坏处': '壞處',
+      '怀疑': '懷疑',
+      '怀念': '懷念',
+      '怀抱': '懷抱',
+      '怀孕': '懷孕',
+      '搀扶': '攙扶',
+      '搀和': '攙和'
+    };
     
-    // 應用基本轉換
-    conversionMap.forEach((simplified, traditional) {
-      if (!simplified.contains('1') && !simplified.contains('2')) {
-        result = result.replaceAll(simplified, traditional);
-      }
+    // 先應用詞組轉換
+    phrases.forEach((simplified, traditional) {
+      result = result.replaceAll(simplified, traditional);
+    });
+    
+    // 再應用單字轉換
+    final singleChars = <String, String>{
+      '來': '來',
+      '會': '會', 
+      '難': '難',
+      '過': '過',
+      '強': '強',
+      '堅': '堅',
+      '現': '現',
+      '時': '時',
+      '間': '間',
+      '對': '對',
+      '應': '應',
+      '業': '業',
+      '產': '產',
+      '樣': '樣',
+      '這': '這',
+      '學': '學',
+      '習': '習',
+      '認': '認',
+      '識': '識',
+      '問': '問',
+      '題': '題',
+      '經': '經',
+      '歷': '歷',
+      '壓': '壓',
+      '達': '達',
+      '選': '選',
+      '擇': '擇',
+      '錢': '錢',
+      '買': '買',
+      '賣': '賣',
+      '價': '價',
+      '錯': '錯',
+      '須': '須',
+      '決': '決',
+      '確': '確',
+      '計': '計',
+      '規': '規',
+      '則': '則',
+      '質': '質',
+      '級': '級',
+      '別': '別',
+      '類': '類',
+      '種': '種',
+      '狀': '狀',
+      '況': '況',
+      '條': '條',
+      '項': '項',
+      '標': '標',
+      '準': '準',
+      '備': '備',
+      '預': '預',
+      '號': '號',
+      '碼': '碼',
+      '導': '導',
+      '領': '領',
+      '帶': '帶',
+      '頭': '頭',
+      '終': '終',
+      '結': '結',
+      '畢': '畢',
+      '敗': '敗',
+      '勝': '勝',
+      '負': '負',
+      '贏': '贏',
+      '輸': '輸',
+      '歸': '歸',
+      '復': '復',
+      '極': '極',
+      '個': '個',
+      '氣': '氣',
+      '靈': '靈',
+      '腦': '腦',
+      '臉': '臉',
+      '顏': '顏',
+      '齒': '齒',
+      '風': '風',
+      '萬': '萬',
+      '東': '東',
+      '國': '國',
+      '圖': '圖',
+      '團': '團',
+      '傳': '傳',
+      '體': '體',
+      '嘗': '嘗',
+      '為': '為',
+      '樂': '樂',
+      '義': '義',
+      '雜': '雜',
+      '藝': '藝',
+      '雖': '雖',
+      '實': '實',
+      '從': '從',
+      '眾': '眾',
+      '當': '當',
+      '滿': '滿',
+      '擁': '擁',
+      '擴': '擴',
+      '擔': '擔',
+      '戰': '戰',
+      '擺': '擺',
+      '擬': '擬',
+      '撤': '撤',
+      '擊': '擊',
+      '護': '護',
+      '報': '報',
+      '電': '電',
+      '積': '積',
+      '換': '換',
+      '環': '環',
+      '壞': '壞',
+      '懷': '懷',
+      '攙': '攙',
+    };
+    
+    // 應用單字轉換（已經在詞組轉換中處理過的不會重複）
+    singleChars.forEach((simplified, traditional) {
+      result = result.replaceAll(simplified, traditional);
     });
     
     return result;
@@ -478,28 +776,43 @@ class DailyQuoteService {
       if (existingQuote == null) {
         debugPrint('🔧 預載入今日金句...');
         
-        // 🚀 離線優先：只在沒有設置離線模式時才嘗試網路
-        if (!_offlineMode && await _checkNetworkConnection()) {
+        // 🚀 簡化網路檢查：只有在明確確認網路可用時才嘗試
+        debugPrint('🔍 開始網路可用性檢查...');
+        bool networkAvailable = false;
+        
+        if (!_offlineMode) {
           try {
-            // 🚀 嘗試獲取網路金句，但不阻塞初始化過程
+            // 🚀 快速網路檢查（只檢查DNS，不做HTTP請求）
+            final dnsResult = await InternetAddress.lookup('google.com')
+                .timeout(const Duration(seconds: 3));
+            networkAvailable = dnsResult.isNotEmpty;
+            debugPrint('🔍 DNS檢查結果: $networkAvailable');
+          } catch (e) {
+            debugPrint('🔍 DNS檢查失敗: $e');
+            networkAvailable = false;
+            _offlineMode = true; // 設置離線模式
+          }
+        }
+        
+        if (networkAvailable) {
+          try {
+            debugPrint('🌐 網路可用，開始金句預載入...');
+            // 🚀 縮短超時時間，避免長時間等待
             final networkQuote = await _fetchQuoteFromNetwork()
-                .timeout(const Duration(seconds: 6));
+                .timeout(const Duration(seconds: 8));
             
             if (networkQuote != null) {
-              debugPrint('✅ 今日金句預載入完成（網路）');
+              debugPrint('✅ 網路金句預載入成功');
             } else {
-              debugPrint('💡 網路金句獲取失敗，將使用本地金句');
+              debugPrint('💡 網路API返回空結果，將使用本地金句');
             }
           } catch (e) {
-            debugPrint('⚠️ 預載入今日金句失敗: $e');
-            debugPrint('💡 將使用本地資料庫中的金句');
+            debugPrint('⚠️ 網路金句預載入失敗: $e');
+            debugPrint('💡 切換到離線模式，使用本地金句');
+            _offlineMode = true; // 網路請求失敗後設置離線模式
           }
         } else {
-          if (_offlineMode) {
-            debugPrint('📱 離線模式啟用，跳過網路金句預載入');
-          } else {
-            debugPrint('📡 無網路連接，跳過網路金句預載入');
-          }
+          debugPrint('📡 網路不可用或已啟用離線模式，跳過網路請求');
           debugPrint('💡 將使用本地資料庫中的金句');
         }
       } else {
@@ -514,6 +827,67 @@ class DailyQuoteService {
   void resetOfflineMode() {
     _offlineMode = false;
     debugPrint('🔄 已重置離線模式，將在下次請求時重新檢查網路');
+  }
+
+  /// 🚀 新增：強制嘗試網路請求（用於調試）
+  Future<Map<String, dynamic>> forceNetworkTest() async {
+    debugPrint('🧪 [強制測試] 開始網路測試...');
+    
+    final testResult = <String, dynamic>{
+      'timestamp': DateTime.now().toIso8601String(),
+      'tests': <Map<String, dynamic>>[],
+    };
+    
+    // 重置離線模式
+    final originalOfflineMode = _offlineMode;
+    _offlineMode = false;
+    
+    try {
+      // 測試 1: 網路連接檢查
+      debugPrint('🧪 [測試1] 測試網路連接檢查...');
+      final networkAvailable = await _checkNetworkConnection();
+      testResult['tests'].add({
+        'test': 'network_check',
+        'result': networkAvailable,
+        'message': networkAvailable ? '網路連接正常' : '網路連接失敗'
+      });
+      
+      if (networkAvailable) {
+        // 測試 2: 實際API請求
+        debugPrint('🧪 [測試2] 測試實際API請求...');
+        try {
+          final quote = await _fetchQuoteFromNetwork();
+          testResult['tests'].add({
+            'test': 'api_request',
+            'result': quote != null,
+            'message': quote != null ? '成功獲取網路金句' : 'API請求返回空結果',
+            'quote': quote != null ? (quote.contentZh.length > 20 ? '${quote.contentZh.substring(0, 20)}...' : quote.contentZh) : 'N/A'
+          });
+        } catch (e) {
+          testResult['tests'].add({
+            'test': 'api_request',
+            'result': false,
+            'message': 'API請求失敗',
+            'error': e.toString()
+          });
+        }
+      }
+      
+      testResult['success'] = testResult['tests'].every((test) => test['result'] == true);
+      testResult['offline_mode'] = _offlineMode;
+      
+    } catch (e) {
+      testResult['error'] = e.toString();
+      testResult['success'] = false;
+    } finally {
+      // 如果測試失敗，恢復原始離線模式狀態
+      if (testResult['success'] != true) {
+        _offlineMode = originalOfflineMode;
+      }
+    }
+    
+    debugPrint('🧪 [測試完成] 成功: ${testResult['success']}, 離線模式: $_offlineMode');
+    return testResult;
   }
 
   /// 🚀 新增：異步保存金句到本地資料庫
@@ -586,12 +960,17 @@ class DailyQuoteService {
     debugPrint('🎲 獲取每日金句...');
     
     try {
-      // 🚀 優化：只在有網路連接時才嘗試網路更新
-      if (await _checkNetworkConnection()) {
-        // 1. 檢查網路更新
-        await _checkAndFetchTodayQuoteFromNetwork();
+      // 🚀 簡化：只在非離線模式時才嘗試網路更新
+      if (!_offlineMode) {
+        debugPrint('🌐 嘗試網路更新...');
+        try {
+          await _checkAndFetchTodayQuoteFromNetwork();
+        } catch (e) {
+          debugPrint('⚠️ 網路更新失敗: $e');
+          debugPrint('💡 繼續使用本地金句');
+        }
       } else {
-        debugPrint('📡 無網路連接，直接使用本地金句');
+        debugPrint('📡 離線模式，直接使用本地金句');
       }
       
       // 2. 從資料庫隨機取得金句
@@ -684,11 +1063,8 @@ class DailyQuoteService {
         return null;
       }
 
-      // 🚀 檢查網路連接
-      if (!await _checkNetworkConnection()) {
-        debugPrint('📡 網路連接不可用，跳過網路請求');
-        return null;
-      }
+      // 🚀 簡化檢查：如果已經是離線模式就不嘗試
+      debugPrint('🔍 當前離線模式狀態: $_offlineMode');
 
       debugPrint('🌐 嘗試 ZenQuotes API...');
       
@@ -715,6 +1091,7 @@ class DailyQuoteService {
       debugPrint('🎯 [目標URL] $uri');
       
       // 🚀 增加超時時間，並添加更詳細的錯誤信息
+      debugPrint('📡 [請求開始] 發送HTTP請求...');
       final response = await http.get(
         uri,
         headers: {
@@ -723,16 +1100,17 @@ class DailyQuoteService {
           'Connection': 'close',
         },
       ).timeout(
-        const Duration(seconds: 10), // 🚀 增加超時時間給權限處理更多時間
+        const Duration(seconds: 12), // 🚀 增加超時時間給權限處理更多時間
         onTimeout: () {
-          debugPrint('⚠️ [超時] 網路請求超時（10秒）');
+          debugPrint('⚠️ [超時] 網路請求超時（12秒）');
           debugPrint('💡 [提示] 可能原因：');
-          debugPrint('   1. 網路連接問題');
+          debugPrint('   1. 網路連接緩慢');
           debugPrint('   2. Android INTERNET 權限未授予');
           debugPrint('   3. iOS 網路權限被阻止');
           debugPrint('   4. 防火牆或代理問題');
+          debugPrint('   5. zenquotes.io 服務器響應緩慢');
           debugPrint('🔄 [處理] 自動切換到離線模式，使用本地金句');
-          throw TimeoutException('Request timeout - 切換到離線模式', const Duration(seconds: 10));
+          throw TimeoutException('Request timeout after 12 seconds - 切換到離線模式', const Duration(seconds: 12));
         },
       );
 
@@ -800,35 +1178,73 @@ class DailyQuoteService {
     try {
       debugPrint('🔍 檢查網路連接...');
       
-      // 🚀 嘗試連接到一個可靠的DNS服務器來檢測網路連接
-      // 使用多重 try-catch 確保任何網路問題都被攔截
-      final result = await InternetAddress.lookup('8.8.8.8')
-          .timeout(const Duration(seconds: 2));
+      // 🚀 第一步：先檢查基本的DNS解析
+      debugPrint('🧪 [步驟1] 檢查基本DNS解析...');
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
       
-      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        debugPrint('✅ 網路連接正常');
-        // 如果網路恢復，重置離線模式
-        _offlineMode = false;
-        return true;
+      if (result.isEmpty || result[0].rawAddress.isEmpty) {
+        debugPrint('❌ DNS解析返回空結果');
+        _offlineMode = true;
+        return false;
       }
+      
+      debugPrint('✅ DNS解析成功: ${result[0].address}');
+      
+      // 🚀 第二步：嘗試實際的HTTP連接測試
+      debugPrint('🧪 [步驟2] 測試實際HTTP連接...');
+      try {
+        final testResponse = await http.head(
+          Uri.parse('https://google.com'),
+          headers: {'User-Agent': 'GoAA Network Test/1.0'},
+        ).timeout(const Duration(seconds: 5));
+        
+        if (testResponse.statusCode >= 200 && testResponse.statusCode < 400) {
+          debugPrint('✅ HTTP連接測試成功 (狀態碼: ${testResponse.statusCode})');
+          // 如果網路恢復，重置離線模式
+          if (_offlineMode) {
+            debugPrint('🔄 網路已恢復，重置離線模式');
+            _offlineMode = false;
+          }
+          return true;
+        } else {
+          debugPrint('⚠️ HTTP連接測試返回異常狀態碼: ${testResponse.statusCode}');
+          _offlineMode = true;
+          return false;
+        }
+      } catch (httpError) {
+        debugPrint('❌ HTTP連接測試失敗: $httpError');
+        _offlineMode = true;
+        return false;
+      }
+      
     } on SocketException catch (e) {
       debugPrint('🚫 網路連接檢查失敗 (SocketException): ${e.message}');
       if (e.message.contains('Failed host lookup')) {
         debugPrint('📡 DNS解析失敗，網路可能不可用');
       }
       // 🚀 設置離線模式，避免後續不必要的網路嘗試
-      _offlineMode = true;
+      if (!_offlineMode) {
+        debugPrint('🔄 切換到離線模式');
+        _offlineMode = true;
+      }
     } on TimeoutException catch (e) {
       debugPrint('⏰ 網路連接檢查超時: ${e.message}');
       // 🚀 超時也設置為離線模式
-      _offlineMode = true;
+      if (!_offlineMode) {
+        debugPrint('🔄 網路檢查超時，切換到離線模式');
+        _offlineMode = true;
+      }
     } catch (e) {
       debugPrint('❌ 網路連接檢查異常: $e');
       // 🚀 任何其他錯誤也設置為離線模式
-      _offlineMode = true;
+      if (!_offlineMode) {
+        debugPrint('🔄 網路檢查異常，切換到離線模式');
+        _offlineMode = true;
+      }
     }
     
-    debugPrint('📡 網路連接不可用，啟用離線模式');
+    debugPrint('📡 網路連接不可用，使用離線模式');
     return false;
   }
 
