@@ -580,7 +580,8 @@ class DailyQuoteService {
           debugPrint('   2. Android INTERNET 權限未授予');
           debugPrint('   3. iOS 網路權限被阻止');
           debugPrint('   4. 防火牆或代理問題');
-          throw TimeoutException('Request timeout - 可能是權限問題', const Duration(seconds: 10));
+          debugPrint('🔄 [處理] 自動切換到離線模式，使用本地金句');
+          throw TimeoutException('Request timeout - 切換到離線模式', const Duration(seconds: 10));
         },
       );
 
