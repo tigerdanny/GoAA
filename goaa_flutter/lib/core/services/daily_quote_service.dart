@@ -104,32 +104,77 @@ class DailyQuoteService {
     });
   }
 
-  /// 從網路獲取金句（簡化版）
-  Future<DailyQuote?> _fetchQuoteFromNetwork() {
-    const apiUrl = 'https://api.quotable.io/random?minLength=30&maxLength=120';
-    debugPrint('🌐 開始網路請求: $apiUrl');
-    
-    return http.get(
-      Uri.parse(apiUrl),
-      headers: {'Accept': 'application/json'},
-    ).timeout(const Duration(seconds: 10))
-    .then((response) {
-      debugPrint('📡 網路回應狀態: ${response.statusCode}');
-      
-      if (response.statusCode == 200) {
-        debugPrint('✅ 網路請求成功，解析回應內容...');
-        final data = json.decode(response.body);
-        final englishContent = data['content'] as String;
-        final author = data['author'] as String;
+  /// 從網路獲取金句（改進版，使用多個API備份）
+  Future<DailyQuote?> _fetchQuoteFromNetwork() async {
+    // API列表，按優先順序排列（ZenQuotes優先，因為Quotable證書有問題）
+    final apiEndpoints = [
+      {
+        'url': 'https://zenquotes.io/api/random',
+        'parser': _parseZenQuotesResponse,
+        'name': 'ZenQuotes'
+      },
+      // Quotable API暫時停用，因為SSL證書過期
+      // {
+      //   'url': 'https://api.quotable.io/random?minLength=30&maxLength=120',
+      //   'parser': _parseQuotableResponse,
+      //   'name': 'Quotable'
+      // },
+    ];
 
-        debugPrint('📝 原始英文金句: $englishContent');
+    // 嘗試每個API
+    for (final api in apiEndpoints) {
+      try {
+        debugPrint('🌐 嘗試 ${api['name']}: ${api['url']}');
+        
+        final response = await http.get(
+          Uri.parse(api['url'] as String),
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'GoAA Flutter App/1.0',
+          },
+        ).timeout(const Duration(seconds: 8));
+
+        debugPrint('📡 ${api['name']} 回應狀態: ${response.statusCode}');
+
+        if (response.statusCode == 200) {
+          debugPrint('✅ ${api['name']} 請求成功，解析回應內容...');
+          
+          final parser = api['parser'] as DailyQuote? Function(String);
+          final quote = parser(response.body);
+          
+          if (quote != null) {
+            debugPrint('🎉 成功從 ${api['name']} 獲取金句！');
+            return quote;
+          }
+        } else {
+          debugPrint('❌ ${api['name']} 請求失敗，狀態碼: ${response.statusCode}');
+        }
+      } catch (e) {
+        debugPrint('❌ ${api['name']} 請求異常: $e');
+        continue; // 嘗試下一個API
+      }
+    }
+
+    debugPrint('❌ 所有API都失敗，返回null');
+    return null;
+  }
+
+  /// 解析ZenQuotes API回應
+  DailyQuote? _parseZenQuotesResponse(String responseBody) {
+    try {
+      final List<dynamic> data = json.decode(responseBody);
+      if (data.isNotEmpty) {
+        final quote = data[0];
+        final englishContent = quote['q'] as String;
+        final author = quote['a'] as String;
+
+        debugPrint('📝 ZenQuotes英文金句: $englishContent');
         debugPrint('✍️  作者: $author');
 
-        // 獲取繁體中文翻譯（同步版本）
         final chineseContent = _getChineseTranslationSync(englishContent);
         debugPrint('🈳 產生中文版本: $chineseContent');
 
-        final networkQuote = DailyQuote(
+        return DailyQuote(
           id: 0,
           contentZh: chineseContent,
           contentEn: englishContent,
@@ -137,23 +182,38 @@ class DailyQuoteService {
           category: 'network',
           createdAt: DateTime.now(),
         );
-        
-        debugPrint('🎉 網路金句建立成功！');
-        return networkQuote;
-      } else {
-        debugPrint('❌ 網路請求失敗，狀態碼: ${response.statusCode}');
-        debugPrint('📄 回應內容: ${response.body}');
-        return null;
       }
-    }).catchError((e) {
-      debugPrint('❌ 網路請求異常: $e');
-      if (e.toString().contains('TimeoutException')) {
-        debugPrint('⏰ 請求超時，可能是網路連線問題');
-      } else if (e.toString().contains('SocketException')) {
-        debugPrint('🔌 網路連線失敗，請檢查網路狀態');
-      }
-      return null;
-    });
+    } catch (e) {
+      debugPrint('❌ 解析ZenQuotes回應失敗: $e');
+    }
+    return null;
+  }
+
+  /// 解析Quotable API回應
+  DailyQuote? _parseQuotableResponse(String responseBody) {
+    try {
+      final data = json.decode(responseBody);
+      final englishContent = data['content'] as String;
+      final author = data['author'] as String;
+
+      debugPrint('📝 Quotable英文金句: $englishContent');
+      debugPrint('✍️  作者: $author');
+
+      final chineseContent = _getChineseTranslationSync(englishContent);
+      debugPrint('🈳 產生中文版本: $chineseContent');
+
+      return DailyQuote(
+        id: 0,
+        contentZh: chineseContent,
+        contentEn: englishContent,
+        author: author,
+        category: 'network',
+        createdAt: DateTime.now(),
+      );
+    } catch (e) {
+      debugPrint('❌ 解析Quotable回應失敗: $e');
+    }
+    return null;
   }
 
   /// 獲取繁體中文翻譯（同步版本，使用預設繁體中文金句庫）
