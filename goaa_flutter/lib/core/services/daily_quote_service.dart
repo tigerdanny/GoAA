@@ -194,32 +194,7 @@ class DailyQuoteService {
     return null;
   }
 
-  /// 解析Quotable API回應
-  DailyQuote? _parseQuotableResponse(String responseBody) {
-    try {
-      final data = json.decode(responseBody);
-      final englishContent = data['content'] as String;
-      final author = data['author'] as String;
 
-      debugPrint('📝 Quotable英文金句: $englishContent');
-      debugPrint('✍️  作者: $author');
-
-      final chineseContent = _getChineseTranslationSync(englishContent);
-      debugPrint('🈳 產生中文版本: $chineseContent');
-
-      return DailyQuote(
-        id: 0,
-        contentZh: chineseContent,
-        contentEn: englishContent,
-        author: author,
-        category: 'network',
-        createdAt: DateTime.now(),
-      );
-    } catch (e) {
-      debugPrint('❌ 解析Quotable回應失敗: $e');
-    }
-    return null;
-  }
 
   /// 獲取繁體中文翻譯（同步版本，使用預設繁體中文金句庫）
   String _getChineseTranslationSync(String englishContent) {
