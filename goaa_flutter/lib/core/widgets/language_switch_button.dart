@@ -136,7 +136,7 @@ class LanguageSelectorSheet extends StatelessWidget {
               _buildLanguageOption(
                 context: context,
                 languageService: languageService,
-                locale: const Locale('zh'),
+                locale: const Locale('zh', 'TW'),
                 title: l10n?.languageTraditionalChinese ?? '繁體中文',
                 isSelected: languageService.isTraditionalChinese,
               ),
@@ -286,7 +286,7 @@ class CompactLanguageSwitchButton extends StatelessWidget {
     HapticFeedback.lightImpact();
     final newLocale = languageService.isTraditionalChinese 
         ? const Locale('en') 
-        : const Locale('zh');
+        : const Locale('zh', 'TW');
     languageService.changeLanguage(newLocale);
   }
 } 

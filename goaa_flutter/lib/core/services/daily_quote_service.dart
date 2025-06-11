@@ -17,7 +17,7 @@ Map<String, String>? _parseZenQuotesInBackground(String responseBody) {
       final englishContent = quote['q'] as String;
       final author = quote['a'] as String;
       
-      // 🚀 使用簡化的中文翻譯
+      // 🚀 使用繁體中文翻譯
       const simpleTranslations = [
         '成功來自堅持不懈的努力。',
         '相信自己，你能做到。', 
@@ -133,6 +133,9 @@ class DailyQuoteService {
     // 🚀 第二階段：背景預載入網路內容（可以失敗）
     _preloadNetworkContentInBackground();
     
+    // 🚀 第三階段：背景清理簡體中文（可以失敗）
+    _cleanupSimplifiedChineseInBackground();
+    
     debugPrint('✅ 每日金句服務初始化完成');
   }
 
@@ -166,6 +169,154 @@ class DailyQuoteService {
       debugPrint('🌐 背景預載入網路內容失敗: $e');
       debugPrint('💡 這不會影響應用正常運行');
     });
+  }
+
+  /// 🚀 新增：背景清理簡體中文（不阻塞主初始化）
+  void _cleanupSimplifiedChineseInBackground() {
+    // 🚀 在背景執行簡體中文清理
+    _cleanupSimplifiedChinese().catchError((e) {
+      debugPrint('🧹 背景清理簡體中文失敗: $e');
+      debugPrint('💡 這不會影響應用正常運行');
+    });
+  }
+
+  /// 🚀 新增：清理簡體中文金句
+  Future<void> _cleanupSimplifiedChinese() async {
+    try {
+      debugPrint('🧹 開始檢查並清理簡體中文金句...');
+      
+      final allQuotes = await _database.select(_database.dailyQuotes).get();
+      int updatedCount = 0;
+      
+      for (final quote in allQuotes) {
+        final convertedContent = _convertSimplifiedToTraditional(quote.contentZh);
+        
+        if (convertedContent != quote.contentZh) {
+          await (_database.update(_database.dailyQuotes)
+            ..where((tbl) => tbl.id.equals(quote.id)))
+            .write(DailyQuotesCompanion(
+              contentZh: Value(convertedContent),
+            ));
+          
+          updatedCount++;
+          debugPrint('✏️ 已更新: ${quote.contentZh} → $convertedContent');
+        }
+      }
+      
+      if (updatedCount > 0) {
+        debugPrint('✅ 清理完成: 更新了 $updatedCount 條簡體中文金句');
+      } else {
+        debugPrint('✅ 檢查完成: 沒有發現簡體中文內容');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ 清理簡體中文失敗: $e');
+    }
+  }
+
+  /// 🚀 新增：簡體轉繁體字典
+  String _convertSimplifiedToTraditional(String text) {
+    final conversionMap = <String, String>{
+      // 基本字體轉換
+      '来': '來',
+      '会': '會', 
+      '难': '難',
+      '过': '過',
+      '强': '強',
+      '坚': '堅',
+      '现': '現',
+      '时': '時',
+      '间': '間',
+      '对': '對',
+      '应': '應',
+      '业': '業',
+      '产': '產',
+      '样': '樣',
+      '这': '這',
+      '学': '學',
+      '习': '習',
+      '认': '認',
+      '识': '識',
+      '问': '問',
+      '题': '題',
+      '经': '經',
+      '历': '歷',
+      '压': '壓',
+      '达': '達',
+      '选': '選',
+      '择': '擇',
+      '钱': '錢',
+      '买': '買',
+      '卖': '賣',
+      '价': '價',
+      '错': '錯',
+      '须': '須',
+      '决': '決',
+      '确': '確',
+      '计': '計',
+      '规': '規',
+      '则': '則',
+      '质': '質',
+      '级': '級',
+      '别': '別',
+      '类': '類',
+      '种': '種',
+      '状': '狀',
+      '况': '況',
+      '条': '條',
+      '项': '項',
+      '标': '標',
+      '准': '準',
+      '备': '備',
+      '预': '預',
+      '号': '號',
+      '码': '碼',
+      '导': '導',
+      '领': '領',
+      '带': '帶',
+      '头': '頭',
+      '终': '終',
+      '结': '結',
+      '毕': '畢',
+      '败': '敗',
+      '胜': '勝',
+      '负': '負',
+      '赢': '贏',
+      '输': '輸',
+      '归': '歸',
+      '复': '復',
+      '极': '極',
+      '个': '個',
+      '气': '氣',
+      '灵': '靈',
+      '脑': '腦',
+      '脸': '臉',
+      '颜': '顏',
+      '齿': '齒',
+      // 額外的轉換（避免重複）
+      '发1': '發', // 發展的發
+      '发2': '髮', // 頭髮的髮  
+      '设1': '設', // 設置的設
+      '设2': '設', // 建設的設（同一個字）
+    };
+    
+    String result = text;
+    
+    // 特殊處理：發字的多種用法
+    result = result.replaceAll('发展', '發展');
+    result = result.replaceAll('发生', '發生'); 
+    result = result.replaceAll('发现', '發現');
+    result = result.replaceAll('头发', '頭髮');
+    result = result.replaceAll('发型', '髮型');
+    
+    // 應用基本轉換
+    conversionMap.forEach((simplified, traditional) {
+      if (!simplified.contains('1') && !simplified.contains('2')) {
+        result = result.replaceAll(simplified, traditional);
+      }
+    });
+    
+    return result;
   }
 
   /// 🚀 新增：確保預設金句可用的備用方法

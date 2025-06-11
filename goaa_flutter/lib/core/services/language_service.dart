@@ -14,12 +14,12 @@ class LanguageService extends ChangeNotifier {
   
   /// 支援的語言列表
   static const List<Locale> supportedLocales = [
-    Locale('zh'), // 繁體中文
+    Locale('zh', 'TW'), // 繁體中文 (台灣)
     Locale('en'), // 英文
   ];
   
   /// 目前語言
-  Locale _currentLocale = const Locale('zh'); // 預設繁體中文
+  Locale _currentLocale = const Locale('zh', 'TW'); // 預設繁體中文(台灣)
   
   /// 獲取目前語言
   Locale get currentLocale => _currentLocale;
@@ -43,8 +43,8 @@ class LanguageService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ 初始化語言服務失敗: $e');
-      // 使用預設語言
-      _currentLocale = const Locale('zh');
+              // 使用預設語言
+        _currentLocale = const Locale('zh', 'TW');
       notifyListeners();
     }
   }
@@ -69,7 +69,7 @@ class LanguageService extends ChangeNotifier {
   
     /// 切換到繁體中文（簡化版）
   Future<void> switchToTraditionalChinese() {
-    return changeLanguage(const Locale('zh'));
+    return changeLanguage(const Locale('zh', 'TW'));
   }
 
   /// 切換到英文（簡化版）
