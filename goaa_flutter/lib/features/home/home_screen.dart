@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen>
       );
       _animationController.forward();
     } else {
-      _homeController.loadData();
+      _homeController.loadDataAsync();
     }
     
     _homeController.addListener(() {

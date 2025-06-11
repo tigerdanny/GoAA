@@ -24,9 +24,10 @@ class LanguageService extends ChangeNotifier {
   /// 獲取目前語言
   Locale get currentLocale => _currentLocale;
   
-  /// 初始化語言服務（簡化版）
-  void initialize() {
-    _storage.read(key: _languageKey).then((savedLanguage) {
+  /// 🚀 初始化語言服務（重新設計使用 async/await）
+  Future<void> initializeAsync() async {
+    try {
+      final savedLanguage = await _storage.read(key: _languageKey);
       if (savedLanguage != null) {
         final locale = Locale(savedLanguage);
         if (supportedLocales.contains(locale)) {
@@ -40,25 +41,30 @@ class LanguageService extends ChangeNotifier {
         }
       }
       notifyListeners();
-    }).catchError((e) {
-      debugPrint('初始化語言服務失敗: $e');
+    } catch (e) {
+      debugPrint('❌ 初始化語言服務失敗: $e');
       // 使用預設語言
       _currentLocale = const Locale('zh');
       notifyListeners();
-    });
+    }
+  }
+
+  /// 🚀 保留同步版本以兼容性
+  void initialize() {
+    initializeAsync();
   }
   
-  /// 切換語言（簡化版）
-  Future<void> changeLanguage(Locale locale) {
+  /// 🚀 切換語言（重新設計使用 async/await）
+  Future<void> changeLanguage(Locale locale) async {
     if (supportedLocales.contains(locale) && _currentLocale != locale) {
       _currentLocale = locale;
       notifyListeners();
-      return _storage.write(key: _languageKey, value: locale.languageCode)
-          .catchError((e) {
-        debugPrint('保存語言設置失敗: $e');
-      });
+      try {
+        await _storage.write(key: _languageKey, value: locale.languageCode);
+      } catch (e) {
+        debugPrint('❌ 保存語言設置失敗: $e');
+      }
     }
-    return Future.value();
   }
   
     /// 切換到繁體中文（簡化版）

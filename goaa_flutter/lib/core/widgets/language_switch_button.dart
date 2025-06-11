@@ -171,16 +171,16 @@ class LanguageSelectorSheet extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           HapticFeedback.lightImpact();
-          languageService.changeLanguage(locale).then((_) {
+          try {
+            await languageService.changeLanguage(locale);
             if (context.mounted) {
               Navigator.pop(context);
             }
-          }).catchError((e) {
-            debugPrint('語言切換失敗: $e');
-            return null;
-          });
+          } catch (e) {
+            debugPrint('❌ 語言切換失敗: $e');
+          }
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(

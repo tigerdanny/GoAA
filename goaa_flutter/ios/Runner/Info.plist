@@ -45,7 +45,28 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
-		<key>UIStatusBarHidden</key>
-		<false/>
+			<key>UIStatusBarHidden</key>
+	<false/>
+	<!-- 🚀 添加網路權限配置 -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>zenquotes.io</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<false/>
+			</dict>
+		</dict>
 	</dict>
+	<!-- 🚀 網路使用說明 -->
+	<key>NSNetworkUsageDescription</key>
+	<string>GOAA 需要網路權限來獲取每日勵志金句和更新內容</string>
+</dict>
 </plist>

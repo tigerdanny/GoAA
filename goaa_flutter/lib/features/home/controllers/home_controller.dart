@@ -42,90 +42,139 @@ class HomeController extends ChangeNotifier {
     
     _isLoading = false;
     notifyListeners();
+    
+    // 🚀 異步載入每日金句和剩餘群組統計
+    _loadAdditionalDataAsync();
   }
 
-  /// 載入所有數據（完全簡化版，無await）
-  void loadData() {
+  /// 🚀 重新設計：完全使用 async/await 載入所有數據
+  Future<void> loadDataAsync() async {
     _isLoading = true;
     notifyListeners();
 
-    // 1. 順序載入用戶資料
-    _loadUserData();
-    
-    // 2. 如果有用戶，順序載入群組資料
-    if (_currentUser != null) {
-      _loadGroupData();
-    }
-    
-    // 3. 載入每日金句（簡化版）
-    _loadDailyQuote();
-    
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  /// 載入用戶資料（同步化）
-  void _loadUserData() {
     try {
-      // 使用同步方式，避免await
-      _userRepository.getCurrentUser().then((user) {
-        _currentUser = user;
-        if (user == null) {
-          debugPrint('未找到用戶，使用預設資料');
-        }
-      }).catchError((e) {
-        debugPrint('載入用戶失敗: $e');
-      });
+      // 1. 載入用戶資料
+      await _loadUserDataAsync();
+      
+      // 2. 如果有用戶，並行載入相關數據
+      if (_currentUser != null) {
+        await _loadAllRelatedDataAsync();
+      }
+      
+      // 3. 載入每日金句（不阻塞主流程）
+      _loadDailyQuoteAsync();
+      
     } catch (e) {
-      debugPrint('用戶資料載入錯誤: $e');
+      debugPrint('❌ 數據載入失敗: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  /// 載入群組資料（同步化）
-  void _loadGroupData() {
+  /// 🚀 新增：異步載入用戶資料
+  Future<void> _loadUserDataAsync() async {
+    try {
+      _currentUser = await _userRepository.getCurrentUser();
+      if (_currentUser == null) {
+        debugPrint('⚠️ 未找到用戶，使用預設資料');
+      }
+    } catch (e) {
+      debugPrint('❌ 載入用戶失敗: $e');
+    }
+  }
+
+  /// 🚀 新增：並行載入所有相關數據
+  Future<void> _loadAllRelatedDataAsync() async {
     if (_currentUser == null) return;
     
     try {
-      // 順序載入群組列表
-      _groupRepository.getUserGroups(_currentUser!.id).then((groups) {
-        _groups = groups;
-        
-        // 簡單的群組統計，不使用複雜的for await
-        for (final group in groups) {
-          _groupRepository.getGroupStats(group.id).then((stats) {
-            _groupStats[group.id] = stats;
-          });
-        }
-      });
+      // 🚀 並行任務：同時載入群組列表和用戶統計
+      final futures = await Future.wait([
+        _groupRepository.getUserGroups(_currentUser!.id),
+        _userRepository.getUserStats(_currentUser!.id),
+      ]);
       
-      // 載入用戶統計
-      _userRepository.getUserStats(_currentUser!.id).then((stats) {
-        _stats = stats;
-      });
+      // 處理結果
+      _groups = futures[0] as List<Group>;
+      _stats = futures[1] as Map<String, dynamic>;
+      
+      // 🚀 並行載入群組統計
+      if (_groups.isNotEmpty) {
+        await _loadAllGroupStatsAsync();
+      }
       
     } catch (e) {
-      debugPrint('群組資料載入錯誤: $e');
+      debugPrint('❌ 相關數據載入失敗: $e');
     }
   }
 
-  /// 載入每日金句（簡化版，無複雜非同步）
-  void _loadDailyQuote() {
+  /// 🚀 新增：並行載入所有群組統計
+  Future<void> _loadAllGroupStatsAsync() async {
     try {
-      // 使用簡單的 then 而不是 await，避免阻塞
-      DailyQuoteService().getDailyQuote().then((quote) {
-        _dailyQuote = quote;
-        debugPrint('✅ 每日金句載入: ${quote.contentZh}');
-        // 載入完成後通知UI更新
-        notifyListeners();
-      }).catchError((e) {
-        debugPrint('❌ 每日金句載入失敗: $e');
-        _dailyQuote = null;
-      });
+      final groupStatsFutures = _groups.map((group) => 
+        _loadSingleGroupStatsAsync(group.id)
+      );
+      
+      // 等待所有群組統計載入完成
+      await Future.wait(groupStatsFutures);
+      
     } catch (e) {
-      debugPrint('每日金句載入錯誤: $e');
+      debugPrint('❌ 群組統計載入失敗: $e');
+    }
+  }
+
+  /// 🚀 新增：載入單個群組統計的輔助方法
+  Future<void> _loadSingleGroupStatsAsync(int groupId) async {
+    try {
+      final stats = await _groupRepository.getGroupStats(groupId);
+      _groupStats[groupId] = stats;
+    } catch (e) {
+      debugPrint('⚠️ 群組 $groupId 統計載入失敗: $e');
+      _groupStats[groupId] = <String, dynamic>{};
+    }
+  }
+
+  /// 🚀 新增：異步載入每日金句（不阻塞主流程）
+  Future<void> _loadDailyQuoteAsync() async {
+    try {
+      _dailyQuote = await DailyQuoteService().getDailyQuote();
+      debugPrint('✅ 每日金句載入: ${_dailyQuote?.contentZh}');
+      notifyListeners(); // 金句載入完成後通知UI更新
+    } catch (e) {
+      debugPrint('❌ 每日金句載入失敗: $e');
       _dailyQuote = null;
     }
   }
 
+  /// 🚀 新增：載入額外數據（用於預載入模式）
+  Future<void> _loadAdditionalDataAsync() async {
+    // 並行載入每日金句和剩餘群組統計
+    final futures = <Future>[];
+    
+    // 任務1：載入每日金句
+    futures.add(_loadDailyQuoteAsync());
+    
+    // 任務2：載入剩餘群組統計（如果有的話）
+    final remainingGroups = _groups.where((group) => 
+      !_groupStats.containsKey(group.id)
+    ).toList();
+    
+    if (remainingGroups.isNotEmpty) {
+      final remainingStatsFutures = remainingGroups.map((group) => 
+        _loadSingleGroupStatsAsync(group.id)
+      );
+      futures.addAll(remainingStatsFutures);
+    }
+    
+    // 等待所有額外任務完成
+    await Future.wait(futures);
+    notifyListeners();
+  }
 
+  /// 🚀 保留舊方法以兼容性（標記為廢棄）
+  @Deprecated('使用 loadDataAsync() 替代')
+  void loadData() {
+    loadDataAsync();
+  }
 } 

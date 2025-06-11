@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 🚀 允許所有網路請求（包括HTTP） -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- 信任系統證書 -->
+            <certificates src="system"/>
+            <!-- 信任用戶添加的證書 -->
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+    
+    <!-- 🚀 特定域名配置 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">zenquotes.io</domain>
+        <domain includeSubdomains="true">api.zenquotes.io</domain>
+        <domain includeSubdomains="true">www.zenquotes.io</domain>
+        <domain includeSubdomains="true">8.8.8.8</domain>
+        <domain includeSubdomains="true">google.com</domain>
+    </domain-config>
+    
+    <!-- 🚀 允許調試配置 -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config> 

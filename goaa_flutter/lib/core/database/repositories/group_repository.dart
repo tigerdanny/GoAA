@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database.dart';
 import '../database_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// 群組資料存取層
 class GroupRepository {
@@ -16,13 +17,13 @@ class GroupRepository {
     return _db.groupQueries.getGroup(groupId);
   }
 
-  /// 創建群組（簡化版）
+  /// 🚀 創建群組（重新設計使用 async/await）
   Future<int> createGroup({
     required String name,
     String? description,
     required int createdBy,
     String currency = 'TWD',
-  }) {
+  }) async {
     final companion = GroupsCompanion.insert(
       name: name,
       description: Value(description),
@@ -30,19 +31,19 @@ class GroupRepository {
       currency: Value(currency),
     );
 
-    return _db.groupQueries.createGroup(companion).then((groupId) {
-      // 將創建者添加為群組管理員
-      return addGroupMember(groupId, createdBy, role: 'admin').then((_) => groupId);
-    });
+    final groupId = await _db.groupQueries.createGroup(companion);
+    // 將創建者添加為群組管理員
+    await addGroupMember(groupId, createdBy, role: 'admin');
+    return groupId;
   }
 
-  /// 更新群組資料（簡化版）
+  /// 🚀 更新群組資料（重新設計使用 async/await）
   Future<bool> updateGroup(int groupId, {
     String? name,
     String? description,
     String? currency,
     bool? isActive,
-  }) {
+  }) async {
     final companion = GroupsCompanion(
       id: Value(groupId),
       name: name != null ? Value(name) : const Value.absent(),
@@ -52,10 +53,10 @@ class GroupRepository {
       updatedAt: Value(DateTime.now()),
     );
 
-    return (_db.update(_db.groups)
+    final count = await (_db.update(_db.groups)
       ..where((g) => g.id.equals(groupId)))
-      .write(companion)
-      .then((count) => count > 0);
+      .write(companion);
+    return count > 0;
   }
 
   /// 獲取群組成員
@@ -100,40 +101,48 @@ class GroupRepository {
     return member != null;
   }
 
-  /// 獲取群組統計信息
+  /// 🚀 獲取群組統計信息（重新設計使用 async/await）
   Future<Map<String, dynamic>> getGroupStats(int groupId) async {
-    // 獲取成員數量
-    final memberCount = await (_db.select(_db.groupMembers)
-      ..where((gm) => gm.groupId.equals(groupId)))
-      .get()
-      .then((list) => list.length);
+    try {
+      // 🚀 並行獲取基本數據
+      final results = await Future.wait([
+        // 獲取成員數量
+        (_db.select(_db.groupMembers)
+          ..where((gm) => gm.groupId.equals(groupId)))
+          .get(),
+        // 獲取支出數據
+        (_db.select(_db.expenses)
+          ..where((e) => e.groupId.equals(groupId)))
+          .get(),
+      ]);
 
-    // 獲取支出數量
-    final expenseCount = await (_db.select(_db.expenses)
-      ..where((e) => e.groupId.equals(groupId)))
-      .get()
-      .then((list) => list.length);
+      final groupMembers = results[0] as List<GroupMember>;
+      final expenses = results[1] as List<Expense>;
 
-    // 獲取總支出金額
-    final expenses = await (_db.select(_db.expenses)
-      ..where((e) => e.groupId.equals(groupId)))
-      .get();
-    
-    final totalAmount = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+      final memberCount = groupMembers.length;
+      final expenseCount = expenses.length;
+      final totalAmount = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
 
-    // 獲取最近活動時間
-    final latestExpense = await (_db.select(_db.expenses)
-      ..where((e) => e.groupId.equals(groupId))
-      ..orderBy([(e) => OrderingTerm.desc(e.expenseDate)])
-      ..limit(1))
-      .getSingleOrNull();
+      // 獲取最近活動時間
+      final latestExpense = expenses.isNotEmpty
+          ? expenses.reduce((a, b) => a.expenseDate.isAfter(b.expenseDate) ? a : b)
+          : null;
 
-    return {
-      'memberCount': memberCount,
-      'expenseCount': expenseCount,
-      'totalAmount': totalAmount,
-      'lastActivity': latestExpense?.expenseDate,
-    };
+      return {
+        'memberCount': memberCount,
+        'expenseCount': expenseCount,
+        'totalAmount': totalAmount,
+        'lastActivity': latestExpense?.expenseDate,
+      };
+    } catch (e) {
+      debugPrint('❌ 獲取群組統計失敗: $e');
+      return {
+        'memberCount': 0,
+        'expenseCount': 0,
+        'totalAmount': 0.0,
+        'lastActivity': null,
+      };
+    }
   }
 
   /// 軟刪除群組

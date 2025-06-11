@@ -7,6 +7,10 @@ import 'database.dart';
 class DatabaseService {
   static DatabaseService? _instance;
   static AppDatabase? _database;
+  
+  // 🚀 優化：添加初始化狀態追蹤
+  static bool _isInitialized = false;
+  static bool _isInitializing = false;
 
   DatabaseService._internal();
 
@@ -21,10 +25,30 @@ class DatabaseService {
     _database ??= AppDatabase();
     return _database!;
   }
+  
+  /// 檢查是否已初始化
+  bool get isInitialized => _isInitialized;
 
   /// 初始化資料庫
   /// 創建初始用戶和示例數據
   Future<void> initialize() async {
+    // 🚀 優化：避免重複初始化
+    if (_isInitialized) {
+      debugPrint('✅ 資料庫已初始化，跳過重複初始化');
+      return;
+    }
+    
+    if (_isInitializing) {
+      debugPrint('⏳ 資料庫正在初始化中，等待完成...');
+      // 等待初始化完成
+      while (_isInitializing) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return;
+    }
+    
+    _isInitializing = true;
+    
     try {
       final db = database;
       
@@ -41,10 +65,13 @@ class DatabaseService {
         }
       }
       
-      debugPrint('資料庫初始化完成');
+      _isInitialized = true;
+      debugPrint('✅ 資料庫初始化完成');
     } catch (e) {
-      debugPrint('資料庫初始化失敗: $e');
+      debugPrint('❌ 資料庫初始化失敗: $e');
       rethrow;
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -152,22 +179,25 @@ class DatabaseService {
     _database = null;
   }
 
-  /// 獲取資料庫統計信息
+  /// 🚀 獲取資料庫統計信息（重新設計使用 async/await）
   Future<Map<String, int>> getDatabaseStats() async {
     final db = database;
     
     try {
-      final userCount = await (db.select(db.users)..limit(1000)).get().then((list) => list.length);
-      final groupCount = await (db.select(db.groups)..limit(1000)).get().then((list) => list.length);
-      final expenseCount = await (db.select(db.expenses)..limit(1000)).get().then((list) => list.length);
+      // 🚀 並行獲取所有統計數據
+      final results = await Future.wait([
+        (db.select(db.users)..limit(1000)).get(),
+        (db.select(db.groups)..limit(1000)).get(),
+        (db.select(db.expenses)..limit(1000)).get(),
+      ]);
       
       return {
-        'users': userCount,
-        'groups': groupCount,
-        'expenses': expenseCount,
+        'users': (results[0] as List).length,
+        'groups': (results[1] as List).length,
+        'expenses': (results[2] as List).length,
       };
     } catch (e) {
-      debugPrint('獲取資料庫統計失敗: $e');
+      debugPrint('❌ 獲取資料庫統計失敗: $e');
       return {};
     }
   }

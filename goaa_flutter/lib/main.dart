@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/daily_quote_service.dart';
+import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'dart:io';
@@ -13,46 +14,70 @@ import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'package:path_provider/path_provider.dart';
 
 void main() async {
+  // 🚀 性能監控：記錄應用啟動開始時間
+  PerformanceMonitor.recordTimestamp('應用啟動開始');
+  
   // 確保 Flutter 綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
+  PerformanceMonitor.recordTimestamp('Flutter綁定完成');
   
   // 修復 Android 相關問題
   await _fixMobileIssues();
+  PerformanceMonitor.recordTimestamp('Android修復完成');
   
-  // 順序初始化服務，保持正確的依賴關係
-  final languageService = LanguageService();
-  languageService.initialize();
-  debugPrint('✅ 語言服務初始化完成');
-  
-  // 先初始化資料庫，再初始化依賴資料庫的服務
-  DatabaseService.instance.initialize().then((_) {
+  // 🚀 優化：使用async/await確保正確的初始化順序
+  try {
+    // 1. 語言服務初始化（同步）
+    final languageService = LanguageService();
+    languageService.initialize();
+    debugPrint('✅ 語言服務初始化完成');
+    PerformanceMonitor.recordTimestamp('語言服務完成');
+    
+    // 2. 資料庫初始化（必須等待完成）
+    await DatabaseService.instance.initialize();
     debugPrint('✅ 資料庫初始化完成');
+    PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 資料庫初始化完成後，才初始化每日金句服務
-    DailyQuoteService().initialize();
+    // 3. 每日金句服務初始化（不阻塞啟動）
+    DailyQuoteService().initialize().catchError((e) {
+      debugPrint('⚠️ 每日金句初始化失敗: $e');
+    });
+    debugPrint('✅ 每日金句服務啟動中...');
     
-  }).catchError((e) {
-    debugPrint('❌ 資料庫初始化失敗: $e');
-  });
-  
-  // 設置系統UI樣式
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  
-  // 設置偏好的螢幕方向（僅豎屏）
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(GoAAApp(languageService: languageService));
+    // 設置系統UI樣式
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+    
+    // 設置偏好的螢幕方向（僅豎屏）
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    
+    PerformanceMonitor.recordTimestamp('系統設置完成');
+    
+    // 🚀 性能監控：計算各階段時間
+    PerformanceMonitor.recordDuration('總初始化時間', '應用啟動開始', '系統設置完成');
+    PerformanceMonitor.recordDuration('資料庫初始化時間', '語言服務完成', '資料庫初始化完成');
+    
+    runApp(GoAAApp(languageService: languageService));
+    
+  } catch (e, stackTrace) {
+    debugPrint('❌ 應用初始化失敗: $e');
+    debugPrint('📚 錯誤堆疊: $stackTrace');
+    
+    // 即使初始化失敗也要啟動應用
+    final languageService = LanguageService();
+    languageService.initialize();
+    runApp(GoAAApp(languageService: languageService));
+  }
 }
 
 /// 修復手機端問題

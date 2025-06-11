@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database.dart';
 import '../database_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// 用戶資料存取層
 class UserRepository {
@@ -60,12 +61,11 @@ class UserRepository {
     return _db.userQueries.insertOrUpdateUser(companion);
   }
 
-  /// 設置當前用戶（簡化版）
-  Future<void> setCurrentUser(int userId) {
+  /// 🚀 設置當前用戶（重新設計使用 async/await）
+  Future<void> setCurrentUser(int userId) async {
     // 先將所有用戶設為非當前用戶，然後設置指定用戶為當前用戶
-    return _db.userQueries.clearAllCurrentUserStatus().then((_) {
-      _db.userQueries.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
-    });
+    await _db.userQueries.clearAllCurrentUserStatus();
+    await _db.userQueries.updateUser(userId, const UsersCompanion(isCurrentUser: Value(true)));
   }
 
   /// 搜索用戶（通過名稱或用戶代碼）
@@ -89,9 +89,10 @@ class UserRepository {
     return (_db.delete(_db.users)..where((u) => u.id.equals(userId))).go();
   }
 
-  /// 檢查用戶代碼是否已存在（簡化版）
-  Future<bool> isUserCodeExists(String userCode) {
-    return findUserByCode(userCode).then((user) => user != null);
+  /// 🚀 檢查用戶代碼是否已存在（重新設計使用 async/await）
+  Future<bool> isUserCodeExists(String userCode) async {
+    final user = await findUserByCode(userCode);
+    return user != null;
   }
 
   /// 生成唯一用戶代碼（簡化版）
@@ -99,7 +100,7 @@ class UserRepository {
     return _generateCodeAttempt(0);
   }
 
-  Future<String> _generateCodeAttempt(int attempts) {
+  Future<String> _generateCodeAttempt(int attempts) async {
     const maxAttempts = 100;
     
     if (attempts >= maxAttempts) {
@@ -115,42 +116,49 @@ class UserRepository {
     final codeNumber = combinedNumber.toString().padLeft(6, '0');
     final userCode = 'GA$codeNumber';
     
-    return isUserCodeExists(userCode).then((exists) {
-      if (exists) {
-        return _generateCodeAttempt(attempts + 1);
-      } else {
-        return userCode;
-      }
-    });
+    final exists = await isUserCodeExists(userCode);
+    if (exists) {
+      return await _generateCodeAttempt(attempts + 1);
+    } else {
+      return userCode;
+    }
   }
 
-  /// 獲取用戶統計信息（簡化版）
-  Future<Map<String, dynamic>> getUserStats(int userId) {
-    // 獲取用戶參與的群組數量
-    final groupCountFuture = (_db.select(_db.groupMembers)
-      ..where((gm) => gm.userId.equals(userId)))
-      .get()
-      .then((list) => list.length);
+  /// 🚀 獲取用戶統計信息（重新設計使用 async/await）
+  Future<Map<String, dynamic>> getUserStats(int userId) async {
+    try {
+      // 🚀 並行獲取數據
+      final results = await Future.wait([
+        // 獲取用戶參與的群組數量
+        (_db.select(_db.groupMembers)
+          ..where((gm) => gm.userId.equals(userId)))
+          .get(),
+        // 獲取用戶的支出數據
+        (_db.select(_db.expenses)
+          ..where((e) => e.paidBy.equals(userId)))
+          .get(),
+      ]);
 
-    // 獲取用戶的支出統計
-    final expenseStatsFuture = (_db.select(_db.expenses)
-      ..where((e) => e.paidBy.equals(userId)))
-      .get()
-      .then((expenses) {
-        final expenseCount = expenses.length;
-        final totalPaid = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
-        return {'expenseCount': expenseCount, 'totalPaid': totalPaid};
-      });
+      final groupMembers = results[0] as List<GroupMember>;
+      final expenses = results[1] as List<Expense>;
 
-    return groupCountFuture.then((groupCount) {
-      return expenseStatsFuture.then((expenseStats) {
-        return {
-          'groupCount': groupCount,
-          'expenseCount': expenseStats['expenseCount'],
-          'totalPaid': expenseStats['totalPaid'],
-        };
-      });
-    });
+      final groupCount = groupMembers.length;
+      final expenseCount = expenses.length;
+      final totalPaid = expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+
+      return {
+        'groupCount': groupCount,
+        'expenseCount': expenseCount,
+        'totalPaid': totalPaid,
+      };
+    } catch (e) {
+      debugPrint('❌ 獲取用戶統計失敗: $e');
+      return {
+        'groupCount': 0,
+        'expenseCount': 0,
+        'totalPaid': 0.0,
+      };
+    }
   }
 } 
  

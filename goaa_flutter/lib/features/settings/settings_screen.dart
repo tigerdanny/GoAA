@@ -61,19 +61,20 @@ class _SettingsScreenState extends State<SettingsScreen>
     _animationController.forward();
   }
 
-  void _loadUserData() {
+  /// 🚀 載入用戶數據（重新設計使用 async/await）
+  Future<void> _loadUserData() async {
     setState(() => _isLoading = true);
-    _userRepository.getCurrentUser().then((user) {
-      _currentUser = user;
+    try {
+      _currentUser = await _userRepository.getCurrentUser();
       if (mounted) {
         setState(() => _isLoading = false);
       }
-    }).catchError((e) {
-      debugPrint('載入用戶資料失敗: $e');
+    } catch (e) {
+      debugPrint('❌ 載入用戶資料失敗: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
-    });
+    }
   }
 
   @override
