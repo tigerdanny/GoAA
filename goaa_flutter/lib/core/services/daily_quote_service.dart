@@ -12,7 +12,15 @@ class DailyQuoteService {
   factory DailyQuoteService() => _instance;
   DailyQuoteService._internal();
 
-  final Random _random = Random();
+  // 使用當前時間作為種子的隨機數生成器，確保真正的隨機性
+  final Random _random = Random(DateTime.now().millisecondsSinceEpoch);
+
+  /// 獲取基於當前時間微秒的隨機數生成器
+  Random _getTimeBasedRandom() {
+    final microseconds = DateTime.now().microsecondsSinceEpoch;
+    debugPrint('🎲 生成隨機種子: $microseconds');
+    return Random(microseconds);
+  }
 
   /// 預設的繁體中文金句（當無法上網且資料庫為空時使用）
   static const String defaultChineseQuote = '每一天都是新的開始，充滿無限可能。';
@@ -242,7 +250,12 @@ class DailyQuoteService {
       '時間是最公平的，給每個人都是二十四小時。',
     ];
     
-    return traditionalChineseQuotes[_random.nextInt(traditionalChineseQuotes.length)];
+    // 使用當前時間微秒作為種子，確保每次翻譯都是真正隨機的
+    final tempRandom = _getTimeBasedRandom();
+    final randomIndex = tempRandom.nextInt(traditionalChineseQuotes.length);
+    debugPrint('🎯 中文翻譯隨機索引: $randomIndex (總共 ${traditionalChineseQuotes.length} 條)');
+    
+    return traditionalChineseQuotes[randomIndex];
   }
 
   /// 保存金句到本地資料庫（簡化版）
@@ -292,16 +305,19 @@ class DailyQuoteService {
     });
   }
 
-  /// 從本地資料庫隨機獲取金句（簡化版）
+  /// 從本地資料庫隨機獲取金句（時間種子版）
   Future<DailyQuote> _getRandomQuoteFromLocal() {
     debugPrint('📚 從資料庫查詢金句...');
     return _database.select(_database.dailyQuotes).get().then((quotes) {
       debugPrint('📊 資料庫中共有 ${quotes.length} 條金句');
       
       if (quotes.isNotEmpty) {
-        final randomIndex = _random.nextInt(quotes.length);
+        // 使用當前時間微秒作為新的隨機種子，確保真正的隨機性
+        final timeBasedRandom = _getTimeBasedRandom();
+        final randomIndex = timeBasedRandom.nextInt(quotes.length);
         final randomQuote = quotes[randomIndex];
-        debugPrint('🎲 隨機選擇第 ${randomIndex + 1} 條金句');
+        
+        debugPrint('🎯 隨機選擇第 ${randomIndex + 1} 條金句 (共 ${quotes.length} 條)');
         debugPrint('📝 選中的金句: ${randomQuote.contentZh}');
         debugPrint('🏷️  分類: ${randomQuote.category}');
         debugPrint('⏰ 創建時間: ${randomQuote.createdAt.toString().substring(0, 19)}');
