@@ -29,14 +29,16 @@ class DailyQuoteService {
   /// 獲取資料庫實例（直接使用已初始化的資料庫）
   AppDatabase get _database => DatabaseService.instance.database;
 
-  /// 初始化服務（簡化版，無需重複初始化資料庫）
-  void initialize() {
-    // 使用簡單的 then 而不是 await，保持一致性
-    _initializeDefaultQuotes().then((_) {
+  /// 初始化服務（修正版，避免回調阻塞）
+  Future<void> initialize() async {
+    try {
+      debugPrint('🚀 開始初始化DailyQuoteService...');
+      await _initializeDefaultQuotes();
       debugPrint('✅ 預設金句初始化完成');
-    }).catchError((e) {
+    } catch (e) {
       debugPrint('⚠️ 預設金句初始化失敗: $e');
-    });
+      // 即使失敗也不阻塞，服務仍可正常運行
+    }
   }
 
   /// 獲取每日金句（完全簡化版，無await）
@@ -318,10 +320,18 @@ class DailyQuoteService {
     );
   }
 
-  /// 初始化預設金句庫（簡化版）
-  Future<void> _initializeDefaultQuotes() {
-    return _database.select(_database.dailyQuotes).get().then((existingQuotes) {
-      if (existingQuotes.isNotEmpty) return;
+  /// 初始化預設金句庫（修正版，避免並發問題）
+  Future<void> _initializeDefaultQuotes() async {
+    try {
+      debugPrint('📚 檢查預設金句庫...');
+      final existingQuotes = await _database.select(_database.dailyQuotes).get();
+      
+      if (existingQuotes.isNotEmpty) {
+        debugPrint('📊 資料庫已有 ${existingQuotes.length} 條金句，跳過初始化');
+        return;
+      }
+
+      debugPrint('🔄 開始初始化預設金句庫...');
 
       // 預設繁體中文金句庫
       final defaultQuotes = [
@@ -386,7 +396,7 @@ class DailyQuoteService {
           'author': 'Mark Twain',
         },
         {
-          'zh': '智慧不在於知道答案，而在於問對問題。',
+          'zh': '智慧不在於知道答案，而是問對問題。',
           'en': 'Wisdom is not about knowing the answers, but asking the right questions.',
           'author': 'Unknown',
         },
@@ -402,22 +412,27 @@ class DailyQuoteService {
         },
       ];
 
-      // 簡化：順序插入預設金句，不使用await
-      for (final quote in defaultQuotes) {
-        _database.into(_database.dailyQuotes).insert(
-          DailyQuotesCompanion(
-            contentZh: Value(quote['zh']!),
-            contentEn: Value(quote['en']!),
-            author: Value(quote['author']!),
-            category: const Value('preset'),
-          ),
-        );
-      }
+      // 使用批量操作，避免並發問題
+      await _database.batch((batch) {
+        for (final quote in defaultQuotes) {
+          batch.insert(
+            _database.dailyQuotes,
+            DailyQuotesCompanion(
+              contentZh: Value(quote['zh']!),
+              contentEn: Value(quote['en']!),
+              author: Value(quote['author']!),
+              category: const Value('preset'),
+              createdAt: Value(DateTime.now()),
+            ),
+          );
+        }
+      });
 
-      debugPrint('📚 預設繁體中文金句庫初始化完成，共 ${defaultQuotes.length} 條金句');
-    }).catchError((e) {
-      debugPrint('初始化預設金句庫失敗: $e');
-    });
+      debugPrint('✅ 預設金句庫初始化完成，共 ${defaultQuotes.length} 條金句');
+    } catch (e) {
+      debugPrint('❌ 初始化預設金句庫失敗: $e');
+      rethrow; // 重新拋出異常，讓上層處理
+    }
   }
 
   /// 獲取指定語言的金句內容
