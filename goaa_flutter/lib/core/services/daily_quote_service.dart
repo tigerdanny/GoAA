@@ -12,10 +12,7 @@ class DailyQuoteService {
   factory DailyQuoteService() => _instance;
   DailyQuoteService._internal();
 
-  // 使用當前時間作為種子的隨機數生成器，確保真正的隨機性
-  final Random _random = Random(DateTime.now().millisecondsSinceEpoch);
-
-  /// 獲取基於當前時間微秒的隨機數生成器
+  /// 獲取基於當前時間微秒的隨機數生成器，確保真正的隨機性
   Random _getTimeBasedRandom() {
     final microseconds = DateTime.now().microsecondsSinceEpoch;
     debugPrint('🎲 生成隨機種子: $microseconds');
