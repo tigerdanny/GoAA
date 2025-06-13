@@ -31,7 +31,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         foregroundColor: AppColors.textPrimary,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
         ),
       ),
       body: SafeArea(
@@ -282,7 +282,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 color: AppColors.textTertiary,
                 size: 16,
@@ -305,7 +305,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('了解', style: TextStyle(color: AppColors.primary)),
+            child: const Text('了解', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -323,7 +323,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('了解', style: TextStyle(color: AppColors.primary)),
+            child: const Text('了解', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -336,12 +336,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('清除所有數據', style: TextStyle(color: AppColors.error)),
+        title: const Text('清除所有數據', style: TextStyle(color: AppColors.error)),
         content: const Text('此操作將永久刪除所有帳務記錄，且無法恢復。確定要繼續嗎？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
@@ -349,7 +349,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               // 实际清除数据的逻辑
               _clearAllData();
             },
-            child: Text('確定清除', style: TextStyle(color: AppColors.error)),
+            child: const Text('確定清除', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -359,8 +359,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   void _clearAllData() {
     HapticFeedback.heavyImpact();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('此功能將在未來版本中實現'),
+      const SnackBar(
+        content: Text('此功能將在未來版本中實現'),
         backgroundColor: AppColors.info,
       ),
     );

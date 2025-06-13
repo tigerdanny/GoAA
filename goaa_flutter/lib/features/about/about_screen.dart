@@ -20,7 +20,7 @@ class AboutScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimary,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
         ),
       ),
       body: SafeArea(
@@ -235,7 +235,7 @@ class AboutScreen extends StatelessWidget {
                 onPressed: () => _showPrivacyPolicy(context),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
+                  side: const BorderSide(color: AppColors.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -251,7 +251,7 @@ class AboutScreen extends StatelessWidget {
                 onPressed: () => _showTermsOfService(context),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: BorderSide(color: AppColors.primary),
+                  side: const BorderSide(color: AppColors.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -291,7 +291,7 @@ class AboutScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('了解', style: TextStyle(color: AppColors.primary)),
+            child: const Text('了解', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -317,7 +317,7 @@ class AboutScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('同意', style: TextStyle(color: AppColors.primary)),
+            child: const Text('同意', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),

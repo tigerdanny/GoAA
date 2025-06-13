@@ -16,15 +16,15 @@ class DeleteConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
       title: const Text('確認刪除'),
       content: Text('確定要刪除好友「${friend['name']}」嗎？'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
         ),
         ElevatedButton(
           onPressed: () {
@@ -33,8 +33,8 @@ class DeleteConfirmDialog extends StatelessWidget {
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.error,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
           ),
           child: const Text('刪除', style: TextStyle(color: Colors.white)),

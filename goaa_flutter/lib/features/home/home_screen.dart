@@ -110,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen>
                   onMenuTap: () => _openDrawer(),
                   onShowQRCode: () => _showQRCode(),
                   onScanQRCode: () => _scanQRCode(),
+                  languageCode: 'zh',
                 ),
                 HomeStats(stats: _homeController.stats),
                 SectionTitle(title: l10n?.myGroups ?? '我的群組'),

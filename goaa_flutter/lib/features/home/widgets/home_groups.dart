@@ -21,7 +21,7 @@ class HomeGroups extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.group_outlined,
                 size: 64,
                 color: AppColors.textTertiary,
@@ -47,13 +47,13 @@ class HomeGroups extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Card(
               child: ListTile(
-                leading: CircleAvatar(
+                leading: const CircleAvatar(
                   backgroundColor: AppColors.primary,
-                  child: const Icon(Icons.group, color: Colors.white),
+                  child: Icon(Icons.group, color: Colors.white),
                 ),
                 title: Text(group.name),
                 subtitle: Text(group.description ?? ''),
-                trailing: Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                 onTap: () => onGroupTap(group),
               ),
             ),

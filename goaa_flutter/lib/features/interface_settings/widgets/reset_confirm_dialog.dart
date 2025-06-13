@@ -16,12 +16,12 @@ class ResetConfirmDialog extends StatelessWidget {
     return AlertDialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('重置介面設定', style: TextStyle(color: AppColors.warning)),
+      title: const Text('重置介面設定', style: TextStyle(color: AppColors.warning)),
       content: const Text('此操作將恢復所有介面設定為預設值。確定要繼續嗎？'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
         ),
         TextButton(
           onPressed: () {
@@ -29,7 +29,7 @@ class ResetConfirmDialog extends StatelessWidget {
             HapticFeedback.heavyImpact();
             onConfirm();
           },
-          child: Text('重置', style: TextStyle(color: AppColors.warning)),
+          child: const Text('重置', style: TextStyle(color: AppColors.warning)),
         ),
       ],
     );

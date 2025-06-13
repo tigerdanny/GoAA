@@ -37,7 +37,7 @@ class AddFriendDialog extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              prefixIcon: Icon(Icons.tag, color: AppColors.primary),
+              prefixIcon: const Icon(Icons.tag, color: AppColors.primary),
             ),
           ),
         ],
@@ -45,7 +45,7 @@ class AddFriendDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+          child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
         ),
         ElevatedButton(
           onPressed: () {

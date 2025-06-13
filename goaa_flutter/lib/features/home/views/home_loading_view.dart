@@ -39,7 +39,7 @@ class HomeLoadingView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
-            SizedBox(
+            const SizedBox(
               width: 32,
               height: 32,
               child: CircularProgressIndicator(

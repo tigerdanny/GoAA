@@ -58,7 +58,7 @@ class DrawerUserCodeRow extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
+        child: const Icon(
           Icons.qr_code,
           size: 20,
           color: AppColors.primary,
@@ -82,7 +82,7 @@ class DrawerUserCodeRow extends StatelessWidget {
           color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(
+        child: const Icon(
           LucideIcons.scan,
           size: 20,
           color: AppColors.primary,

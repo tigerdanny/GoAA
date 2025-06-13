@@ -24,7 +24,7 @@ class AppInfoDialog extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: AppColors.primaryGradient,
             ),
@@ -89,7 +89,7 @@ class AppInfoDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(
             l10n?.cancel ?? '取消',
-            style: TextStyle(color: AppColors.primary),
+            style: const TextStyle(color: AppColors.primary),
           ),
         ),
         ElevatedButton(
@@ -211,7 +211,7 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
         if (isClickable && onTap != null)
-          Icon(
+          const Icon(
             Icons.open_in_new,
             size: 16,
             color: AppColors.primary,

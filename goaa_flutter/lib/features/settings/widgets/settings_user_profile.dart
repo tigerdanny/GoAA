@@ -137,7 +137,7 @@ class SettingsUserProfile extends StatelessWidget {
           ),
           child: IconButton(
             onPressed: onEditProfile,
-            icon: Icon(
+            icon: const Icon(
               Icons.edit_outlined,
               color: AppColors.primary,
               size: 20,

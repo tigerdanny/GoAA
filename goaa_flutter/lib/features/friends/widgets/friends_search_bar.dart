@@ -35,8 +35,8 @@ class FriendsSearchBar extends StatelessWidget {
         ),
         decoration: InputDecoration(
           hintText: '搜索好友姓名或代碼...',
-          hintStyle: TextStyle(color: AppColors.textSecondary),
-          prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
+          hintStyle: const TextStyle(color: AppColors.textSecondary),
+          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,

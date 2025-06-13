@@ -92,8 +92,8 @@ class _InterfaceSettingsScreenState extends State<InterfaceSettingsScreen> {
     });
     
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('介面設定已重置為預設值'),
+      const SnackBar(
+        content: Text('介面設定已重置為預設值'),
         backgroundColor: AppColors.success,
       ),
     );

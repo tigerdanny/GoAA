@@ -88,7 +88,7 @@ class FriendCard extends StatelessWidget {
           ],
         ),
         trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
+          icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
           onSelected: (value) {
             HapticFeedback.lightImpact();
             onMenuAction(value);

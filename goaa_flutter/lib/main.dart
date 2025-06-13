@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
-import 'core/services/daily_quote_service.dart';
+import 'core/services/daily_quote/daily_quote_repository.dart';
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
 import 'l10n/generated/app_localizations.dart';
@@ -39,8 +39,9 @@ void main() async {
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
     // 3. 每日金句服務初始化（不阻塞啟動）
-    DailyQuoteService().initialize().catchError((e) {
-      debugPrint('⚠️ 每日金句初始化失敗: $e');
+    final quoteRepository = DailyQuoteRepository();
+    await quoteRepository.initialize().catchError((e) {
+      debugPrint('初始化金句服務失敗: $e');
     });
     debugPrint('✅ 每日金句服務啟動中...');
     

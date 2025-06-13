@@ -86,8 +86,8 @@ class DatabaseService {
     final user = UsersCompanion.insert(
       userCode: userCode,
       name: '使用者名稱',
-      avatarType: Value('male_01'),
-      isCurrentUser: Value(true),
+      avatarType: const Value('male_01'),
+      isCurrentUser: const Value(true),
     );
     
     final userId = await db.userQueries.insertOrUpdateUser(user);
@@ -108,7 +108,7 @@ class DatabaseService {
       // 創建示例群組
       final groupId = await db.groupQueries.createGroup(GroupsCompanion.insert(
         name: '室友分攤',
-        description: Value('與室友一起分攤日常開支'),
+        description: const Value('與室友一起分攤日常開支'),
         createdBy: currentUser.id,
       ));
 
@@ -119,13 +119,13 @@ class DatabaseService {
       final user2Id = await db.userQueries.insertOrUpdateUser(UsersCompanion.insert(
         userCode: _generateUserCode(),
         name: '室友小王',
-        avatarType: Value('female_01'),
+        avatarType: const Value('female_01'),
       ));
 
       final user3Id = await db.userQueries.insertOrUpdateUser(UsersCompanion.insert(
         userCode: _generateUserCode(),
         name: '室友小李',
-        avatarType: Value('male_02'),
+        avatarType: const Value('male_02'),
       ));
 
       // 將其他用戶添加到群組
@@ -137,7 +137,7 @@ class DatabaseService {
         groupId: groupId,
         paidBy: currentUser.id,
         title: '購買日用品',
-        description: Value('衛生紙、洗衣精等'),
+        description: const Value('衛生紙、洗衣精等'),
         amount: 450.0,
         expenseDate: DateTime.now().subtract(const Duration(hours: 2)),
       ));

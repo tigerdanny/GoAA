@@ -164,7 +164,7 @@ class _SplashScreenState extends State<SplashScreen>
   /// 🚀 重新設計：等待動畫完成並導航
   Future<void> _waitForAnimationAndNavigate() async {
     // 計算動畫剩餘時間
-    final animationDuration = const Duration(milliseconds: 1500);
+    const animationDuration = Duration(milliseconds: 1500);
     final elapsed = DateTime.now().difference(_startTime ?? DateTime.now());
     final remaining = animationDuration - elapsed;
     

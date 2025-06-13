@@ -84,7 +84,7 @@ class DrawerMenuItem extends StatelessWidget {
 
   /// 建構箭頭圖標
   Widget _buildArrow() {
-    return Icon(
+    return const Icon(
       Icons.chevron_right,
       color: AppColors.textTertiary,
       size: 20,

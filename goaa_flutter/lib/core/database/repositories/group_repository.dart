@@ -7,6 +7,14 @@ import 'package:flutter/foundation.dart';
 class GroupRepository {
   final AppDatabase _db = DatabaseService.instance.database;
 
+  /// 獲取所有群組（為了兼容性）
+  Future<List<Group>> getGroups() async {
+    return (_db.select(_db.groups)
+      ..where((g) => g.isActive.equals(true))
+      ..orderBy([(g) => OrderingTerm.desc(g.updatedAt)]))
+      .get();
+  }
+
   /// 獲取用戶所有群組
   Future<List<Group>> getUserGroups(int userId) {
     return _db.groupQueries.getUserGroups(userId);

@@ -36,7 +36,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
         foregroundColor: AppColors.textPrimary,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
         ),
       ),
       body: SafeArea(
@@ -286,7 +286,7 @@ class _ReminderSettingsScreenState extends State<ReminderSettingsScreen> {
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_forward_ios,
                 color: AppColors.textTertiary,
                 size: 16,

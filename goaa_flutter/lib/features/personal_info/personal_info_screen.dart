@@ -51,7 +51,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         foregroundColor: AppColors.textPrimary,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
         ),
       ),
       body: SafeArea(
@@ -216,7 +216,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         ),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: AppColors.textSecondary),
+          labelStyle: const TextStyle(color: AppColors.textSecondary),
           prefixIcon: Icon(icon, color: AppColors.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -224,7 +224,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
           filled: true,
           fillColor: AppColors.surface,
@@ -271,7 +271,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     HapticFeedback.lightImpact();
     // 保存用戶信息到數據庫
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
+      const SnackBar(
         content: Text('個人資訊已保存'),
         backgroundColor: AppColors.success,
       ),

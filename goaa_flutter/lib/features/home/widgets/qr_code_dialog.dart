@@ -41,7 +41,7 @@ class QRCodeDialog extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.qr_code,
                     color: AppColors.primary,
                     size: 24,
@@ -70,7 +70,7 @@ class QRCodeDialog extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.close,
                     color: AppColors.textSecondary,
                   ),
@@ -102,7 +102,7 @@ class QRCodeDialog extends StatelessWidget {
                 version: QrVersions.auto,
                 size: 200.0,
                 backgroundColor: Colors.white,
-                dataModuleStyle: QrDataModuleStyle(
+                dataModuleStyle: const QrDataModuleStyle(
                   dataModuleShape: QrDataModuleShape.square,
                   color: AppColors.textPrimary,
                 ),
@@ -115,7 +115,7 @@ class QRCodeDialog extends StatelessWidget {
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Column(
+                    child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
@@ -123,7 +123,7 @@ class QRCodeDialog extends StatelessWidget {
                           color: AppColors.error,
                           size: 48,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           'QR碼生成失敗',
                           style: TextStyle(color: AppColors.error),
@@ -149,7 +149,7 @@ class QRCodeDialog extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.tag,
                     color: AppColors.primary,
                     size: 18,
@@ -186,8 +186,8 @@ class QRCodeDialog extends StatelessWidget {
                     onPressed: () {
                       // 實作分享功能
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('分享功能開發中...'),
+                        const SnackBar(
+                          content: Text('分享功能開發中...'),
                           backgroundColor: AppColors.primary,
                         ),
                       );
@@ -196,7 +196,7 @@ class QRCodeDialog extends StatelessWidget {
                     label: const Text('分享'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
-                      side: BorderSide(color: AppColors.primary),
+                      side: const BorderSide(color: AppColors.primary),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -207,8 +207,8 @@ class QRCodeDialog extends StatelessWidget {
                     onPressed: () {
                       // 實作儲存功能
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('儲存功能開發中...'),
+                        const SnackBar(
+                          content: Text('儲存功能開發中...'),
                           backgroundColor: AppColors.primary,
                         ),
                       );
@@ -245,8 +245,8 @@ class QRCodeScanner {
   /// 顯示掃描功能（暫時用SnackBar代替）
   static void scan(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('二維碼掃描功能開發中...'),
+      const SnackBar(
+        content: Text('二維碼掃描功能開發中...'),
         backgroundColor: AppColors.primary,
       ),
     );

@@ -17,7 +17,7 @@ class InterfaceSettingsAppBar extends StatelessWidget implements PreferredSizeWi
       foregroundColor: AppColors.textPrimary,
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
-        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
       ),
     );
   }

@@ -75,7 +75,7 @@ class SettingItem extends StatelessWidget {
               ),
               
               // 箭頭圖標
-              Icon(
+              const Icon(
                 Icons.chevron_right,
                 color: AppColors.textTertiary,
                 size: 20,

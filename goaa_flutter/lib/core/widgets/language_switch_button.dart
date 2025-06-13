@@ -46,7 +46,7 @@ class LanguageSwitchButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: mainAxisSize,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.language,
                     size: 18,
                     color: AppColors.textSecondary,
@@ -62,7 +62,7 @@ class LanguageSwitchButton extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(width: 4),
-                  Icon(
+                  const Icon(
                     Icons.expand_more,
                     size: 16,
                     color: AppColors.textTertiary,
@@ -231,7 +231,7 @@ class LanguageSelectorSheet extends StatelessWidget {
               
               // 選中指示器
               if (isSelected)
-                Icon(
+                const Icon(
                   Icons.check_circle,
                   color: AppColors.primary,
                   size: 24,

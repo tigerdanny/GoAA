@@ -22,12 +22,12 @@ class FriendsAppBar extends StatelessWidget implements PreferredSizeWidget {
       foregroundColor: AppColors.textPrimary,
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
-        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
       ),
       actions: [
         IconButton(
           onPressed: onAddFriend,
-          icon: Icon(Icons.person_add, color: AppColors.primary),
+          icon: const Icon(Icons.person_add, color: AppColors.primary),
         ),
       ],
     );
