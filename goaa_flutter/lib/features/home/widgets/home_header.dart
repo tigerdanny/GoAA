@@ -30,15 +30,12 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 调试信息
-    debugPrint('HomeHeader - currentUser: ${currentUser?.name ?? 'null'}, userCode: ${currentUser?.userCode ?? 'null'}');
-    
     final now = DateTime.now();
     final hour = now.hour;
     String timeGreeting = '';
 
     if (hour >= 5 && hour < 12) {
-      timeGreeting = '早安~';
+      timeGreeting = '午安~';
     } else if (hour >= 12 && hour < 18) {
       timeGreeting = '午安~';
     } else if (hour >= 18 && hour < 22) {
@@ -48,185 +45,195 @@ class HomeHeader extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.8),
-          ],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
+      color: Colors.white,
       child: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 顶部操作栏
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: onMenuTap,
-                  icon: const Icon(
-                    LucideIcons.menu,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: onShowQRCode,
-                      icon: const Icon(
-                        LucideIcons.qrCode,
-                        color: Colors.white,
-                        size: 24,
+            // 頂部選單按鈕和問候語區域
+            Container(
+              padding: const EdgeInsets.fromLTRB(0, 16, 20, 16),
+              child: Row(
+                children: [
+                  // 選單按鈕 - 緊貼左邊螢幕邊緣，無任何空白
+                  GestureDetector(
+                    onTap: onMenuTap,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.menu,
+                            color: AppColors.textPrimary,
+                            size: 24,
+                          ),
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right,
+                            color: AppColors.textSecondary,
+                            size: 16,
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: onScanQRCode,
-                      icon: const Icon(
-                        LucideIcons.scan,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // 问候语和用户信息
-            Text(
-              timeGreeting,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            
-            const SizedBox(height: 4),
-            
-            Text(
-              currentUser?.name ?? '訪客',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-            if (currentUser?.userCode != null) ...[
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: currentUser!.userCode));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('用戶代碼已複製'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'ID: ${currentUser!.userCode}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        LucideIcons.copy,
-                        color: Colors.white,
-                        size: 12,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            
-            const SizedBox(height: 20),
-            
-            // 每日金句
-            if (dailyQuote != null) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
+                  const SizedBox(width: 4),
+                  // 問候語和每日金句
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          LucideIcons.quote,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
                         Text(
-                          '每日金句',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                          timeGreeting,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        if (dailyQuote != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            getQuoteContent(dailyQuote!, languageCode),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 4),
+                          const Text(
+                            '每一天都是新的開始，充滿無限可能。',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      getQuoteContent(dailyQuote!, languageCode),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
+                  ),
+                ],
+              ),
+            ),
+            
+            // 用戶信息區域
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Row(
+                children: [
+                  // 用戶頭像 - 與選單頁一致的圓形圖片頭像
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.textPrimary,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/goaa_logo.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    if (dailyQuote!.author.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        '— ${dailyQuote!.author}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
+                  ),
+                  const SizedBox(width: 16),
+                  // 用戶信息
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 用戶名稱
+                        Text(
+                          currentUser?.name ?? '用戶',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                        const SizedBox(height: 4),
+                        // 用戶ID + 操作按鈕
+                        Row(
+                          children: [
+                            // 用戶ID
+                            if (currentUser?.userCode != null) ...[
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: currentUser!.userCode));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('用戶代碼已複製'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  currentUser!.userCode,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ] else ...[
+                              const Text(
+                                'N/A',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(width: 12),
+                            // QR碼按鈕
+                            GestureDetector(
+                              onTap: onShowQRCode,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                child: const Icon(
+                                  LucideIcons.qrCode,
+                                  color: AppColors.textSecondary,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // 掃一掃按鈕
+                            GestureDetector(
+                              onTap: onScanQRCode,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                child: const Icon(
+                                  LucideIcons.scan,
+                                  color: AppColors.textSecondary,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),

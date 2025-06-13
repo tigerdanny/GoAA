@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/database/database.dart';
-import '../../l10n/generated/app_localizations.dart';
 import 'controllers/home_controller.dart';
 import 'controllers/home_animation_controller.dart';
 import 'views/home_loading_view.dart';
@@ -82,8 +81,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    
     if (_homeController.isLoading) {
       return const HomeLoadingView();
     }
@@ -104,19 +101,31 @@ class _HomeScreenState extends State<HomeScreen>
             position: _animationController.slideAnimation,
             child: CustomScrollView(
               slivers: [
-                HomeHeader(
-                  currentUser: _homeController.currentUser,
-                  dailyQuote: _homeController.dailyQuote,
-                  onMenuTap: () => _openDrawer(),
-                  onShowQRCode: () => _showQRCode(),
-                  onScanQRCode: () => _scanQRCode(),
-                  languageCode: 'zh',
+                SliverToBoxAdapter(
+                  child: HomeHeader(
+                    currentUser: _homeController.currentUser,
+                    dailyQuote: _homeController.dailyQuote,
+                    onMenuTap: () => _openDrawer(),
+                    onShowQRCode: () => _showQRCode(),
+                    onScanQRCode: () => _scanQRCode(),
+                    languageCode: 'zh',
+                  ),
                 ),
                 HomeStats(stats: _homeController.stats),
-                SectionTitle(title: l10n?.myGroups ?? '我的群組'),
-                HomeGroups(
-                  groups: _homeController.groups,
-                  onGroupTap: (group) => _enterGroup(group),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                    child: Text(
+                      '最近帳務',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                HomeExpenses(
+                  expenses: _homeController.expenses,
+                  onExpenseTap: (expense) => _viewExpense(expense),
                 ),
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 100),
@@ -134,10 +143,6 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // 交互方法
-  void _enterGroup(Group group) {
-    HomeInteractionService.enterGroup(context, group);
-  }
-
   void _showQRCode() {
     if (_homeController.currentUser != null) {
       HomeInteractionService.showQRCode(context, _homeController.currentUser!);
@@ -154,5 +159,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _openDrawer() {
     HomeInteractionService.openDrawer(_scaffoldKey);
+  }
+
+  void _viewExpense(Expense expense) {
+    // 導航到費用詳情頁面
+    debugPrint('查看費用: ${expense.description}');
   }
 } 
