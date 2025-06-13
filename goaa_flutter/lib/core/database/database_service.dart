@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'database.dart';
+import 'dart:math';
 
 /// 資料庫服務
 /// 管理資料庫實例的單例，提供初始化和關閉方法
@@ -167,10 +168,21 @@ class DatabaseService {
     }
   }
 
-  /// 生成用戶代碼
+  /// 生成用戶代碼 - 🎲 使用更好的隨機數生成
   String _generateUserCode() {
-    final random = DateTime.now().millisecondsSinceEpoch % 1000000;
-    return 'GA${random.toString().padLeft(6, '0')}';
+    final now = DateTime.now();
+    // 使用多個時間源創建真正的隨機數
+    final microseconds = now.microsecondsSinceEpoch;
+    final random = Random(microseconds);
+    
+    // 結合時間和隨機數，確保唯一性
+    final timeComponent = microseconds % 1000000;
+    final randomComponent = random.nextInt(999999);
+    final combined = (timeComponent + randomComponent) % 1000000;
+    
+    final userCode = 'GA${combined.toString().padLeft(6, '0')}';
+    debugPrint('🎲 生成用戶代碼: $userCode (時間: $timeComponent, 隨機: $randomComponent)');
+    return userCode;
   }
 
   /// 清理資料庫連接

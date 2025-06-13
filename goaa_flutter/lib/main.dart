@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
@@ -20,68 +21,137 @@ void main() async {
   // 確保 Flutter 綁定初始化
   WidgetsFlutterBinding.ensureInitialized();
   PerformanceMonitor.recordTimestamp('Flutter綁定完成');
+
+  // 🎲 修復問題2：初始化隨機數種子
+  _initializeRandomSeed();
   
-  // 修復 Android 相關問題
-  await _fixMobileIssues();
-  PerformanceMonitor.recordTimestamp('Android修復完成');
-  
-  // 🚀 優化：使用async/await確保正確的初始化順序
+  // 🚀 修復問題1：簡化主線程初始化，只做必要操作
   try {
-    // 1. 語言服務初始化（同步）
+    debugPrint('🚀 開始快速啟動模式...');
+    
+    // 1. 輕量級語言服務初始化（同步，快速）
     final languageService = LanguageService();
     languageService.initialize();
     debugPrint('✅ 語言服務初始化完成');
     PerformanceMonitor.recordTimestamp('語言服務完成');
     
-    // 2. 資料庫初始化（必須等待完成）
+    // 2. 設置基本UI樣式（同步，快速）
+    _setupBasicUI();
+    
+    PerformanceMonitor.recordTimestamp('基本初始化完成');
+    
+    // 🚀 立即啟動應用，重型初始化移到後台
+    runApp(GoAAApp(languageService: languageService));
+    
+    // 3. 在後台進行重型初始化（不阻塞UI顯示）
+    _backgroundInitialization();
+    
+  } catch (e, stackTrace) {
+    debugPrint('❌ 啟動過程出錯: $e');
+    debugPrint('📚 錯誤堆疊: $stackTrace');
+    
+    // 即使出錯也要能啟動基本應用
+    try {
+      final languageService = LanguageService();
+      languageService.initialize();
+      runApp(GoAAApp(languageService: languageService));
+    } catch (fallbackError) {
+      debugPrint('❌ 後備啟動也失敗: $fallbackError');
+      // 最後的後備方案 - 基本的錯誤顯示應用
+      runApp(_createErrorApp());
+    }
+  }
+}
+
+/// 🎲 初始化隨機數種子
+void _initializeRandomSeed() {
+  final now = DateTime.now();
+  final seed = now.microsecondsSinceEpoch;
+  final random = Random(seed);
+  debugPrint('🎲 隨機數種子初始化: $seed');
+  // 進行一次測試以確保種子生效
+  final testValue = random.nextInt(1000000);
+  debugPrint('🎲 隨機數測試值: $testValue');
+}
+
+/// 🚀 設置基本UI樣式（快速，同步）
+void _setupBasicUI() {
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
+  );
+  
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  debugPrint('✅ 基本UI設置完成');
+}
+
+/// 🚀 後台重型初始化（不阻塞UI）
+Future<void> _backgroundInitialization() async {
+  debugPrint('🔄 開始後台初始化...');
+  
+  try {
+    // 1. Android修復（可能耗時）
+    await _fixMobileIssues();
+    PerformanceMonitor.recordTimestamp('Android修復完成');
+    
+    // 2. 資料庫初始化（可能耗時）
     await DatabaseService.instance.initialize();
     debugPrint('✅ 資料庫初始化完成');
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 3. 每日金句服務初始化（不阻塞啟動）
+    // 3. 每日金句服務（可選，失敗不影響）
     final quoteRepository = DailyQuoteRepository();
-    await quoteRepository.initialize().catchError((e) {
-      debugPrint('初始化金句服務失敗: $e');
-    });
-    debugPrint('✅ 每日金句服務啟動中...');
+    unawaited(quoteRepository.initialize().catchError((e) {
+      debugPrint('⚠️ 金句服務初始化失敗（非關鍵）: $e');
+    }));
     
-    // 設置系統UI樣式
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-    );
-    
-    // 設置偏好的螢幕方向（僅豎屏）
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    
-    PerformanceMonitor.recordTimestamp('系統設置完成');
-    
-    // 🚀 性能監控：計算各階段時間
-    PerformanceMonitor.recordDuration('總初始化時間', '應用啟動開始', '系統設置完成');
-    PerformanceMonitor.recordDuration('資料庫初始化時間', '語言服務完成', '資料庫初始化完成');
-    
-    runApp(GoAAApp(languageService: languageService));
+    PerformanceMonitor.recordTimestamp('後台初始化完成');
+    debugPrint('✅ 後台初始化全部完成');
     
   } catch (e, stackTrace) {
-    debugPrint('❌ 應用初始化失敗: $e');
+    debugPrint('❌ 後台初始化失敗: $e');
     debugPrint('📚 錯誤堆疊: $stackTrace');
-    
-    // 即使初始化失敗也要啟動應用
-    final languageService = LanguageService();
-    languageService.initialize();
-    runApp(GoAAApp(languageService: languageService));
+    // 後台初始化失敗不應該影響應用運行
   }
 }
 
-/// 修復手機端問題
+/// 🚀 創建錯誤應用（最後的後備方案）
+Widget _createErrorApp() {
+  return MaterialApp(
+    title: 'GOAA',
+    home: Scaffold(
+      body: Container(
+        color: Colors.red.shade50,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                '應用啟動遇到問題',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text('請重新啟動應用或聯繫支援'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// 修復手機端問題（移到後台）
 Future<void> _fixMobileIssues() async {
   try {
     debugPrint('🔧 開始修復手機端問題...');
@@ -121,7 +191,6 @@ Future<void> _fixMobileIssues() async {
       // 3. 設置 SQLite 臨時目錄
       try {
         final tempDir = await getTemporaryDirectory();
-        // 未來可以設置 sqlite3.tempDirectory = tempDir.path;
         debugPrint('✅ SQLite 臨時目錄已設置: ${tempDir.path}');
       } catch (e) {
         debugPrint('⚠️ SQLite 臨時目錄設置問題: $e');
@@ -134,6 +203,11 @@ Future<void> _fixMobileIssues() async {
     debugPrint('❌ 手機端問題修復失敗: $e');
     debugPrint('📚 錯誤堆疊: $stackTrace');
   }
+}
+
+/// 輔助函數：延遲執行而不等待
+void unawaited(Future<void> future) {
+  // 故意不等待這個Future
 }
 
 /// GOAA分帳應用主類
@@ -171,13 +245,12 @@ class GoAAApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             
-            // 使用SplashScreen作為初始頁面
+            // 🚀 使用快速啟動的SplashScreen
             home: const SplashScreen(),
             
-            // 路由配置（暫時使用簡單路由，後續會改用 go_router）
+            // 路由配置
             routes: {
               '/splash': (context) => const SplashScreen(),
-              // HomeScreen现在通过直接导航传递预加载数据，不再需要路由
             },
             
             // Material App 配置

@@ -11,8 +11,16 @@ class DailyQuoteLocal {
   
   final DatabaseService _dbService;
   static const int maxQuotesInDatabase = 100;
+  
+  // 🎲 修復隨機數問題：使用時間種子的隨機數生成器
+  late final Random _random;
 
-  DailyQuoteLocal._internal() : _dbService = DatabaseService.instance;
+  DailyQuoteLocal._internal() : _dbService = DatabaseService.instance {
+    // 使用當前時間的微秒級時間戳作為種子
+    final seed = DateTime.now().microsecondsSinceEpoch;
+    _random = Random(seed);
+    debugPrint('🎲 DailyQuoteLocal 隨機數種子: $seed');
+  }
 
   /// 初始化
   Future<void> initialize() async {
@@ -58,12 +66,15 @@ class DailyQuoteLocal {
     }
   }
 
-  /// 取得隨機金句
+  /// 取得隨機金句 - 🎲 使用真正的隨機數
   Future<models.DailyQuoteModel?> getRandomQuote() async {
     final db = _dbService.database;
     final quotes = await db.select(db.dailyQuotes).get();
     if (quotes.isNotEmpty) {
-      return models.DailyQuoteModel.fromRow(quotes[Random().nextInt(quotes.length)]);
+      // 使用基於時間種子的隨機數生成器
+      final randomIndex = _random.nextInt(quotes.length);
+      debugPrint('🎲 隨機選擇金句索引: $randomIndex / ${quotes.length}');
+      return models.DailyQuoteModel.fromRow(quotes[randomIndex]);
     }
     return null;
   }
