@@ -27,9 +27,11 @@ class UserQueries {
   }
 
   /// 更新用戶資料
-  Future<bool> updateUser(int id, UsersCompanion user) {
-    return _database.update(_database.users).replace(
-        user.copyWith(id: Value(id), updatedAt: Value(DateTime.now())));
+  Future<bool> updateUser(int id, UsersCompanion user) async {
+    final result = await (_database.update(_database.users)
+          ..where((u) => u.id.equals(id)))
+        .write(user.copyWith(updatedAt: Value(DateTime.now())));
+    return result > 0;
   }
 
   /// 清除所有用戶的當前用戶狀態

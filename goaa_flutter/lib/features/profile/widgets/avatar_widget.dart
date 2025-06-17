@@ -45,7 +45,11 @@ class AvatarWidget extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: _buildAvatarImage(),
+                    child: SizedBox(
+                      width: size,
+                      height: size,
+                      child: _buildAvatarImage(),
+                    ),
                   ),
                 ),
                 if (onTap != null)
@@ -94,6 +98,7 @@ class AvatarWidget extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
           errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
         );
       }
@@ -106,6 +111,7 @@ class AvatarWidget extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
         errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
       );
     }
