@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../settings/settings_screen.dart';
+import '../../../profile/profile_screen.dart';
 
 /// 抽屜導航服務
 /// 集中管理所有抽屜的導航邏輯
@@ -39,8 +40,10 @@ class DrawerNavigationService {
   /// 導航到個人檔案頁面
   static void navigateToProfile(BuildContext context) {
     Navigator.pop(context);
-    // 實現個人檔案頁面
-    _showComingSoon(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+    );
   }
 
   /// 導航到統計報表頁面
