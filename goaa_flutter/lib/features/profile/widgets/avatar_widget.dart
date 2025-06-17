@@ -24,7 +24,10 @@ class AvatarWidget extends StatelessWidget {
       child: Column(
         children: [
           GestureDetector(
-            onTap: onTap,
+            onTap: () {
+              debugPrint('🎯 頭像被點擊');
+              onTap?.call();
+            },
             child: Stack(
               children: [
                 Container(

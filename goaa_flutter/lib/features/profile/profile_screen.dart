@@ -131,8 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         
-        // 重新載入資料
-        await _loadUserData();
+        // 儲存成功後保持當前UI狀態，不重新載入
+        // 這確保用戶選擇的頭像狀態不會被覆蓋
       }
     } catch (e) {
       debugPrint('儲存用戶資料失敗: $e');
@@ -151,20 +151,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _changeAvatar() async {
     HapticFeedback.lightImpact();
     
+    debugPrint('🔄 開始更換頭像');
+    debugPrint('🔄 當前頭像類型: $_avatarType');
+    debugPrint('🔄 當前頭像路徑: $_avatarPath');
+    
     final result = await _avatarService.showAvatarPicker(context);
-    if (result != null) {
-      setState(() {
-        if (result.startsWith('/')) {
-          // 自定義頭像路徑
-          _avatarPath = result;
-          _avatarType = null;
-        } else {
-          // 預設頭像類型
-          _avatarType = result;
-          _avatarPath = null;
-        }
-      });
-    }
+    debugPrint('🔄 選擇結果: $result');
+    
+          if (result != null) {
+        setState(() {
+          if (result.startsWith('/')) {
+            // 自定義頭像路徑
+            debugPrint('✅ 設置自定義頭像: $result');
+            // 如果之前有自定義頭像，先刪除
+            if (_avatarPath != null && _avatarPath!.isNotEmpty) {
+              _avatarService.deleteCustomAvatar(_avatarPath);
+            }
+            _avatarPath = result;
+            _avatarType = null;
+          } else {
+            // 預設頭像類型
+            debugPrint('✅ 設置預設頭像: $result');
+            // 如果之前有自定義頭像，先刪除
+            if (_avatarPath != null && _avatarPath!.isNotEmpty) {
+              _avatarService.deleteCustomAvatar(_avatarPath);
+            }
+            _avatarType = result;
+            _avatarPath = null;
+          }
+        });
+        
+        debugPrint('🔄 更新後頭像類型: $_avatarType');
+        debugPrint('🔄 更新後頭像路徑: $_avatarPath');
+      } else {
+        debugPrint('❌ 用戶取消了頭像選擇');
+      }
   }
 
   @override
