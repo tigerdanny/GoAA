@@ -58,10 +58,18 @@ class AvatarService {
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
+        preferredCameraDevice: CameraDevice.front,
       );
       
       if (image != null) {
-        return await _cropImage(image.path);
+        final croppedPath = await _cropImage(image.path);
+        // 刪除原始臨時文件
+        try {
+          await File(image.path).delete();
+        } catch (e) {
+          debugPrint('刪除臨時文件失敗: $e');
+        }
+        return croppedPath;
       }
     } catch (e) {
       debugPrint('拍照失敗: $e');
@@ -80,10 +88,19 @@ class AvatarService {
       );
       
       if (image != null) {
-        return await _cropImage(image.path);
+        final croppedPath = await _cropImage(image.path);
+        // 刪除原始臨時文件
+        try {
+          await File(image.path).delete();
+        } catch (e) {
+          debugPrint('刪除臨時文件失敗: $e');
+        }
+        return croppedPath;
       }
     } catch (e) {
       debugPrint('選擇照片失敗: $e');
+      // 返回更詳細的錯誤信息
+      rethrow;
     }
     return null;
   }
@@ -94,18 +111,32 @@ class AvatarService {
       final CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: imagePath,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        maxWidth: 512,
+        maxHeight: 512,
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 90,
         uiSettings: [
           AndroidUiSettings(
             toolbarTitle: '裁剪頭像',
-            toolbarColor: const Color(0xFF8B4513),
+            toolbarColor: const Color(0xFF2196F3),
             toolbarWidgetColor: Colors.white,
+            statusBarColor: const Color(0xFF1976D2),
+            backgroundColor: Colors.white,
+            activeControlsWidgetColor: const Color(0xFF2196F3),
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
+            hideBottomControls: false,
+            cropGridRowCount: 3,
+            cropGridColumnCount: 3,
           ),
           IOSUiSettings(
             title: '裁剪頭像',
+            doneButtonTitle: '完成',
+            cancelButtonTitle: '取消',
             aspectRatioLockEnabled: true,
             resetAspectRatioEnabled: false,
+            rotateClockwiseButtonHidden: false,
+            hidesNavigationBar: false,
           ),
         ],
       );
@@ -115,6 +146,7 @@ class AvatarService {
       }
     } catch (e) {
       debugPrint('裁剪圖片失敗: $e');
+      rethrow;
     }
     return null;
   }
@@ -201,9 +233,17 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final result = await _avatarService.takePhoto();
-                      if (result != null && context.mounted) {
-                        Navigator.of(context).pop(result);
+                      try {
+                        final result = await _avatarService.takePhoto();
+                        if (result != null && context.mounted) {
+                          Navigator.of(context).pop(result);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('拍照失敗: $e')),
+                          );
+                        }
                       }
                     },
                     icon: const Icon(Icons.camera_alt),
@@ -214,9 +254,17 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      final result = await _avatarService.pickFromGallery();
-                      if (result != null && context.mounted) {
-                        Navigator.of(context).pop(result);
+                      try {
+                        final result = await _avatarService.pickFromGallery();
+                        if (result != null && context.mounted) {
+                          Navigator.of(context).pop(result);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('選擇照片失敗: $e')),
+                          );
+                        }
                       }
                     },
                     icon: const Icon(Icons.photo_library),
@@ -265,9 +313,10 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        crossAxisCount: 5,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
+        childAspectRatio: 1.0,
       ),
       itemCount: avatars.length,
       itemBuilder: (context, index) {

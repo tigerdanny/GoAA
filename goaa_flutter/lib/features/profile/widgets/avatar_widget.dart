@@ -15,7 +15,7 @@ class AvatarWidget extends StatelessWidget {
     this.avatarType,
     this.avatarPath,
     this.onTap,
-    this.size = 120,
+    this.size = 100,
   });
 
   @override

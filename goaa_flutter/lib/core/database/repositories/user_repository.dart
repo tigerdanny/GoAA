@@ -24,18 +24,23 @@ class UserRepository {
     String? phone,
     String? avatarType,
     String? avatarSource,
-  }) {
-    final companion = UsersCompanion(
-      id: Value(id),
-      name: name != null ? Value(name) : const Value.absent(),
-      email: email != null ? Value(email) : const Value.absent(),
-      phone: phone != null ? Value(phone) : const Value.absent(),
-      avatarType: avatarType != null ? Value(avatarType) : const Value.absent(),
-      avatarSource: avatarSource != null ? Value(avatarSource) : const Value.absent(),
-      updatedAt: Value(DateTime.now()),
-    );
+  }) async {
+    try {
+      final companion = UsersCompanion(
+        id: Value(id),
+        name: name != null ? Value(name) : const Value.absent(),
+        email: email != null ? Value(email) : const Value.absent(),
+        phone: phone != null ? Value(phone) : const Value.absent(),
+        avatarType: avatarType != null ? Value(avatarType) : const Value.absent(),
+        avatarSource: avatarSource != null ? Value(avatarSource) : const Value.absent(),
+        updatedAt: Value(DateTime.now()),
+      );
 
-    return _db.userQueries.updateUser(id, companion);
+      return await _db.userQueries.updateUser(id, companion);
+    } catch (e) {
+      debugPrint('更新用戶失敗: $e');
+      rethrow;
+    }
   }
 
   /// 創建新用戶
@@ -44,21 +49,26 @@ class UserRepository {
     required String name,
     String? email,
     String? phone,
-    String avatarType = 'male_01',
+    String avatarType = 'man_0',
     String? avatarSource,
     bool isCurrentUser = false,
-  }) {
-    final companion = UsersCompanion.insert(
-      userCode: userCode,
-      name: name,
-      email: Value(email),
-      phone: Value(phone),
-      avatarType: Value(avatarType),
-      avatarSource: Value(avatarSource),
-      isCurrentUser: Value(isCurrentUser),
-    );
+  }) async {
+    try {
+      final companion = UsersCompanion.insert(
+        userCode: userCode,
+        name: name,
+        email: Value(email),
+        phone: Value(phone),
+        avatarType: Value(avatarType),
+        avatarSource: Value(avatarSource),
+        isCurrentUser: Value(isCurrentUser),
+      );
 
-    return _db.userQueries.insertOrUpdateUser(companion);
+      return await _db.userQueries.insertOrUpdateUser(companion);
+    } catch (e) {
+      debugPrint('創建用戶失敗: $e');
+      rethrow;
+    }
   }
 
   /// 🚀 設置當前用戶（重新設計使用 async/await）
