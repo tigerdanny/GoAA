@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/database/database.dart' as db;
 import '../../../core/models/daily_quote.dart' as model;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/avatar_service.dart';
 
 /// 首页顶部标题区域组件
 class HomeHeader extends StatelessWidget {
@@ -144,10 +146,7 @@ class HomeHeader extends StatelessWidget {
                       ],
                     ),
                     child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/goaa_logo.png',
-                        fit: BoxFit.cover,
-                      ),
+                      child: _buildAvatarImage(),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -173,7 +172,7 @@ class HomeHeader extends StatelessWidget {
                             if (currentUser?.userCode != null) ...[
                               GestureDetector(
                                 onTap: () {
-                                  Clipboard.setData(ClipboardData(text: currentUser!.userCode));
+                                  Clipboard.setData(ClipboardData(text: currentUser?.userCode ?? ''));
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text('用戶代碼已複製'),
@@ -182,7 +181,7 @@ class HomeHeader extends StatelessWidget {
                                   );
                                 },
                                 child: Text(
-                                  currentUser!.userCode,
+                                  currentUser?.userCode ?? '',
                                   style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 14,
@@ -237,6 +236,51 @@ class HomeHeader extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// 建構頭像圖片
+  Widget _buildAvatarImage() {
+    // 優先顯示自定義頭像
+    final avatarSource = currentUser?.avatarSource;
+    if (avatarSource != null && avatarSource.isNotEmpty) {
+      final file = File(avatarSource);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+        );
+      }
+    }
+
+    // 顯示預設頭像
+    final avatarType = currentUser?.avatarType;
+    if (avatarType != null && avatarType.isNotEmpty) {
+      return Image.asset(
+        AvatarService.getAvatarPath(avatarType),
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+      );
+    }
+
+    // 顯示預設圖標
+    return _buildDefaultAvatar();
+  }
+
+  /// 建構預設頭像
+  Widget _buildDefaultAvatar() {
+    return Image.asset(
+      'assets/images/goaa_logo.png',
+      width: 60,
+      height: 60,
+      fit: BoxFit.cover,
     );
   }
 } 

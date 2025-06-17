@@ -105,6 +105,16 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  /// 只刷新用戶資料
+  Future<void> refreshUserOnly() async {
+    try {
+      await _loadCurrentUser();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('刷新用戶資料失敗: $e');
+    }
+  }
+
   /// 載入當前用戶
   Future<void> _loadCurrentUser() async {
     try {

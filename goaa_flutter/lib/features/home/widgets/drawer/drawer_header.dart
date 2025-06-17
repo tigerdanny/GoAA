@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/database/database.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/avatar_service.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import 'drawer_user_code_row.dart';
 
@@ -62,11 +64,53 @@ class DrawerHeader extends StatelessWidget {
         ],
       ),
       child: ClipOval(
-        child: Image.asset(
-          'assets/images/goaa_logo.png',
-          fit: BoxFit.cover,
-        ),
+        child: _buildAvatarImage(),
       ),
+    );
+  }
+
+  /// 建構頭像圖片
+  Widget _buildAvatarImage() {
+    // 優先顯示自定義頭像
+    final avatarSource = currentUser?.avatarSource;
+    if (avatarSource != null && avatarSource.isNotEmpty) {
+      final file = File(avatarSource);
+      if (file.existsSync()) {
+        return Image.file(
+          file,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+        );
+      }
+    }
+
+    // 顯示預設頭像
+    final avatarType = currentUser?.avatarType;
+    if (avatarType != null && avatarType.isNotEmpty) {
+      return Image.asset(
+        AvatarService.getAvatarPath(avatarType),
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+      );
+    }
+
+    // 顯示預設圖標
+    return _buildDefaultAvatar();
+  }
+
+  /// 建構預設頭像
+  Widget _buildDefaultAvatar() {
+    return Image.asset(
+      'assets/images/goaa_logo.png',
+      width: 80,
+      height: 80,
+      fit: BoxFit.cover,
     );
   }
 

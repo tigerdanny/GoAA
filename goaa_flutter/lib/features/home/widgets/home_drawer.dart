@@ -11,12 +11,14 @@ class HomeDrawer extends StatelessWidget {
   final User? currentUser;
   final VoidCallback onShowQRCode;
   final VoidCallback onScanQRCode;
+  final VoidCallback? onUserUpdated;
 
   const HomeDrawer({
     super.key,
     required this.currentUser,
     required this.onShowQRCode,
     required this.onScanQRCode,
+    this.onUserUpdated,
   });
 
   @override
@@ -64,9 +66,12 @@ class HomeDrawer extends StatelessWidget {
       items: [
         drawer_components.DrawerMenuItem(
           icon: Icons.account_circle_outlined,
-          title: '個人檔案',
+          title: '個人資訊',
           subtitle: '編輯個人資料',
-          onTap: () => drawer_components.DrawerNavigationService.navigateToProfile(context),
+          onTap: () => drawer_components.DrawerNavigationService.navigateToProfile(
+            context, 
+            onUserUpdated: onUserUpdated,
+          ),
         ),
         drawer_components.DrawerMenuItem(
           icon: Icons.person_outline,

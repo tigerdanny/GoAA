@@ -91,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen>
         currentUser: _homeController.currentUser,
         onShowQRCode: () => _showQRCode(),
         onScanQRCode: () => _scanQRCode(),
+        onUserUpdated: () => _refreshUserData(),
       ),
       drawerScrimColor: Colors.black.withValues(alpha: 0.3),
       drawerEdgeDragWidth: 60,
@@ -164,5 +165,10 @@ class _HomeScreenState extends State<HomeScreen>
   void _viewExpense(Expense expense) {
     // 導航到費用詳情頁面
     debugPrint('查看費用: ${expense.description}');
+  }
+
+  /// 刷新用戶數據
+  void _refreshUserData() {
+    _homeController.refreshUserOnly();
   }
 } 

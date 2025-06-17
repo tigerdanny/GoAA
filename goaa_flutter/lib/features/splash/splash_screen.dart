@@ -6,6 +6,7 @@ import '../../core/database/repositories/group_repository.dart';
 import '../../core/database/database.dart';
 import '../../core/utils/performance_monitor.dart';
 import '../home/home_screen.dart';
+import '../profile/profile_screen.dart';
 
 /// 啟動畫面 - 集成数据加载功能
 /// 展示品牌Logo並執行所有初始化工作
@@ -100,38 +101,46 @@ class _SplashScreenState extends State<SplashScreen>
       // 1. 首先載入當前用戶（這是基礎數據，必須先載入）
       _currentUser = await _userRepository.getCurrentUser();
       
-      if (_currentUser != null) {
-        // 🚀 並行載入：同時進行多個不相關的數據查詢
-        final futures = <Future>[];
+      // 檢查是否有用戶資料
+      if (_currentUser == null) {
+        debugPrint('🚨 沒有用戶資料，將跳轉到個人資訊頁面');
+        setState(() => _dataLoaded = true);
+        await _waitForAnimationAndNavigate();
+        return;
+      }
+      
+      debugPrint('✅ 已有用戶資料，載入完整應用數據');
+      
+      // 🚀 並行載入：同時進行多個不相關的數據查詢
+      final futures = <Future>[];
+      
+      // 並行任務1：載入用戶群組
+      final groupsFuture = _groupRepository.getUserGroups(_currentUser!.id);
+      futures.add(groupsFuture);
+      
+      // 並行任務2：載入用戶統計
+      final statsFuture = _userRepository.getUserStats(_currentUser!.id);
+      futures.add(statsFuture);
+      
+      // 等待所有並行任務完成
+      final results = await Future.wait([
+        groupsFuture,
+        statsFuture,
+      ]);
+      
+      // 處理結果
+      _groups = results[0] as List<Group>;
+      _stats = results[1] as Map<String, dynamic>;
+      
+      // 🚀 優化：只載入前5個群組的統計，其他延遲載入
+      if (_groups.isNotEmpty) {
+        final priorityGroups = _groups.take(5).toList();
+        final groupStatsFutures = priorityGroups.map((group) => 
+          _loadGroupStatsAsync(group.id)
+        );
         
-        // 並行任務1：載入用戶群組
-        final groupsFuture = _groupRepository.getUserGroups(_currentUser!.id);
-        futures.add(groupsFuture);
-        
-        // 並行任務2：載入用戶統計
-        final statsFuture = _userRepository.getUserStats(_currentUser!.id);
-        futures.add(statsFuture);
-        
-        // 等待所有並行任務完成
-        final results = await Future.wait([
-          groupsFuture,
-          statsFuture,
-        ]);
-        
-        // 處理結果
-        _groups = results[0] as List<Group>;
-        _stats = results[1] as Map<String, dynamic>;
-        
-        // 🚀 優化：只載入前5個群組的統計，其他延遲載入
-        if (_groups.isNotEmpty) {
-          final priorityGroups = _groups.take(5).toList();
-          final groupStatsFutures = priorityGroups.map((group) => 
-            _loadGroupStatsAsync(group.id)
-          );
-          
-          // 並行載入群組統計
-          await Future.wait(groupStatsFutures);
-        }
+        // 並行載入群組統計
+        await Future.wait(groupStatsFutures);
       }
       
       // 🚀 性能監控：記錄數據載入完成時間
@@ -177,32 +186,48 @@ class _SplashScreenState extends State<SplashScreen>
     await _navigateToHomeAsync();
   }
   
-  /// 🚀 重新設計：異步導航到首頁
+  /// 🚀 重新設計：異步導航到目標頁面
   Future<void> _navigateToHomeAsync() async {
     if (!mounted) return;
     
-    // 🚀 性能監控：記錄導航到首頁的時間
-    PerformanceMonitor.recordTimestamp('導航到首頁');
-    PerformanceMonitor.recordDuration('總啟動時間', '應用啟動開始', '導航到首頁');
+    // 🚀 性能監控：記錄導航開始時間
+    PerformanceMonitor.recordTimestamp('導航開始');
+    PerformanceMonitor.recordDuration('總啟動時間', '應用啟動開始', '導航開始');
     
     // 打印性能報告
     PerformanceMonitor.printPerformanceReport();
     
-    // 導航到首頁
-    await Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => PreloadedHomeScreen(
-          currentUser: _currentUser,
-          groups: _groups,
-          groupStats: _groupStats,
-          stats: _stats,
+    // 根據是否有用戶資料決定導航目標
+    if (_currentUser == null) {
+      debugPrint('🚨 導航到個人資訊頁面（首次使用）');
+      // 導航到個人資訊頁面
+      await Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         ),
-        transitionDuration: const Duration(milliseconds: 300),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+      );
+    } else {
+      debugPrint('✅ 導航到首頁（正常使用）');
+      // 導航到首頁
+      await Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => PreloadedHomeScreen(
+            currentUser: _currentUser,
+            groups: _groups,
+            groupStats: _groupStats,
+            stats: _stats,
+          ),
+          transitionDuration: const Duration(milliseconds: 300),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+    }
   }
 
   @override

@@ -7,6 +7,7 @@ import '../../core/services/avatar_service.dart';
 import '../../core/services/user_id_service.dart';
 import '../../core/services/validation_service.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../home/home_screen.dart';
 import 'widgets/avatar_widget.dart';
 import 'widgets/profile_form.dart';
 import 'widgets/user_info_display.dart';
@@ -131,8 +132,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         
-        // 儲存成功後保持當前UI狀態，不重新載入
-        // 這確保用戶選擇的頭像狀態不會被覆蓋
+        // 儲存成功後，檢查是否是首次設置（沒有返回頁面）
+        if (Navigator.of(context).canPop()) {
+          // 有返回頁面，返回更新標記
+          Navigator.of(context).pop(true);
+        } else {
+          // 沒有返回頁面（首次使用），導航到首頁
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
       }
     } catch (e) {
       debugPrint('儲存用戶資料失敗: $e');

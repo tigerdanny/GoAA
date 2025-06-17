@@ -38,12 +38,17 @@ class DrawerNavigationService {
   }
 
   /// 導航到個人檔案頁面
-  static void navigateToProfile(BuildContext context) {
+  static Future<void> navigateToProfile(BuildContext context, {VoidCallback? onUserUpdated}) async {
     Navigator.pop(context);
-    Navigator.push(
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ProfileScreen()),
     );
+    
+    // 如果個人資料有更新，觸發刷新回調
+    if (result == true && onUserUpdated != null) {
+      onUserUpdated();
+    }
   }
 
   /// 導航到統計報表頁面

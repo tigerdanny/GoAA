@@ -12,6 +12,45 @@ class DatabaseCleanupService {
   
   DatabaseCleanupService._internal() : _dbService = DatabaseService.instance;
 
+  /// 清除除了金句以外的所有資料，保留資料庫格式
+  Future<void> clearAllDataExceptQuotes() async {
+    try {
+      final db = _dbService.database;
+      
+      debugPrint('🗑️ 開始清除所有資料（保留金句）...');
+      
+      // 按順序清除資料（考慮外鍵約束）
+      await db.delete(db.expenseSplits).go();
+      debugPrint('✅ 已清除費用分攤資料');
+      
+      await db.delete(db.expenses).go();
+      debugPrint('✅ 已清除費用資料');
+      
+      await db.delete(db.settlements).go();
+      debugPrint('✅ 已清除結算資料');
+      
+      await db.delete(db.invitations).go();
+      debugPrint('✅ 已清除邀請資料');
+      
+      await db.delete(db.groupMembers).go();
+      debugPrint('✅ 已清除群組成員資料');
+      
+      await db.delete(db.groups).go();
+      debugPrint('✅ 已清除群組資料');
+      
+      await db.delete(db.users).go();
+      debugPrint('✅ 已清除用戶資料');
+      
+      // 保留 daily_quotes 表格，不清除
+      debugPrint('✅ 保留金句資料');
+      
+      debugPrint('🎉 資料清除完成，已保留金句資料');
+    } catch (e) {
+      debugPrint('❌ 資料清除失敗: $e');
+      rethrow;
+    }
+  }
+
   /// 清理舊金句（保留最新100條）
   Future<void> cleanupOldQuotes() async {
     try {
