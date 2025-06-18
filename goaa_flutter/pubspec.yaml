@@ -105,6 +105,7 @@ dependencies:
   
   # 新增依賴
   logging: ^1.2.0
+  mqtt_client: ^10.9.2
 
 dev_dependencies:
   flutter_test:

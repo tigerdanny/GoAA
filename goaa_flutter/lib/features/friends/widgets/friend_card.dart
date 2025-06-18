@@ -1,136 +1,184 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:goaa_flutter/core/theme/app_colors.dart';
+import 'package:goaa_flutter/core/theme/app_dimensions.dart';
+import 'package:goaa_flutter/core/services/mqtt/mqtt_models.dart';
 
-/// 好友卡片组件
+/// 好友卡片組件
 class FriendCard extends StatelessWidget {
-  final Map<String, String> friend;
-  final int index;
-  final VoidCallback onTap;
-  final Function(String) onMenuAction;
+  final OnlineUser user;
+  final bool isFriend;
+  final VoidCallback? onAddFriend;
+  final VoidCallback? onOpenChat;
 
   const FriendCard({
     super.key,
-    required this.friend,
-    required this.index,
-    required this.onTap,
-    required this.onMenuAction,
+    required this.user,
+    required this.isFriend,
+    this.onAddFriend,
+    this.onOpenChat,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      AppColors.primary,
-      AppColors.secondary,
-      AppColors.accent,
-      AppColors.success,
-    ];
-    final color = colors[index % colors.length];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    final bool isRecent = DateTime.now().difference(user.lastSeen).inMinutes < 5;
+    
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isRecent
+            ? const BorderSide(color: AppColors.success, width: 2)
+            : BorderSide.none,
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [color, color.withValues(alpha: 0.7)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              friend['avatar']!,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        title: Text(
-          friend['name']!,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: isFriend ? null : onAddFriend,
+        child: Padding(
+          padding: AppDimensions.paddingM,
+          child: Row(
+            children: [
+              // 頭像
+              _buildAvatar(isRecent),
+              const SizedBox(width: 16),
+              
+              // 用戶信息
+              Expanded(
+                child: _buildUserInfo(context, isRecent),
+              ),
+              
+              // 操作按鈕
+              _buildActionButton(),
+            ],
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              '代碼：${friend['userCode']}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              friend['email']!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-          onSelected: (value) {
-            HapticFeedback.lightImpact();
-            onMenuAction(value);
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view',
-              child: Row(
-                children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('查看詳情'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit),
-                  SizedBox(width: 8),
-                  Text('編輯'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('刪除', style: TextStyle(color: Colors.red)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
       ),
     );
+  }
+
+  Widget _buildAvatar(bool isRecent) {
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: AppColors.primaryLight,
+          child: Text(
+            user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        if (isRecent)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: const BoxDecoration(
+                color: AppColors.success,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildUserInfo(BuildContext context, bool isRecent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                user.userName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (isFriend)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  '已是好友',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          user.userCode,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          _formatLastSeen(user.lastSeen),
+          style: TextStyle(
+            fontSize: 12,
+            color: isRecent ? AppColors.success : AppColors.textSecondary,
+            fontWeight: isRecent ? FontWeight.w500 : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButton() {
+    if (isFriend) {
+      return IconButton(
+        onPressed: onOpenChat,
+        icon: const Icon(
+          Icons.chat,
+          color: AppColors.primary,
+        ),
+      );
+    } else {
+      return IconButton(
+        onPressed: onAddFriend,
+        icon: const Icon(
+          Icons.person_add,
+          color: AppColors.primary,
+        ),
+      );
+    }
+  }
+
+  String _formatLastSeen(DateTime lastSeen) {
+    final difference = DateTime.now().difference(lastSeen);
+    
+    if (difference.inMinutes < 1) {
+      return '剛剛在線';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}分鐘前';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}小時前';
+    } else {
+      return '${lastSeen.month}/${lastSeen.day}';
+    }
   }
 } 

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:goaa_flutter/core/services/mqtt/mqtt_models.dart';
 import 'friends_empty_state.dart';
 import 'friend_card.dart';
 
 /// 好友列表组件
 class FriendsList extends StatelessWidget {
-  final List<Map<String, String>> friends;
-  final Function(Map<String, String>) onFriendTap;
-  final Function(String, Map<String, String>) onMenuAction;
+  final List<OnlineUser> friends;
+  final Function(OnlineUser) onFriendTap;
+  final Function(String, OnlineUser) onMenuAction;
 
   const FriendsList({
     super.key,
@@ -27,10 +28,9 @@ class FriendsList extends StatelessWidget {
       itemBuilder: (context, index) {
         final friend = friends[index];
         return FriendCard(
-          friend: friend,
-          index: index,
-          onTap: () => onFriendTap(friend),
-          onMenuAction: (action) => onMenuAction(action, friend),
+          user: friend,
+          isFriend: true, // 在好友列表中，都是已確認的好友
+          onOpenChat: () => onFriendTap(friend),
         );
       },
     );

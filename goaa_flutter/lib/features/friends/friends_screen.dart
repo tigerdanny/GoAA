@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../core/theme/app_colors.dart';
-import 'widgets/index.dart';
+import 'package:goaa_flutter/core/theme/app_colors.dart';
+import 'package:goaa_flutter/core/theme/app_dimensions.dart';
+import 'package:goaa_flutter/core/services/mqtt/mqtt_models.dart';
+import 'package:goaa_flutter/features/chat/chat_screen.dart';
+import 'controllers/friends_controller.dart';
+import 'widgets/friends_list_view.dart';
+import 'widgets/friend_request_dialog.dart';
+import 'dart:async';
 
 /// 好友資訊頁面
 class FriendsScreen extends StatefulWidget {
@@ -11,121 +17,293 @@ class FriendsScreen extends StatefulWidget {
   State<FriendsScreen> createState() => _FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen> {
-  final _searchController = TextEditingController();
-  final List<Map<String, String>> _friends = [];
-
-  List<Map<String, String>> _filteredFriends = [];
+class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserver {
+  final TextEditingController _searchController = TextEditingController();
+  late FriendsController _controller;
 
   @override
   void initState() {
     super.initState();
-    _filteredFriends = _friends;
+    WidgetsBinding.instance.addObserver(this);
+    _controller = FriendsController();
+    _initializeController();
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _filterFriends(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredFriends = _friends;
-      } else {
-        _filteredFriends = _friends.where((friend) {
-          return friend['name']!.toLowerCase().contains(query.toLowerCase()) ||
-                 friend['userCode']!.toLowerCase().contains(query.toLowerCase()) ||
-                 friend['email']!.toLowerCase().contains(query.toLowerCase());
-        }).toList();
-      }
-    });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _controller.reconnect();
+    }
+  }
+
+  /// 初始化控制器
+  Future<void> _initializeController() async {
+    final success = await _controller.initializeMqtt();
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('連接失敗，請檢查網絡連接'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  /// 搜索變化處理
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      _controller.searchUsers(query);
+    } else {
+      _controller.clearSearch();
+    }
+    setState(() {});
+  }
+
+  /// 打開聊天
+  void _openChat(OnlineUser user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          friendUserId: user.userId,
+          friendUserName: user.userName,
+        ),
+      ),
+    );
+  }
+
+  /// 發送好友請求
+  void _sendFriendRequest(OnlineUser user) {
+    FriendRequestDialogs.showAddFriendDialog(
+      context,
+      user,
+      () async {
+        await _controller.sendFriendRequest(user);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('已向 ${user.userName} 發送好友請求'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          HapticFeedback.lightImpact();
+        }
+      },
+    );
+  }
+
+  /// 顯示好友請求列表
+  void _showFriendRequestsList() {
+    FriendRequestDialogs.showFriendRequestsList(
+      context,
+      _controller.friendRequests,
+      _controller.acceptFriendRequest,
+      _controller.rejectFriendRequest,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: FriendsAppBar(onAddFriend: _addFriend),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 搜索栏
-            FriendsSearchBar(
-              controller: _searchController,
-              onChanged: _filterFriends,
-            ),
-            
-            // 好友列表
-            Expanded(
-              child: FriendsList(
-                friends: _filteredFriends,
-                onFriendTap: _viewFriendDetail,
-                onMenuAction: _handleFriendAction,
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _scanQRCode(),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          if (_controller.isConnecting) _buildConnectingIndicator(),
+          Expanded(child: _buildContent()),
+        ],
       ),
     );
   }
 
-  void _addFriend() {
-    HapticFeedback.lightImpact();
-    AddFriendDialog.show(context, () {
-      _showMessage('添加好友功能開發中...');
-    });
-  }
-
-  void _scanQRCode() {
-    HapticFeedback.lightImpact();
-    _showMessage('掃描二維碼功能開發中...');
-  }
-
-  void _viewFriendDetail(Map<String, String> friend) {
-    HapticFeedback.lightImpact();
-    _showMessage('查看好友詳情功能開發中...');
-  }
-
-  void _handleFriendAction(String action, Map<String, String> friend) {
-    switch (action) {
-      case 'view':
-        _viewFriendDetail(friend);
-        break;
-      case 'edit':
-        _showMessage('編輯好友功能開發中...');
-        break;
-      case 'delete':
-        _confirmDeleteFriend(friend);
-        break;
-    }
-  }
-
-  void _confirmDeleteFriend(Map<String, String> friend) {
-    DeleteConfirmDialog.show(context, friend, () {
-      setState(() {
-        _friends.remove(friend);
-        _filteredFriends.remove(friend);
-      });
-      _showMessage('已刪除好友');
-    });
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+  /// 構建應用欄
+  AppBar _buildAppBar() {
+    return AppBar(
+      title: Row(
+        children: [
+          const Text('好友'),
+          const SizedBox(width: 8),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: _controller.isConnected ? AppColors.success : AppColors.error,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            _controller.isConnected ? '在線' : '離線',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: _controller.isConnected ? AppColors.success : AppColors.error,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        if (_controller.friendRequests.isNotEmpty) _buildNotificationBadge(),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _controller.isConnecting ? null : _controller.reconnect,
         ),
+      ],
+    );
+  }
+
+  /// 構建通知徽章
+  Widget _buildNotificationBadge() {
+    return Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications),
+          onPressed: _showFriendRequestsList,
+        ),
+        Positioned(
+          right: 8,
+          top: 8,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+              color: AppColors.error,
+              shape: BoxShape.circle,
+            ),
+            constraints: const BoxConstraints(
+              minWidth: 16,
+              minHeight: 16,
+            ),
+            child: Text(
+              '${_controller.friendRequests.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 構建搜索欄
+  Widget _buildSearchBar() {
+    return Container(
+      padding: AppDimensions.paddingM,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: '搜索在線用戶 (姓名或用戶代碼)',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    _controller.clearSearch();
+                  },
+                )
+              : null,
+          border: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 構建連接指示器
+  Widget _buildConnectingIndicator() {
+    return const Padding(
+      padding: AppDimensions.paddingM,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 8),
+          Text('正在連接到網絡...'),
+        ],
+      ),
+    );
+  }
+
+  /// 構建內容區域
+  Widget _buildContent() {
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, child) {
+        if (!_controller.isConnected && !_controller.isConnecting) {
+          return _buildOfflineState();
+        }
+
+        if (_searchController.text.trim().isNotEmpty) {
+          return FriendsListView(
+            users: _controller.searchResults,
+            friends: _controller.friends,
+            title: '',
+            isSearching: _controller.isSearching,
+            onAddFriend: _sendFriendRequest,
+            onOpenChat: _openChat,
+          );
+        }
+
+        return FriendsListView(
+          users: _controller.onlineUsers,
+          friends: _controller.friends,
+          title: '在線用戶 (${_controller.onlineUsers.length})',
+          onAddFriend: _sendFriendRequest,
+          onOpenChat: _openChat,
+        );
+      },
+    );
+  }
+
+  /// 構建離線狀態
+  Widget _buildOfflineState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.wifi_off,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '網絡連接失敗',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '無法連接到 MQTT 服務器\n請檢查網絡連接',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _controller.initializeMqtt,
+            icon: const Icon(Icons.refresh),
+            label: const Text('重新連接'),
+          ),
+        ],
       ),
     );
   }

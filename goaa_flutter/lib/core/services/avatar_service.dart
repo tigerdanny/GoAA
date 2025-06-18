@@ -4,8 +4,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'avatar/avatar_generator.dart';
+import 'avatar/avatar_storage.dart';
 
-/// 頭像選擇和管理服務
+/// 頭像選擇和管理服務 - 重構版
 class AvatarService {
   static final AvatarService _instance = AvatarService._internal();
   factory AvatarService() => _instance;
@@ -13,34 +15,26 @@ class AvatarService {
 
   final ImagePicker _picker = ImagePicker();
 
-  /// 預設頭像類型
-  static const List<String> _avatarCategories = ['cat', 'dog', 'girl', 'man'];
-  static const int _avatarsPerCategory = 10;
+  /// 獲取所有預設頭像 (委託給 AvatarGenerator)
+  static List<String> getAllDefaultAvatars() => AvatarGenerator.getAllDefaultAvatars();
 
-  /// 獲取所有預設頭像
-  static List<String> getAllDefaultAvatars() {
-    final List<String> avatars = [];
-    for (String category in _avatarCategories) {
-      for (int i = 0; i < _avatarsPerCategory; i++) {
-        avatars.add('${category}_$i');
-      }
-    }
-    return avatars;
-  }
+  /// 根據分類獲取頭像 (委託給 AvatarGenerator)
+  static List<String> getAvatarsByCategory(String category) => AvatarGenerator.getAvatarsByCategory(category);
 
-  /// 根據分類獲取頭像
-  static List<String> getAvatarsByCategory(String category) {
-    final List<String> avatars = [];
-    for (int i = 0; i < _avatarsPerCategory; i++) {
-      avatars.add('${category}_$i');
-    }
-    return avatars;
-  }
+  /// 獲取頭像資源路徑 (委託給 AvatarGenerator)
+  static String getAvatarPath(String avatarType) => AvatarGenerator.getAvatarPath(avatarType);
 
-  /// 獲取頭像資源路徑
-  static String getAvatarPath(String avatarType) {
-    return 'assets/images/$avatarType.png';
-  }
+  /// 保存用戶頭像 (委託給 AvatarStorage)
+  static Future<bool> saveUserAvatar(String avatarPath) => AvatarStorage.saveUserAvatar(avatarPath);
+
+  /// 獲取用戶頭像 (委託給 AvatarStorage)
+  static Future<String?> getUserAvatar() => AvatarStorage.getUserAvatar();
+
+  /// 清除用戶頭像 (委託給 AvatarStorage)
+  static Future<bool> clearUserAvatar() => AvatarStorage.clearUserAvatar();
+
+  /// 檢查是否有頭像 (委託給 AvatarStorage)
+  static Future<bool> hasUserAvatar() => AvatarStorage.hasUserAvatar();
 
   /// 顯示頭像選擇對話框
   Future<String?> showAvatarPicker(BuildContext context) async {
@@ -63,12 +57,7 @@ class AvatarService {
       
       if (image != null) {
         final croppedPath = await _cropImage(image.path);
-        // 刪除原始臨時文件
-        try {
-          await File(image.path).delete();
-        } catch (e) {
-          debugPrint('刪除臨時文件失敗: $e');
-        }
+        await _cleanupTempFile(image.path);
         return croppedPath;
       }
     } catch (e) {
@@ -89,17 +78,11 @@ class AvatarService {
       
       if (image != null) {
         final croppedPath = await _cropImage(image.path);
-        // 刪除原始臨時文件
-        try {
-          await File(image.path).delete();
-        } catch (e) {
-          debugPrint('刪除臨時文件失敗: $e');
-        }
+        await _cleanupTempFile(image.path);
         return croppedPath;
       }
     } catch (e) {
       debugPrint('選擇照片失敗: $e');
-      // 返回更詳細的錯誤信息
       rethrow;
     }
     return null;
@@ -182,6 +165,15 @@ class AvatarService {
       }
     }
   }
+
+  /// 清理臨時文件
+  Future<void> _cleanupTempFile(String filePath) async {
+    try {
+      await File(filePath).delete();
+    } catch (e) {
+      debugPrint('刪除臨時文件失敗: $e');
+    }
+  }
 }
 
 /// 頭像選擇對話框
@@ -200,7 +192,7 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -212,94 +204,33 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: 500,
+        width: 350,
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Text(
               '選擇頭像',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
-            
-            // 操作按鈕
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final result = await _avatarService.takePhoto();
-                        if (result != null && context.mounted) {
-                          Navigator.of(context).pop(result);
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('拍照失敗: $e')),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('拍照'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        final result = await _avatarService.pickFromGallery();
-                        if (result != null && context.mounted) {
-                          Navigator.of(context).pop(result);
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('選擇照片失敗: $e')),
-                          );
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('相簿'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // 標籤欄
             TabBar(
               controller: _tabController,
-              isScrollable: true,
               tabs: const [
-                Tab(text: '全部'),
-                Tab(text: '貓咪'),
-                Tab(text: '狗狗'),
-                Tab(text: '女生'),
-                Tab(text: '男生'),
-                Tab(text: '隨機'),
+                Tab(text: '預設'),
+                Tab(text: '相機'),
+                Tab(text: '相簿'),
               ],
             ),
-            
-            // 內容區域
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildAvatarGrid(AvatarService.getAllDefaultAvatars()),
-                  _buildAvatarGrid(AvatarService.getAvatarsByCategory('cat')),
-                  _buildAvatarGrid(AvatarService.getAvatarsByCategory('dog')),
-                  _buildAvatarGrid(AvatarService.getAvatarsByCategory('girl')),
-                  _buildAvatarGrid(AvatarService.getAvatarsByCategory('man')),
-                  _buildRandomAvatarSelector(),
+                  _buildDefaultAvatarsTab(),
+                  _buildCameraTab(),
+                  _buildGalleryTab(),
                 ],
               ),
             ),
@@ -309,14 +240,14 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
     );
   }
 
-  Widget _buildAvatarGrid(List<String> avatars) {
+  Widget _buildDefaultAvatarsTab() {
+    final avatars = AvatarService.getAllDefaultAvatars();
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        crossAxisSpacing: 6,
-        mainAxisSpacing: 6,
-        childAspectRatio: 1.0,
+        crossAxisCount: 4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
       itemCount: avatars.length,
       itemBuilder: (context, index) {
@@ -325,20 +256,14 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
           onTap: () => Navigator.of(context).pop(avatarType),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               child: Image.asset(
                 AvatarService.getAvatarPath(avatarType),
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.person, color: Colors.grey),
-                  );
-                },
               ),
             ),
           ),
@@ -347,26 +272,32 @@ class _AvatarPickerDialogState extends State<AvatarPickerDialog>
     );
   }
 
-  Widget _buildRandomAvatarSelector() {
+  Widget _buildCameraTab() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.shuffle, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          const Text('隨機選擇頭像', style: TextStyle(fontSize: 18)),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              final allAvatars = AvatarService.getAllDefaultAvatars();
-              final randomAvatar = allAvatars[
-                DateTime.now().millisecondsSinceEpoch % allAvatars.length
-              ];
-              Navigator.of(context).pop(randomAvatar);
-            },
-            child: const Text('隨機選擇'),
-          ),
-        ],
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          final avatarPath = await _avatarService.takePhoto();
+          if (avatarPath != null && mounted) {
+            Navigator.of(context).pop(avatarPath);
+          }
+        },
+        icon: const Icon(Icons.camera_alt),
+        label: const Text('拍照'),
+      ),
+    );
+  }
+
+  Widget _buildGalleryTab() {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          final avatarPath = await _avatarService.pickFromGallery();
+          if (avatarPath != null && mounted) {
+            Navigator.of(context).pop(avatarPath);
+          }
+        },
+        icon: const Icon(Icons.photo_library),
+        label: const Text('選擇照片'),
       ),
     );
   }
