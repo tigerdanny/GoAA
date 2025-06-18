@@ -3,6 +3,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../settings/settings_screen.dart';
 import '../../../profile/profile_screen.dart';
+import '../../../about/about_screen.dart';
+import '../../../friends/friends_screen.dart';
+import '../../../account_settings/account_settings_screen.dart';
+import '../../../reminder_settings/reminder_settings_screen.dart';
 
 /// 抽屜導航服務
 /// 集中管理所有抽屜的導航邏輯
@@ -19,22 +23,28 @@ class DrawerNavigationService {
   /// 導航到好友頁面
   static void navigateToFriends(BuildContext context) {
     Navigator.pop(context);
-    // 實現好友頁面
-    _showComingSoon(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FriendsScreen()),
+    );
   }
 
   /// 導航到帳務設定頁面
   static void navigateToAccountSettings(BuildContext context) {
     Navigator.pop(context);
-    // 實現帳務設定頁面
-    _showComingSoon(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AccountSettingsScreen()),
+    );
   }
 
   /// 導航到關於頁面
   static void navigateToAbout(BuildContext context) {
     Navigator.pop(context);
-    // 實現關於頁面
-    _showComingSoon(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AboutScreen()),
+    );
   }
 
   /// 導航到個人檔案頁面
@@ -61,8 +71,10 @@ class DrawerNavigationService {
   /// 導航到提醒設定頁面
   static void navigateToReminderSettings(BuildContext context) {
     Navigator.pop(context);
-    // 實現提醒設定頁面
-    _showComingSoon(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ReminderSettingsScreen()),
+    );
   }
 
   /// 導航到說明頁面
