@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 
-/// 關於應用頁面
+/// 關於應用頁面 - 簡潔版本
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
@@ -29,20 +29,24 @@ class AboutScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 應用Logo
-              _buildAppLogo(),
+              // 應用Logo和基本信息
+              _buildAppHeader(),
+              const SizedBox(height: 48),
+              
+              // 設計理念
+              _buildDesignPhilosophy(),
               const SizedBox(height: 32),
               
-              // 應用信息
-              _buildAppInfo(l10n),
+              // 開發信息
+              _buildDevelopmentInfo(),
               const SizedBox(height: 32),
               
-              // 開發者信息
-              _buildDeveloperInfo(l10n, context),
-              const SizedBox(height: 32),
+              // License信息
+              _buildLicenseInfo(context),
+              const SizedBox(height: 48),
               
-              // 聯繫按鈕
-              _buildContactButtons(l10n, context),
+              // 感謝訊息
+              _buildThankYouMessage(),
             ],
           ),
         ),
@@ -50,67 +54,69 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAppLogo() {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Image.asset(
-          'assets/images/goaa_logo.png',
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppInfo(AppLocalizations? l10n) {
+  Widget _buildAppHeader() {
     return Column(
       children: [
-        Text(
-          l10n?.appName ?? 'GOAA分帳神器',
-          style: const TextStyle(
+        // 應用Logo
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset(
+              'assets/images/goaa_logo.png',
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // 應用名稱
+        const Text(
+          'GOAA分帳神器',
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          l10n?.appDescription ?? '跨平台分帳應用，讓分帳變得簡單優雅',
-          style: const TextStyle(
+        
+        // 簡潔的應用描述
+        const Text(
+          '讓分帳變得簡單優雅',
+          style: TextStyle(
             fontSize: 16,
             color: AppColors.textSecondary,
           ),
-          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
+        
+        // 版本號
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              width: 1,
-            ),
           ),
-          child: Text(
-            '${l10n?.version ?? "版本"} 1.0.0',
-            style: const TextStyle(
+          child: const Text(
+            '版本 1.0.0',
+            style: TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
         ),
@@ -118,7 +124,7 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDeveloperInfo(AppLocalizations? l10n, BuildContext context) {
+  Widget _buildDesignPhilosophy() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -127,73 +133,131 @@ class AboutScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n?.developer ?? '開發者',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                                 child: const Icon(
+                   Icons.lightbulb_outline,
+                   color: AppColors.primary,
+                   size: 20,
+                 ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '設計理念',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            '簡單、直觀、高效\n\n我們相信最好的分帳應用應該讓用戶專注於生活，而不是複雜的操作。透過清晰的介面設計和流暢的使用體驗，讓每一次分帳都變得輕鬆自然。',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+              height: 1.7,
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            Icons.person,
-            l10n?.developerName ?? 'Danny Wang',
-            context,
-          ),
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.business,
-            '獨立開發者',
-            context,
-          ),
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.location_city,
-            '台灣',
-            context,
-          ),
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.calendar_today,
-            l10n?.developmentDateValue ?? '2025年6月',
-            context,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text, BuildContext context) {
+  Widget _buildDevelopmentInfo() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                                 child: const Icon(
+                   Icons.info_outline,
+                   color: AppColors.primary,
+                   size: 20,
+                 ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '開發資訊',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow('設計者', 'Danny Wang'),
+          const SizedBox(height: 16),
+          _buildInfoRow('開發時間', '2025年6月開始'),
+          const SizedBox(height: 16),
+          _buildInfoRow('技術框架', 'Flutter 3.0'),
+          const SizedBox(height: 16),
+          _buildInfoRow('支援平台', 'Android、iOS、Windows'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
     return Row(
       children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            color: AppColors.primary,
-            size: 20,
+        SizedBox(
+          width: 90,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        const SizedBox(width: 16),
         Expanded(
           child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            value,
+            style: const TextStyle(
+              fontSize: 15,
               color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -201,78 +265,113 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactButtons(AppLocalizations? l10n, BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: () => _contactDeveloper(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+  Widget _buildLicenseInfo(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                                 child: const Icon(
+                   Icons.gavel_outlined,
+                   color: AppColors.primary,
+                   size: 20,
+                 ),
               ),
-            ),
-            icon: const Icon(Icons.email_outlined),
-            label: Text(
-              l10n?.contactDeveloper ?? '聯繫開發者',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+              const SizedBox(width: 12),
+              const Text(
+                'License',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow('授權', 'MIT License'),
+          const SizedBox(height: 16),
+          _buildInfoRow('使用條款', '免費使用，開源友好'),
+          const SizedBox(height: 16),
+          _buildInfoRow('隱私政策', '所有資料存儲於本地設備'),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _showLicenseDetails(context),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                '查看完整授權條款',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showPrivacyPolicy(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                icon: const Icon(Icons.privacy_tip_outlined, size: 20),
-                label: Text(l10n?.privacy ?? '隱私政策'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showTermsOfService(context),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                icon: const Icon(Icons.description_outlined, size: 20),
-                label: Text(l10n?.terms ?? '使用條款'),
-              ),
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  void _contactDeveloper() {
-    HapticFeedback.lightImpact();
-    //實現聯繫開發者功能（打開郵件應用）
+  Widget _buildThankYouMessage() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.favorite,
+            color: Colors.red,
+            size: 18,
+          ),
+          SizedBox(width: 8),
+          Text(
+            '感謝您使用 GOAA 分帳神器',
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _showPrivacyPolicy(BuildContext context) {
+
+
+  void _showLicenseDetails(BuildContext context) {
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
@@ -281,46 +380,41 @@ class AboutScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Text('隱私政策'),
+        title: const Text(
+          'MIT License',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: const SingleChildScrollView(
           child: Text(
-            'GOAA分帳神器尊重並保護您的隱私。我們不會收集、存儲或分享您的個人敏感信息。所有數據均存儲在您的設備本地。\n\n如有任何疑問，請聯繫開發者。',
-            style: TextStyle(color: AppColors.textSecondary),
+            'Copyright (c) 2025 Danny Wang\n\n'
+            'Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.\n\n'
+            'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.5,
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('了解', style: TextStyle(color: AppColors.primary)),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+            ),
+            child: const Text(
+              '關閉',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  void _showTermsOfService(BuildContext context) {
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('使用條款'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'GOAA分帳神器是一款免費的分帳應用。使用本應用即表示您同意以下條款：\n\n1. 本應用僅供個人非商業用途\n2. 請合理使用，不得用於非法目的\n3. 數據安全由用戶自行負責\n4. 開發者不承擔數據丟失責任\n\n感謝您的使用！',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('同意', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
-} 
+
+
