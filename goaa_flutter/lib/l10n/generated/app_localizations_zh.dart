@@ -139,12 +139,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get groceryDescription => '衛生紙、洗衣精等';
 
   @override
-  String get roommateXiaoWang => '室友小王';
-
-  @override
-  String get roommateXiaoLi => '室友小李';
-
-  @override
   String get loading => '載入中...';
 
   @override

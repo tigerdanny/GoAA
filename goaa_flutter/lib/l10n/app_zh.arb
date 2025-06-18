@@ -259,15 +259,7 @@
     "description": "購買日用品支出描述"
   },
   
-  "roommateXiaoWang": "室友小王",
-  "@roommateXiaoWang": {
-    "description": "室友小王名稱"
-  },
-  
-  "roommateXiaoLi": "室友小李",
-  "@roommateXiaoLi": {
-    "description": "室友小李名稱"
-  },
+
   
   "loading": "載入中...",
   "@loading": {

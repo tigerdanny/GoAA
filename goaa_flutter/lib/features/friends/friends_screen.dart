@@ -13,22 +13,7 @@ class FriendsScreen extends StatefulWidget {
 
 class _FriendsScreenState extends State<FriendsScreen> {
   final _searchController = TextEditingController();
-  final List<Map<String, String>> _friends = [
-    {
-      'name': '室友小王',
-      'userCode': 'GA123456',
-      'email': 'wang@example.com',
-      'phone': '+886 912345678',
-      'avatar': 'assets/images/goaa_logo.png',
-    },
-    {
-      'name': '室友小李',
-      'userCode': 'GA789012',
-      'email': 'li@example.com',
-      'phone': '+886 987654321',
-      'avatar': 'assets/images/goaa_logo.png',
-    },
-  ];
+  final List<Map<String, String>> _friends = [];
 
   List<Map<String, String>> _filteredFriends = [];
 

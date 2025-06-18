@@ -140,12 +140,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groceryDescription => 'Toilet paper, detergent, etc.';
 
   @override
-  String get roommateXiaoWang => 'Roommate Wang';
-
-  @override
-  String get roommateXiaoLi => 'Roommate Li';
-
-  @override
   String get loading => 'Loading...';
 
   @override

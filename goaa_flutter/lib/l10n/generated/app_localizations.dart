@@ -314,18 +314,6 @@ abstract class AppLocalizations {
   /// **'衛生紙、洗衣精等'**
   String get groceryDescription;
 
-  /// 室友小王名稱
-  ///
-  /// In zh, this message translates to:
-  /// **'室友小王'**
-  String get roommateXiaoWang;
-
-  /// 室友小李名稱
-  ///
-  /// In zh, this message translates to:
-  /// **'室友小李'**
-  String get roommateXiaoLi;
-
   /// 載入中狀態
   ///
   /// In zh, this message translates to:

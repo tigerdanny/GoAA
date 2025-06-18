@@ -259,15 +259,7 @@
     "description": "Grocery shopping expense description"
   },
   
-  "roommateXiaoWang": "Roommate Wang",
-  "@roommateXiaoWang": {
-    "description": "Roommate Wang name"
-  },
-  
-  "roommateXiaoLi": "Roommate Li",
-  "@roommateXiaoLi": {
-    "description": "Roommate Li name"
-  },
+
   
   "loading": "Loading...",
   "@loading": {
