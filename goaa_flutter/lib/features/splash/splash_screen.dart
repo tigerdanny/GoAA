@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/home_screen.dart';
+import '../profile/profile_screen.dart';
 import 'controllers/splash_controller.dart';
 import 'widgets/splash_logo.dart';
 import 'widgets/loading_indicator.dart';
@@ -66,13 +67,18 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateToNext() {
     if (!mounted) return;
 
-    // 根據是否有用戶資料決定導航目標
+    // 根據導航目標決定要跳轉的頁面
+    Widget targetScreen;
+    if (_controller.navigationTarget == NavigationTarget.profile) {
+      targetScreen = const ProfileScreen();
+    } else {
+      targetScreen = const HomeScreen();
+    }
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          // 這裡可以根據實際需求決定導航到哪個頁面
-          // 暫時直接導航到首頁
-          return const HomeScreen();
+          return targetScreen;
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(

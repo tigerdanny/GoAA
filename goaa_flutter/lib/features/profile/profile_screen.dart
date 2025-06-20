@@ -4,8 +4,10 @@ import 'package:goaa_flutter/core/theme/app_colors.dart';
 import 'package:goaa_flutter/features/home/home_screen.dart';
 import 'package:goaa_flutter/l10n/generated/app_localizations.dart';
 import 'controllers/profile_controller.dart';
-import 'widgets/avatar_widget.dart';
+import 'widgets/profile_app_bar.dart';
+import 'widgets/profile_avatar_section.dart';
 import 'widgets/profile_form.dart';
+import 'widgets/profile_save_button.dart';
 import 'widgets/user_info_display.dart';
 
 /// 個人資料頁面
@@ -75,7 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_controller.currentUser != null) {
       // 更新現有用戶
       success = await _controller.updateUserName(name);
-      // 注意：userCode 更新被禁用了，所以跳過
     } else {
       // 創建新用戶
       success = await _controller.createUser(
@@ -132,21 +133,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n?.userProfile ?? '個人資料'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios),
-              )
-            : null,
+      appBar: ProfileAppBar(
+        isLoading: _controller.isLoading,
+        isSaving: _controller.isSaving,
+        hasCurrentUser: _controller.currentUser != null,
+        onSave: _saveProfile,
       ),
       body: SafeArea(
         child: _controller.isLoading
@@ -158,65 +151,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 32),
-                      
                       // 頭像區域
-                      AvatarWidget(
+                      ProfileAvatarSection(
                         avatarPath: _controller.avatarPath,
-                        size: 120,
                         onTap: _changeAvatar,
                       ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      Text(
-                        '點擊更換頭像',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 48),
                       
                       // 個人資料表單
                       ProfileForm(
                         nameController: _nameController,
+                        userCodeController: _userCodeController,
                         emailController: _emailController,
                         phoneController: _phoneController,
+                        showUserCode: _controller.currentUser == null,
                       ),
                       
                       const SizedBox(height: 48),
                       
                       // 保存按鈕
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _controller.isSaving ? null : _saveProfile,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: _controller.isSaving
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Text(
-                                  _controller.currentUser != null ? '更新資料' : '完成設置',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
+                      ProfileSaveButton(
+                        isSaving: _controller.isSaving,
+                        hasCurrentUser: _controller.currentUser != null,
+                        onPressed: _saveProfile,
                       ),
                       
                       const SizedBox(height: 32),

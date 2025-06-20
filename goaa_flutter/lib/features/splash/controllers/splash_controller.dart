@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:goaa_flutter/core/services/user_id_service.dart';
 import 'package:goaa_flutter/core/database/database_service.dart';
+import 'package:goaa_flutter/core/database/repositories/user_repository.dart';
 
 /// 啟動頁狀態
 enum SplashState {
@@ -11,18 +12,27 @@ enum SplashState {
   error,
 }
 
+/// 導航目標
+enum NavigationTarget {
+  home,
+  profile,
+}
+
 /// 啟動頁控制器
 class SplashController extends ChangeNotifier {
   final UserIdService _userIdService = UserIdService();
+  final UserRepository _userRepository = UserRepository();
 
   SplashState _state = SplashState.initializing;
   String _message = '正在初始化...';
   String? _errorMessage;
+  NavigationTarget _navigationTarget = NavigationTarget.home;
 
   // Getters
   SplashState get state => _state;
   String get message => _message;
   String? get errorMessage => _errorMessage;
+  NavigationTarget get navigationTarget => _navigationTarget;
   bool get isLoading => _state == SplashState.loading || _state == SplashState.initializing;
   bool get isCompleted => _state == SplashState.completed;
   bool get hasError => _state == SplashState.error;
@@ -47,7 +57,12 @@ class SplashController extends ChangeNotifier {
       await _performDatabaseMaintenance();
       await _delay(500);
 
-      // 步驟4: 預加載必要資源
+      // 步驟4: 檢查用戶資料
+      _updateMessage('正在檢查用戶資料...');
+      await _checkUserProfile();
+      await _delay(500);
+
+      // 步驟5: 預加載必要資源
       _updateMessage('正在加載資源...');
       await _preloadResources();
       await _delay(500);
@@ -59,6 +74,26 @@ class SplashController extends ChangeNotifier {
       debugPrint('啟動頁初始化失敗: $e');
       _updateState(SplashState.error, '初始化失敗');
       _errorMessage = e.toString();
+    }
+  }
+
+  /// 檢查用戶資料
+  Future<void> _checkUserProfile() async {
+    try {
+      final currentUser = await _userRepository.getCurrentUser();
+      if (currentUser == null || currentUser.name.isEmpty) {
+        // 沒有用戶資料或用戶名為空，導航到個人資料頁面
+        _navigationTarget = NavigationTarget.profile;
+        debugPrint('未找到用戶資料，將導航到個人資料頁面');
+      } else {
+        // 有用戶資料，導航到主頁
+        _navigationTarget = NavigationTarget.home;
+        debugPrint('用戶資料存在，將導航到主頁');
+      }
+    } catch (e) {
+      debugPrint('檢查用戶資料失敗: $e');
+      // 出錯時也導航到個人資料頁面，確保用戶可以設置資料
+      _navigationTarget = NavigationTarget.profile;
     }
   }
 
