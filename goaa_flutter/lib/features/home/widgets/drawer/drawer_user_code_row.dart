@@ -32,14 +32,18 @@ class DrawerUserCodeRow extends StatelessWidget {
     );
   }
 
-  /// 建構用戶代碼文字
+  /// 建構用戶代碼文字（截斷顯示）
   Widget _buildUserCode() {
+    final userCode = currentUser?.userCode ?? 'N/A';
+    final displayCode = userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode;
+    
     return Text(
-      currentUser?.userCode ?? 'N/A',
+      displayCode,
       style: const TextStyle(
         color: AppColors.textPrimary,
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: FontWeight.w600,
+        fontFamily: 'monospace',
       ),
     );
   }

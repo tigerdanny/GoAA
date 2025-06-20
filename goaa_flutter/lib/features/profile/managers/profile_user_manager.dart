@@ -1,28 +1,20 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/database/repositories/user_repository.dart';
 import '../../../core/database/database.dart';
 import '../../../core/services/avatar_service.dart';
+import 'package:uuid/uuid.dart';
 
 /// 個人資料用戶管理器
 class ProfileUserManager extends ChangeNotifier {
   final UserRepository _userRepository = UserRepository();
+  static const Uuid _uuid = Uuid();
   
   bool _isSaving = false;
 
   // Getters
   bool get isSaving => _isSaving;
 
-  /// 生成唯一的用戶代碼
-  String generateUserCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
-    final timestamp = DateTime.now().millisecondsSinceEpoch % 10000;
-    final randomPart = List.generate(4, (index) => chars[random.nextInt(chars.length)]).join();
-    return 'U${timestamp.toString().padLeft(4, '0')}$randomPart';
-  }
-
-  /// 創建新用戶
+  /// 創建新用戶（帶重試機制）
   Future<User?> createUser({
     required String name,
     String? userCode,
@@ -31,37 +23,82 @@ class ProfileUserManager extends ChangeNotifier {
   }) async {
     if (name.trim().isEmpty) return null;
 
-    // 如果沒有提供用戶代碼，則自動生成
-    final finalUserCode = userCode?.trim().isNotEmpty == true ? userCode!.trim() : generateUserCode();
-
     _setSaving(true);
     try {
-      final userId = await _userRepository.createUser(
-        userCode: finalUserCode,
-        name: name.trim(),
-        avatarType: avatarType,
-        avatarSource: avatarSource,
-        isCurrentUser: true,
-      );
-
-      if (userId > 0) {
-        // 重新獲取創建的用戶
-        final newUser = await _userRepository.getCurrentUser();
-        
-        // 保存頭像到 AvatarService
-        if (avatarSource != null) {
-          await AvatarService.saveUserAvatar(avatarSource);
-        }
-        
-        return newUser;
+      // 如果提供了用戶代碼，直接使用
+      if (userCode?.trim().isNotEmpty == true) {
+        return await _attemptCreateUser(
+          userCode: userCode!.trim(),
+          name: name.trim(),
+          avatarType: avatarType,
+          avatarSource: avatarSource,
+        );
       }
+
+      // 沒有提供用戶代碼時，嘗試多次生成唯一代碼
+      for (int attempt = 1; attempt <= 5; attempt++) {
+        final generatedCode = _generateNewUserCode();
+        debugPrint('🔄 嘗試創建用戶 (第$attempt次): $generatedCode');
+        
+        try {
+          final user = await _attemptCreateUser(
+            userCode: generatedCode,
+            name: name.trim(),
+            avatarType: avatarType,
+            avatarSource: avatarSource,
+          );
+          
+          if (user != null) {
+            debugPrint('✅ 用戶創建成功: ${user.name} (${user.userCode})');
+            return user;
+          }
+        } catch (e) {
+          debugPrint('⚠️ 第$attempt次嘗試失敗: $e');
+          if (attempt == 5) {
+            rethrow; // 最後一次嘗試失敗時拋出異常
+          }
+          // 其他嘗試失敗時繼續下一次
+        }
+      }
+      
+      debugPrint('❌ 所有嘗試都失敗，無法創建用戶');
       return null;
+      
     } catch (e) {
       debugPrint('創建用戶失敗: $e');
       return null;
     } finally {
       _setSaving(false);
     }
+  }
+
+  /// 嘗試創建用戶的內部方法
+  Future<User?> _attemptCreateUser({
+    required String userCode,
+    required String name,
+    required String avatarType,
+    String? avatarSource,
+  }) async {
+    final userId = await _userRepository.createUser(
+      userCode: userCode,
+      name: name,
+      avatarType: avatarType,
+      avatarSource: avatarSource,
+      isCurrentUser: true,
+    );
+
+    if (userId > 0) {
+      // 重新獲取創建的用戶
+      final newUser = await _userRepository.getCurrentUser();
+      
+      // 保存頭像到 AvatarService
+      if (avatarSource != null) {
+        await AvatarService.saveUserAvatar(avatarSource);
+      }
+      
+      return newUser;
+    }
+    return null;
   }
 
   /// 更新用戶名稱
@@ -99,6 +136,11 @@ class ProfileUserManager extends ChangeNotifier {
       debugPrint('獲取當前用戶失敗: $e');
       return null;
     }
+  }
+
+  /// 生成新的用戶代碼（每次調用都生成不同的UUID）
+  String _generateNewUserCode() {
+    return _uuid.v4().replaceAll('-', '');
   }
 
   /// 設置保存狀態

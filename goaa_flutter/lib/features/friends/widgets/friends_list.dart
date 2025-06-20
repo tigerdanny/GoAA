@@ -30,7 +30,6 @@ class FriendsList extends StatelessWidget {
         return FriendCard(
           user: friend,
           isFriend: true, // 在好友列表中，都是已確認的好友
-          onOpenChat: () => onFriendTap(friend),
         );
       },
     );

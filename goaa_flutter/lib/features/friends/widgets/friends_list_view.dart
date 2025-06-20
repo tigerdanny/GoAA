@@ -11,7 +11,7 @@ class FriendsListView extends StatelessWidget {
   final String title;
   final bool isSearching;
   final Function(OnlineUser) onAddFriend;
-  final Function(OnlineUser) onOpenChat;
+  final Function(OnlineUser)? onOpenChat;
 
   const FriendsListView({
     super.key,
@@ -20,7 +20,7 @@ class FriendsListView extends StatelessWidget {
     required this.title,
     this.isSearching = false,
     required this.onAddFriend,
-    required this.onOpenChat,
+    this.onOpenChat,
   });
 
   @override
@@ -58,7 +58,7 @@ class FriendsListView extends StatelessWidget {
               user: users[index],
               isFriend: friends.contains(users[index].userId),
               onAddFriend: () => onAddFriend(users[index]),
-              onOpenChat: () => onOpenChat(users[index]),
+              onOpenChat: onOpenChat != null ? () => onOpenChat!(users[index]) : null,
             ),
           ),
         ),
@@ -78,7 +78,7 @@ class FriendsListView extends StatelessWidget {
           ),
           SizedBox(height: 16),
           Text(
-            '暫無用戶',
+            '暫無好友',
             style: TextStyle(
               fontSize: 16,
               color: AppColors.textSecondary,
@@ -86,7 +86,7 @@ class FriendsListView extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            '當有用戶上線時會顯示在這裡',
+            '通過搜索添加好友後會顯示在這裡',
             style: TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,

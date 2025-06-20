@@ -47,13 +47,14 @@ class UserInfoDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           
-          // 用戶代碼
+          // 用戶代碼（截斷顯示）
           _buildInfoRow(
             context,
             label: '用戶代碼',
-            value: userCode,
+            value: userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode,
+            fullValue: userCode, // 完整值用於複製
             isCopiable: true,
-            description: '用於好友邀請和群組加入',
+            description: '用於好友邀請和群組加入（點擊可複製完整代碼）',
           ),
           const SizedBox(height: 12),
           
@@ -73,6 +74,7 @@ class UserInfoDisplay extends StatelessWidget {
     BuildContext context, {
     required String label,
     required String value,
+    String? fullValue, // 用於複製的完整值
     bool isCopiable = false,
     String? description,
   }) {
@@ -91,7 +93,7 @@ class UserInfoDisplay extends StatelessWidget {
             const Spacer(),
             if (isCopiable)
               GestureDetector(
-                onTap: () => _copyToClipboard(context, value),
+                onTap: () => _copyToClipboard(context, fullValue ?? value),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

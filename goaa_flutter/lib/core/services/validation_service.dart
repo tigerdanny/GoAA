@@ -154,9 +154,9 @@ class ValidationService {
         .replaceAll(RegExp(r'\s+'), ' '); // 合併多個空格
   }
 
-  /// 檢查是否為有效的用戶代碼格式
+  /// 檢查是否為有效的用戶代碼格式（UUID格式，32位十六進制字符）
   static bool isValidUserCode(String userCode) {
-    final regex = RegExp(r'^[A-Z0-9]{8,12}$');
+    final regex = RegExp(r'^[a-fA-F0-9]{32}$');
     return regex.hasMatch(userCode);
   }
 

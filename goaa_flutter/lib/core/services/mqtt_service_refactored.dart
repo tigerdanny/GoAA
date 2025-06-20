@@ -129,28 +129,7 @@ class MqttService {
     );
   }
 
-  /// 發送消息給好友
-  Future<void> sendMessageToFriend(String friendUserId, String message, {String? type}) async {
-    if (!isConnected || _currentUserId == null) return;
 
-    final messageData = {
-      'id': _generateMessageId(),
-      'type': GoaaMqttMessageType.message.name,
-      'fromUserId': _currentUserId!,
-      'toUserId': friendUserId,
-      'data': {
-        'message': message,
-        'messageType': type ?? 'text',
-        'userName': _currentUserName,
-      },
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-
-    await _connectionManager.publishMessage(
-      'goaa/users/$friendUserId/messages',
-      messageData,
-    );
-  }
 
   /// 搜索在線用戶
   List<OnlineUser> searchOnlineUsers(String query) {
@@ -173,12 +152,26 @@ class MqttService {
   /// 判斷是否應該轉發到應用層
   bool _shouldForwardToApp(GoaaMqttMessageType type) {
     switch (type) {
+      // 好友功能群組 - 轉發到應用層
       case GoaaMqttMessageType.friendRequest:
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
-      case GoaaMqttMessageType.message:
-      case GoaaMqttMessageType.expenseShare:
         return true;
+        
+      // 帳務功能群組 - 轉發到應用層
+      case GoaaMqttMessageType.expenseShare:
+      case GoaaMqttMessageType.expenseUpdate:
+      case GoaaMqttMessageType.expenseSettlement:
+      case GoaaMqttMessageType.expenseNotification:
+      case GoaaMqttMessageType.groupInvitation:
+        return true;
+        
+      // 系統功能群組 - 轉發到應用層
+      case GoaaMqttMessageType.systemAnnouncement:
+      case GoaaMqttMessageType.systemMaintenance:
+        return true;
+        
+      // 基礎系統消息 - 不轉發（由用戶管理器處理）
       case GoaaMqttMessageType.userOnline:
       case GoaaMqttMessageType.userOffline:
       case GoaaMqttMessageType.heartbeat:

@@ -33,6 +33,11 @@ class FriendsController extends ChangeNotifier {
   bool get isConnecting => _isConnecting;
   bool get isConnected => _isConnected;
   
+  /// 獲取已成為好友的在線用戶
+  List<OnlineUser> getFriendUsers() {
+    return _onlineUsers.where((user) => _friends.contains(user.userId)).toList();
+  }
+  
   /// 初始化 MQTT 服務
   Future<bool> initializeMqtt() async {
     _isConnecting = true;
@@ -42,23 +47,32 @@ class FriendsController extends ChangeNotifier {
       // 獲取用戶信息
       final userId = await _userIdService.getUserId();
       final userName = 'User_${userId.substring(0, 8)}';
-      final userCode = 'GA${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+      final userCode = await _userIdService.getUserCode();
 
-      // 連接 MQTT
+      // 設置連接超時
       final connected = await _mqttService.connect(
         userId: userId,
         userName: userName,
         userCode: userCode,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('MQTT 連接超時');
+          return false;
+        },
       );
 
       if (connected) {
         _setupSubscriptions();
         _isConnected = true;
+      } else {
+        _isConnected = false;
       }
       
       return connected;
     } catch (e) {
       debugPrint('MQTT 初始化失敗: $e');
+      _isConnected = false;
       return false;
     } finally {
       _isConnecting = false;
@@ -86,6 +100,9 @@ class FriendsController extends ChangeNotifier {
   
   /// 處理 MQTT 消息
   void _handleMqttMessage(GoaaMqttMessage message) {
+    // 只處理好友功能群組的消息
+    if (message.group != 'friends') return;
+    
     switch (message.type) {
       case GoaaMqttMessageType.friendRequest:
         _friendRequests.add(message);

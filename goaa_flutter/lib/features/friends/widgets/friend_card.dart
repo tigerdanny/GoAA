@@ -150,13 +150,8 @@ class FriendCard extends StatelessWidget {
 
   Widget _buildActionButton() {
     if (isFriend) {
-      return IconButton(
-        onPressed: onOpenChat,
-        icon: const Icon(
-          Icons.chat,
-          color: AppColors.primary,
-        ),
-      );
+      // 好友狀態下不顯示任何按鈕（聊天功能已移除）
+      return const SizedBox(width: 48); // 保持佈局一致
     } else {
       return IconButton(
         onPressed: onAddFriend,

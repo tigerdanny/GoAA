@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -28,7 +27,7 @@ class UserIdService {
     return userId;
   }
 
-  /// 獲取或生成用戶代碼（8-12位字母數字組合）
+  /// 獲取或生成用戶代碼（UUID格式）
   Future<String> getUserCode() async {
     final prefs = await SharedPreferences.getInstance();
     String? userCode = prefs.getString(_userCodeKey);
@@ -59,18 +58,10 @@ class UserIdService {
     }
   }
 
-  /// 生成用戶代碼（用於邀請等功能）
+  /// 生成用戶代碼（UUID格式）
   Future<String> _generateUserCode() async {
-    const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final Random random = Random();
-    
-    // 生成8位用戶代碼
-    String userCode = '';
-    for (int i = 0; i < 8; i++) {
-      userCode += chars[random.nextInt(chars.length)];
-    }
-    
-    return userCode;
+    // 生成UUID v4格式的用戶代碼（去掉連字符，保持32位字符）
+    return _uuid.v4().replaceAll('-', '');
   }
 
   /// 獲取設備信息

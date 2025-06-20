@@ -168,7 +168,7 @@ class HomeHeader extends StatelessWidget {
                         // 用戶ID + 操作按鈕
                         Row(
                           children: [
-                            // 用戶ID
+                            // 用戶代碼（截斷顯示）
                             if (currentUser?.userCode != null) ...[
                               GestureDetector(
                                 onTap: () {
@@ -181,11 +181,15 @@ class HomeHeader extends StatelessWidget {
                                   );
                                 },
                                 child: Text(
-                                  currentUser?.userCode ?? '',
+                                  // 顯示前12位字符加省略號
+                                  currentUser!.userCode.length > 12 
+                                    ? '${currentUser!.userCode.substring(0, 12)}...' 
+                                    : currentUser!.userCode,
                                   style: const TextStyle(
                                     color: AppColors.textSecondary,
-                                    fontSize: 14,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w500,
+                                    fontFamily: 'monospace',
                                   ),
                                 ),
                               ),

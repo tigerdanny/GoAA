@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../database.dart';
 import '../database_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 
 /// 用戶資料存取層
 class UserRepository {
@@ -54,6 +55,12 @@ class UserRepository {
     bool isCurrentUser = false,
   }) async {
     try {
+      // 首先檢查用戶代碼是否已存在
+      final existingUser = await findUserByCode(userCode);
+      if (existingUser != null) {
+        throw Exception('用戶代碼已存在: $userCode');
+      }
+
       final companion = UsersCompanion.insert(
         userCode: userCode,
         name: name,
@@ -64,7 +71,8 @@ class UserRepository {
         isCurrentUser: Value(isCurrentUser),
       );
 
-      return await _db.userQueries.insertOrUpdateUser(companion);
+      // 使用安全的插入方法，如果代碼衝突會拋出異常
+      return await _db.userQueries.insertUser(companion);
     } catch (e) {
       debugPrint('創建用戶失敗: $e');
       rethrow;
@@ -117,14 +125,9 @@ class UserRepository {
       throw Exception('無法生成唯一用戶代碼');
     }
     
-    // 生成用戶代碼
-    final now = DateTime.now();
-    final timeComponent = now.microsecondsSinceEpoch.toString();
-    final timeDigits = timeComponent.substring(timeComponent.length - 8);
-    final randomComponent = (now.millisecond * 1000 + attempts * 7 + now.second * 13) % 999999;
-    final combinedNumber = (int.parse(timeDigits.substring(2, 6)) + randomComponent) % 999999;
-    final codeNumber = combinedNumber.toString().padLeft(6, '0');
-    final userCode = 'GA$codeNumber';
+    // 生成UUID格式的用戶代碼
+    const uuid = Uuid();
+    final userCode = uuid.v4().replaceAll('-', '');
     
     final exists = await isUserCodeExists(userCode);
     if (exists) {

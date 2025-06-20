@@ -26,6 +26,11 @@ class UserQueries {
     return _database.into(_database.users).insertOnConflictUpdate(user);
   }
 
+  /// 安全創建用戶（如果代碼衝突則拋出異常）
+  Future<int> insertUser(UsersCompanion user) {
+    return _database.into(_database.users).insert(user);
+  }
+
   /// 更新用戶資料
   Future<bool> updateUser(int id, UsersCompanion user) async {
     final result = await (_database.update(_database.users)

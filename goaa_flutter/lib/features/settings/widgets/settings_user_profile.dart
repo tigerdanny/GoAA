@@ -102,10 +102,11 @@ class SettingsUserProfile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                l10n?.userCode(currentUser?.userCode ?? 'N/A') ?? 
-                '用戶代碼：${currentUser?.userCode ?? "N/A"}',
+                l10n?.userCode(_formatUserCode(currentUser?.userCode ?? 'N/A')) ?? 
+                '用戶代碼：${_formatUserCode(currentUser?.userCode ?? "N/A")}',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
+                  fontFamily: 'monospace',
                 ),
               ),
               const SizedBox(height: 8),
@@ -147,5 +148,11 @@ class SettingsUserProfile extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// 格式化用戶代碼顯示（截斷長代碼）
+  String _formatUserCode(String userCode) {
+    if (userCode == 'N/A') return userCode;
+    return userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode;
   }
 } 

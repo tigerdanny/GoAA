@@ -1,16 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'mqtt_models.dart';
+import 'mqtt_topics.dart';
 
 /// MQTT 連接管理器
 class MqttConnectionManager {
-  static const String _broker = 'broker.emqx.io';
-  static const int _port = 1883;
+  // HiveMQ 雲端服務配置
+  static const String _broker = 'e5ad947c783545e480cd17a9a59672c0.s1.eu.hivemq.cloud';
+  static const int _port = 8883;
+  static const String _username = 'goaauser';
+  static const String _password = 'goaauser_!QAZ2wsx';
   static const int _keepAlivePeriod = 60;
-  static const int _connectionTimeout = 10;
+  static const int _connectionTimeout = 15;
 
   MqttServerClient? _client;
   String? _currentUserId;
@@ -40,12 +45,16 @@ class MqttConnectionManager {
       _currentUserName = userName;
       _currentUserCode = userCode;
 
-      // 創建客戶端
+      // 創建客戶端（使用用戶UUID作為 Client ID）
       _client = MqttServerClient.withPort(_broker, userId, _port);
       _client!.logging(on: kDebugMode);
       _client!.keepAlivePeriod = _keepAlivePeriod;
       _client!.connectTimeoutPeriod = _connectionTimeout;
       _client!.autoReconnect = true;
+      
+      // 啟用安全連接 (TLS/SSL)
+      _client!.secure = true;
+      _client!.securityContext = SecurityContext.defaultContext;
 
       // 設置回調
       _client!.onConnected = _onConnected;
@@ -53,10 +62,10 @@ class MqttConnectionManager {
       _client!.onSubscribed = _onSubscribed;
       _client!.onUnsubscribed = _onUnsubscribed;
 
-      // 連接
+      // 連接消息配置（包含認證信息）
       final connMessage = MqttConnectMessage()
           .withClientIdentifier(userId)
-          .withWillTopic('goaa/users/offline')
+          .withWillTopic(MqttTopics.friendsUserOffline)
           .withWillMessage(jsonEncode({
             'userId': userId,
             'userName': userName,
@@ -64,14 +73,15 @@ class MqttConnectionManager {
           }))
           .withWillQos(MqttQos.atLeastOnce)
           .startClean()
-          .withWillRetain();
+          .withWillRetain()
+          .authenticateAs(_username, _password);
 
       _client!.connectionMessage = connMessage;
 
-      await _client!.connect();
+      await _client!.connect(_username, _password);
 
       if (isConnected) {
-        _setupSubscriptions();
+        _setupSubscriptions(); // 默認只訂閱好友功能，帳務功能需要另外訂閱
         _startHeartbeat();
         await _publishUserOnline();
         return true;
@@ -126,18 +136,47 @@ class MqttConnectionManager {
     }
   }
 
-  /// 設置訂閱
-  void _setupSubscriptions() {
+  /// 設置好友功能訂閱
+  void _setupFriendsSubscriptions() {
     if (!isConnected || _currentUserId == null) return;
 
-    // 訂閱全局頻道
-    subscribeToTopic('goaa/users/online');
-    subscribeToTopic('goaa/users/offline');
+    // 訂閱好友功能相關主題
+    final friendsTopics = MqttTopics.getFriendsSubscriptionTopics(_currentUserId!);
+    for (final topic in friendsTopics) {
+      subscribeToTopic(topic);
+    }
+  }
 
-    // 訂閱個人頻道
-    subscribeToTopic('goaa/users/$_currentUserId/requests');
-    subscribeToTopic('goaa/users/$_currentUserId/responses');
-    subscribeToTopic('goaa/users/$_currentUserId/messages');
+  /// 設置帳務功能訂閱
+  void _setupExpensesSubscriptions(List<String> groupIds) {
+    if (!isConnected || _currentUserId == null) return;
+
+    // 訂閱帳務功能相關主題
+    final expensesTopics = MqttTopics.getExpensesSubscriptionTopics(_currentUserId!, groupIds);
+    for (final topic in expensesTopics) {
+      subscribeToTopic(topic);
+    }
+  }
+
+  /// 設置系統功能訂閱
+  void _setupSystemSubscriptions() {
+    if (!isConnected || _currentUserId == null) return;
+
+    // 訂閱系統功能相關主題
+    final systemTopics = MqttTopics.getSystemSubscriptionTopics(_currentUserId!);
+    for (final topic in systemTopics) {
+      subscribeToTopic(topic);
+    }
+  }
+
+  /// 設置所有訂閱
+  void _setupSubscriptions({List<String> userGroupIds = const []}) {
+    if (!isConnected || _currentUserId == null) return;
+
+    // 設置各功能群組的訂閱
+    _setupFriendsSubscriptions();
+    _setupExpensesSubscriptions(userGroupIds);
+    _setupSystemSubscriptions();
 
     // 設置消息監聽
     _client!.updates!.listen(_onMessageReceived);
@@ -153,11 +192,11 @@ class MqttConnectionManager {
     });
   }
 
-  /// 發佈用戶上線
+  /// 發佈用戶上線（好友功能群組）
   Future<void> _publishUserOnline() async {
     if (_currentUserId == null) return;
 
-    await publishMessage('goaa/users/online', {
+    await publishMessage(MqttTopics.friendsUserOnline, {
       'userId': _currentUserId,
       'userName': _currentUserName,
       'userCode': _currentUserCode,
@@ -165,22 +204,22 @@ class MqttConnectionManager {
     });
   }
 
-  /// 發佈用戶離線
+  /// 發佈用戶離線（好友功能群組）
   Future<void> _publishUserOffline() async {
     if (_currentUserId == null) return;
 
-    await publishMessage('goaa/users/offline', {
+    await publishMessage(MqttTopics.friendsUserOffline, {
       'userId': _currentUserId,
       'userName': _currentUserName,
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  /// 發佈心跳
+  /// 發佈心跳（好友功能群組）
   Future<void> _publishHeartbeat() async {
     if (_currentUserId == null) return;
 
-    await publishMessage('goaa/users/heartbeat', {
+    await publishMessage(MqttTopics.friendsUserHeartbeat, {
       'userId': _currentUserId,
       'userName': _currentUserName,
       'timestamp': DateTime.now().toIso8601String(),
@@ -235,23 +274,52 @@ class MqttConnectionManager {
   GoaaMqttMessage? _parseMessage(String topic, Map<String, dynamic> data) {
     try {
       GoaaMqttMessageType type;
+      String group = MqttTopics.getTopicGroup(topic) ?? 'unknown';
       
-      if (topic.contains('/online')) {
-        type = GoaaMqttMessageType.userOnline;
-      } else if (topic.contains('/offline')) {
-        type = GoaaMqttMessageType.userOffline;
-      } else if (topic.contains('/heartbeat')) {
-        type = GoaaMqttMessageType.heartbeat;
-      } else if (topic.contains('/requests')) {
-        type = GoaaMqttMessageType.friendRequest;
-      } else if (topic.contains('/responses')) {
-        if (data['action'] == 'accept') {
-          type = GoaaMqttMessageType.friendAccept;
+      // 根據主題群組和路徑確定消息類型
+      if (MqttTopics.isFriendsGroupTopic(topic)) {
+        // 好友功能群組消息解析
+        if (topic.contains('/online')) {
+          type = GoaaMqttMessageType.userOnline;
+        } else if (topic.contains('/offline')) {
+          type = GoaaMqttMessageType.userOffline;
+        } else if (topic.contains('/heartbeat')) {
+          type = GoaaMqttMessageType.heartbeat;
+        } else if (topic.contains('/requests')) {
+          type = GoaaMqttMessageType.friendRequest;
+        } else if (topic.contains('/responses')) {
+          if (data['action'] == 'accept') {
+            type = GoaaMqttMessageType.friendAccept;
+          } else {
+            type = GoaaMqttMessageType.friendReject;
+          }
         } else {
-          type = GoaaMqttMessageType.friendReject;
+          return null;
         }
-      } else if (topic.contains('/messages')) {
-        type = GoaaMqttMessageType.message;
+      } else if (MqttTopics.isExpensesGroupTopic(topic)) {
+        // 帳務功能群組消息解析
+        if (topic.contains('/shares')) {
+          type = GoaaMqttMessageType.expenseShare;
+        } else if (topic.contains('/updates')) {
+          type = GoaaMqttMessageType.expenseUpdate;
+        } else if (topic.contains('/settlements')) {
+          type = GoaaMqttMessageType.expenseSettlement;
+        } else if (topic.contains('/notifications')) {
+          type = GoaaMqttMessageType.expenseNotification;
+        } else if (topic.contains('/invitations')) {
+          type = GoaaMqttMessageType.groupInvitation;
+        } else {
+          return null;
+        }
+      } else if (MqttTopics.isSystemGroupTopic(topic)) {
+        // 系統功能群組消息解析
+        if (topic.contains('/announcements')) {
+          type = GoaaMqttMessageType.systemAnnouncement;
+        } else if (topic.contains('/maintenance')) {
+          type = GoaaMqttMessageType.systemMaintenance;
+        } else {
+          return null;
+        }
       } else {
         return null;
       }
@@ -263,11 +331,32 @@ class MqttConnectionManager {
         toUserId: data['toUserId'],
         data: data,
         timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
+        group: group,
       );
     } catch (e) {
       debugPrint('解析消息失敗: $e');
       return null;
     }
+  }
+
+  /// 訂閱帳務群組（當用戶加入群組時調用）
+  Future<void> subscribeToExpensesGroup(String groupId) async {
+    if (!isConnected) return;
+
+    await subscribeToTopic(MqttTopics.expensesGroupShares(groupId));
+    await subscribeToTopic(MqttTopics.expensesGroupUpdates(groupId));
+    await subscribeToTopic(MqttTopics.expensesGroupSettlements(groupId));
+    await subscribeToTopic(MqttTopics.expensesGroupMembers(groupId));
+  }
+
+  /// 取消訂閱帳務群組（當用戶退出群組時調用）
+  Future<void> unsubscribeFromExpensesGroup(String groupId) async {
+    if (!isConnected) return;
+
+    _client?.unsubscribe(MqttTopics.expensesGroupShares(groupId));
+    _client?.unsubscribe(MqttTopics.expensesGroupUpdates(groupId));
+    _client?.unsubscribe(MqttTopics.expensesGroupSettlements(groupId));
+    _client?.unsubscribe(MqttTopics.expensesGroupMembers(groupId));
   }
 
   /// 清理資源

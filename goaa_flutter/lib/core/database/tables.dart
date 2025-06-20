@@ -7,7 +7,7 @@ import 'package:drift/drift.dart';
 /// 用戶表
 class Users extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get userCode => text().withLength(min: 8, max: 12).unique()();
+  TextColumn get userCode => text().withLength(min: 32, max: 36).unique()(); // UUID格式
   TextColumn get name => text().withLength(min: 1, max: 50)();
   TextColumn get email => text().nullable()();
   TextColumn get phone => text().nullable()();

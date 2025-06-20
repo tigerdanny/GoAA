@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:goaa_flutter/core/theme/app_colors.dart';
 import 'package:goaa_flutter/core/theme/app_dimensions.dart';
 import 'package:goaa_flutter/core/services/mqtt/mqtt_models.dart';
-import 'package:goaa_flutter/features/chat/chat_screen.dart';
 import 'controllers/friends_controller.dart';
 import 'widgets/friends_list_view.dart';
 import 'widgets/friend_request_dialog.dart';
@@ -70,18 +69,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
     setState(() {});
   }
 
-  /// 打開聊天
-  void _openChat(OnlineUser user) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          friendUserId: user.userId,
-          friendUserName: user.userName,
-        ),
-      ),
-    );
-  }
+
 
   /// 發送好友請求
   void _sendFriendRequest(OnlineUser user) {
@@ -203,7 +191,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: '搜索在線用戶 (姓名或用戶代碼)',
+          hintText: '搜索用戶 (姓名或用戶代碼)',
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -257,16 +245,15 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
             title: '',
             isSearching: _controller.isSearching,
             onAddFriend: _sendFriendRequest,
-            onOpenChat: _openChat,
           );
         }
 
+        // 只顯示已加為好友的用戶，不顯示所有在線用戶
         return FriendsListView(
-          users: _controller.onlineUsers,
+          users: _controller.getFriendUsers(),
           friends: _controller.friends,
-          title: '在線用戶 (${_controller.onlineUsers.length})',
+          title: '好友列表 (${_controller.getFriendUsers().length})',
           onAddFriend: _sendFriendRequest,
-          onOpenChat: _openChat,
         );
       },
     );

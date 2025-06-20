@@ -3,6 +3,7 @@ import 'dart:math';
 import 'mqtt/mqtt_models.dart';
 import 'mqtt/mqtt_connection_manager.dart';
 import 'mqtt/mqtt_user_manager.dart';
+import 'mqtt/mqtt_topics.dart';
 
 /// MQTT 服務類 - 重構版
 class MqttService {
@@ -77,10 +78,11 @@ class MqttService {
         'userData': userData,
       },
       'timestamp': DateTime.now().toIso8601String(),
+      'group': 'friends',
     };
 
     await _connectionManager.publishMessage(
-      'goaa/users/$targetUserId/requests',
+      MqttTopics.friendsUserRequests(targetUserId),
       messageData,
     );
   }
@@ -100,10 +102,11 @@ class MqttService {
         'userCode': _currentUserCode,
       },
       'timestamp': DateTime.now().toIso8601String(),
+      'group': 'friends',
     };
 
     await _connectionManager.publishMessage(
-      'goaa/users/$fromUserId/responses',
+      MqttTopics.friendsUserResponses(fromUserId),
       messageData,
     );
   }
@@ -121,40 +124,137 @@ class MqttService {
         'action': 'reject',
       },
       'timestamp': DateTime.now().toIso8601String(),
+      'group': 'friends',
     };
 
     await _connectionManager.publishMessage(
-      'goaa/users/$fromUserId/responses',
+      MqttTopics.friendsUserResponses(fromUserId),
       messageData,
     );
   }
 
-  /// 發送消息給好友
-  Future<void> sendMessageToFriend(String friendUserId, String message, {String? type}) async {
-    if (!isConnected || _currentUserId == null) return;
 
-    final messageData = {
-      'id': _generateMessageId(),
-      'type': GoaaMqttMessageType.message.name,
-      'fromUserId': _currentUserId!,
-      'toUserId': friendUserId,
-      'data': {
-        'message': message,
-        'messageType': type ?? 'text',
-        'userName': _currentUserName,
-      },
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-
-    await _connectionManager.publishMessage(
-      'goaa/users/$friendUserId/messages',
-      messageData,
-    );
-  }
 
   /// 搜索在線用戶
   List<OnlineUser> searchOnlineUsers(String query) {
     return _userManager.searchOnlineUsers(query);
+  }
+
+  // ==================== 帳務功能群組方法 ====================
+
+  /// 發佈帳務分享
+  Future<void> publishExpenseShare(String groupId, Map<String, dynamic> expenseData) async {
+    if (!isConnected || _currentUserId == null) return;
+
+    final messageData = {
+      'id': _generateMessageId(),
+      'type': GoaaMqttMessageType.expenseShare.name,
+      'fromUserId': _currentUserId!,
+      'groupId': groupId,
+      'data': expenseData,
+      'timestamp': DateTime.now().toIso8601String(),
+      'group': 'expenses',
+    };
+
+    await _connectionManager.publishMessage(
+      MqttTopics.expensesGroupShares(groupId),
+      messageData,
+    );
+  }
+
+  /// 發佈帳務更新
+  Future<void> publishExpenseUpdate(String groupId, Map<String, dynamic> updateData) async {
+    if (!isConnected || _currentUserId == null) return;
+
+    final messageData = {
+      'id': _generateMessageId(),
+      'type': GoaaMqttMessageType.expenseUpdate.name,
+      'fromUserId': _currentUserId!,
+      'groupId': groupId,
+      'data': updateData,
+      'timestamp': DateTime.now().toIso8601String(),
+      'group': 'expenses',
+    };
+
+    await _connectionManager.publishMessage(
+      MqttTopics.expensesGroupUpdates(groupId),
+      messageData,
+    );
+  }
+
+  /// 發佈結算通知
+  Future<void> publishSettlementNotification(String groupId, Map<String, dynamic> settlementData) async {
+    if (!isConnected || _currentUserId == null) return;
+
+    final messageData = {
+      'id': _generateMessageId(),
+      'type': GoaaMqttMessageType.expenseSettlement.name,
+      'fromUserId': _currentUserId!,
+      'groupId': groupId,
+      'data': settlementData,
+      'timestamp': DateTime.now().toIso8601String(),
+      'group': 'expenses',
+    };
+
+    await _connectionManager.publishMessage(
+      MqttTopics.expensesGroupSettlements(groupId),
+      messageData,
+    );
+  }
+
+  /// 發送群組邀請
+  Future<void> sendGroupInvitation(String targetUserId, String groupId, Map<String, dynamic> groupData) async {
+    if (!isConnected || _currentUserId == null) return;
+
+    final messageData = {
+      'id': _generateMessageId(),
+      'type': GoaaMqttMessageType.groupInvitation.name,
+      'fromUserId': _currentUserId!,
+      'toUserId': targetUserId,
+      'data': {
+        'groupId': groupId,
+        'groupData': groupData,
+        'inviterName': _currentUserName,
+      },
+      'timestamp': DateTime.now().toIso8601String(),
+      'group': 'expenses',
+    };
+
+    await _connectionManager.publishMessage(
+      MqttTopics.expensesUserInvitations(targetUserId),
+      messageData,
+    );
+  }
+
+  /// 訂閱帳務群組（用戶加入群組時）
+  Future<void> subscribeToExpensesGroup(String groupId) async {
+    await _connectionManager.subscribeToExpensesGroup(groupId);
+  }
+
+  /// 取消訂閱帳務群組（用戶退出群組時）
+  Future<void> unsubscribeFromExpensesGroup(String groupId) async {
+    await _connectionManager.unsubscribeFromExpensesGroup(groupId);
+  }
+
+  // ==================== 系統功能群組方法 ====================
+
+  /// 發佈系統公告
+  Future<void> publishSystemAnnouncement(Map<String, dynamic> announcementData) async {
+    if (!isConnected || _currentUserId == null) return;
+
+    final messageData = {
+      'id': _generateMessageId(),
+      'type': GoaaMqttMessageType.systemAnnouncement.name,
+      'fromUserId': _currentUserId!,
+      'data': announcementData,
+      'timestamp': DateTime.now().toIso8601String(),
+      'group': 'system',
+    };
+
+    await _connectionManager.publishMessage(
+      MqttTopics.systemAnnouncements,
+      messageData,
+    );
   }
 
   /// 設置消息處理
@@ -173,12 +273,26 @@ class MqttService {
   /// 判斷是否應該轉發到應用層
   bool _shouldForwardToApp(GoaaMqttMessageType type) {
     switch (type) {
+      // 好友功能群組 - 轉發到應用層
       case GoaaMqttMessageType.friendRequest:
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
-      case GoaaMqttMessageType.message:
-      case GoaaMqttMessageType.expenseShare:
         return true;
+        
+      // 帳務功能群組 - 轉發到應用層
+      case GoaaMqttMessageType.expenseShare:
+      case GoaaMqttMessageType.expenseUpdate:
+      case GoaaMqttMessageType.expenseSettlement:
+      case GoaaMqttMessageType.expenseNotification:
+      case GoaaMqttMessageType.groupInvitation:
+        return true;
+        
+      // 系統功能群組 - 轉發到應用層
+      case GoaaMqttMessageType.systemAnnouncement:
+      case GoaaMqttMessageType.systemMaintenance:
+        return true;
+        
+      // 基礎系統消息 - 不轉發（由用戶管理器處理）
       case GoaaMqttMessageType.userOnline:
       case GoaaMqttMessageType.userOffline:
       case GoaaMqttMessageType.heartbeat:
