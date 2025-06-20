@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:goaa_flutter/core/theme/app_colors.dart';
 import 'package:goaa_flutter/features/home/home_screen.dart';
-import 'package:goaa_flutter/l10n/generated/app_localizations.dart';
 import 'controllers/profile_controller.dart';
 import 'widgets/profile_app_bar.dart';
 import 'widgets/profile_avatar_section.dart';
