@@ -61,7 +61,7 @@ class UserInfoDisplay extends StatelessWidget {
           _buildInfoRow(
             context,
             label: '用戶ID',
-            value: '${userId.substring(0, 8)}...',
+            value: userId.length > 8 ? '${userId.substring(0, 8)}...' : userId,
             description: '系統自動生成的唯一識別碼',
           ),
         ],

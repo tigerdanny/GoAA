@@ -92,34 +92,80 @@ class AvatarWidget extends StatelessWidget {
   }
 
   Widget _buildAvatarImage() {
-    // 優先顯示自定義頭像
+    debugPrint('🖼️ 建構頭像圖片 - avatarPath: $avatarPath, avatarType: $avatarType');
+    
+    // 優先顯示傳入的頭像路徑
     if (avatarPath != null && avatarPath!.isNotEmpty) {
-      final file = File(avatarPath!);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
+      // 檢查是否為自定義頭像文件路徑
+      if (avatarPath!.startsWith('/')) {
+        final file = File(avatarPath!);
+        if (file.existsSync()) {
+          debugPrint('✅ 顯示自定義頭像文件: $avatarPath');
+          return Image.file(
+            file,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('❌ 自定義頭像加載失敗: $error');
+              return _buildDefaultAvatar();
+            },
+          );
+        } else {
+          debugPrint('⚠️ 自定義頭像文件不存在: $avatarPath');
+        }
+      } 
+      // 檢查是否為預設頭像類型（如 'male_01'）
+      else if (!avatarPath!.contains('/') && !avatarPath!.contains('.')) {
+        debugPrint('✅ 顯示預設頭像類型: $avatarPath');
+        return Image.asset(
+          AvatarService.getAvatarPath(avatarPath!),
           width: size,
           height: size,
           fit: BoxFit.cover,
           filterQuality: FilterQuality.high,
-          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('❌ 預設頭像加載失敗: $error');
+            return _buildDefaultAvatar();
+          },
+        );
+      }
+      // 檢查是否為 assets 路徑
+      else if (avatarPath!.startsWith('assets/')) {
+        debugPrint('✅ 顯示 assets 頭像: $avatarPath');
+        return Image.asset(
+          avatarPath!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('❌ Assets 頭像加載失敗: $error');
+            return _buildDefaultAvatar();
+          },
         );
       }
     }
 
-    // 顯示預設頭像
+    // 顯示預設頭像類型
     if (avatarType != null && avatarType!.isNotEmpty) {
+      debugPrint('✅ 顯示 avatarType 頭像: $avatarType');
       return Image.asset(
         AvatarService.getAvatarPath(avatarType!),
         width: size,
         height: size,
         fit: BoxFit.cover,
         filterQuality: FilterQuality.high,
-        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('❌ AvatarType 頭像加載失敗: $error');
+          return _buildDefaultAvatar();
+        },
       );
     }
 
     // 顯示預設圖標
+    debugPrint('🔄 顯示預設頭像圖標');
     return _buildDefaultAvatar();
   }
 

@@ -34,9 +34,9 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       actions: [
         if (!isLoading)
-          IconButton(
+          TextButton(
             onPressed: isSaving ? null : onSave,
-            icon: isSaving
+            child: isSaving
                 ? const SizedBox(
                     width: 20,
                     height: 20,
@@ -45,11 +45,14 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
                       valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   )
-                : const Icon(
-                    Icons.check,
-                    color: AppColors.primary,
+                : Text(
+                    hasCurrentUser ? '更新資料' : '完成設置',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
-            tooltip: hasCurrentUser ? '更新資料' : '完成設置',
           ),
       ],
     );

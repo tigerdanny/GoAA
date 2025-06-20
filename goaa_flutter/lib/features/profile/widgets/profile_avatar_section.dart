@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import 'avatar_widget.dart';
 
 /// 個人資料頭像區域組件
@@ -24,15 +23,6 @@ class ProfileAvatarSection extends StatelessWidget {
           avatarPath: avatarPath,
           size: 120,
           onTap: onTap,
-        ),
-        
-        const SizedBox(height: 16),
-        
-        Text(
-          '點擊更換頭像',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
         ),
         
         const SizedBox(height: 48),

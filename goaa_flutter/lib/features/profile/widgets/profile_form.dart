@@ -55,26 +55,7 @@ class ProfileForm extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         
-        // 用戶代碼（新用戶時顯示）
-        if (showUserCode && userCodeController != null) ...[
-          ProfileFieldBuilder.buildTextField(
-            controller: userCodeController!,
-            label: '用戶代碼 *',
-            icon: Icons.badge_outlined,
-            isRequired: true,
-            maxLength: 10,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-            ],
-            validator: (value) {
-              if (value?.isEmpty ?? true) return '請輸入用戶代碼';
-              if (value!.length < 3) return '用戶代碼至少需要3個字符';
-              return null;
-            },
-            helpText: '3-10個字符，用於好友搜索',
-          ),
-          const SizedBox(height: 16),
-        ],
+        // 用戶代碼將自動生成，不需要用戶輸入
         
         // 電子郵件（選填）
         ProfileFieldBuilder.buildTextField(

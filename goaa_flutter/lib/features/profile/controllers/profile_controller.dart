@@ -1,41 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:drift/drift.dart';
-import 'package:goaa_flutter/core/database/repositories/user_repository.dart';
 import 'package:goaa_flutter/core/database/database.dart';
-import 'package:goaa_flutter/core/services/avatar_service.dart';
+import '../managers/profile_avatar_manager.dart';
+import '../managers/profile_user_manager.dart';
 
-/// 個人資料控制器
+/// 個人資料控制器 - 重構版
 class ProfileController extends ChangeNotifier {
-  final UserRepository _userRepository = UserRepository();
-  final AvatarService _avatarService = AvatarService();
+  // 管理器
+  final ProfileAvatarManager _avatarManager = ProfileAvatarManager();
+  final ProfileUserManager _userManager = ProfileUserManager();
   
   User? _currentUser;
   bool _isLoading = false;
-  bool _isSaving = false;
 
   // Getters
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
-  bool get isSaving => _isSaving;
+  bool get isSaving => _avatarManager.isSaving || _userManager.isSaving;
   String? get userName => _currentUser?.name;
   String? get userCode => _currentUser?.userCode;
   
-  /// 獲取頭像路徑（優先使用自定義頭像，否則使用預設頭像）
-  String? get avatarPath {
-    if (_currentUser?.avatarSource != null && _currentUser!.avatarSource!.isNotEmpty) {
-      return _currentUser!.avatarSource;
-    }
-    if (_currentUser?.avatarType != null && _currentUser!.avatarType.isNotEmpty) {
-      return 'assets/images/${_currentUser!.avatarType}.png';
-    }
-    return null;
-  }
+  // 頭像管理器相關
+  ProfileAvatarManager get avatarManager => _avatarManager;
+  ProfileUserManager get userManager => _userManager;
+  
+  /// 獲取頭像路徑（委託給頭像管理器）
+  String? get avatarPath => _avatarManager.getAvatarPath(_currentUser);
 
   /// 初始化
   Future<void> initialize() async {
     _setLoading(true);
     try {
-      _currentUser = await _userRepository.getCurrentUser();
+      _currentUser = await _userManager.getCurrentUser();
+      
+      // 設置管理器的監聽器
+      _avatarManager.addListener(_onManagerChanged);
+      _userManager.addListener(_onManagerChanged);
+      
       notifyListeners();
     } catch (e) {
       debugPrint('初始化個人資料失敗: $e');
@@ -44,31 +44,22 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  /// 更新用戶名稱
-  Future<bool> updateUserName(String name) async {
-    if (_currentUser == null || name.trim().isEmpty) return false;
+  /// 管理器狀態變化處理
+  void _onManagerChanged() {
+    notifyListeners();
+  }
 
-    _setSaving(true);
-    try {
-      final success = await _userRepository.updateUser(
-        _currentUser!.id,
-        name: name.trim(),
-      );
-      
-      if (success) {
-        _currentUser = _currentUser!.copyWith(
-          name: name.trim(),
-          updatedAt: DateTime.now(),
-        );
-        notifyListeners();
-      }
-      return success;
-    } catch (e) {
-      debugPrint('更新用戶名稱失敗: $e');
-      return false;
-    } finally {
-      _setSaving(false);
+  /// 更新用戶名稱（委託給用戶管理器）
+  Future<bool> updateUserName(String name) async {
+    if (_currentUser == null) return false;
+    
+    final updatedUser = await _userManager.updateUserName(_currentUser!, name);
+    if (updatedUser != null) {
+      _currentUser = updatedUser;
+      notifyListeners();
+      return true;
     }
+    return false;
   }
 
   /// 更新用戶代碼 - 注意：UserRepository 不支持更新 userCode
@@ -79,103 +70,74 @@ class ProfileController extends ChangeNotifier {
     return false;
   }
 
-  /// 更新頭像
+  /// 更新頭像（委託給頭像管理器）
   Future<bool> updateAvatar(String? avatarPath, {bool isCustom = false}) async {
     if (_currentUser == null) return false;
-
-    _setSaving(true);
-    try {
-      final success = await _userRepository.updateUser(
-        _currentUser!.id,
-        avatarType: isCustom ? _currentUser!.avatarType : avatarPath,
-        avatarSource: isCustom ? avatarPath : null,
-      );
-      
-      if (success) {
-        _currentUser = _currentUser!.copyWith(
-          avatarType: isCustom ? _currentUser!.avatarType : (avatarPath ?? 'male_01'),
-          avatarSource: isCustom ? Value(avatarPath) : const Value(null),
-          updatedAt: DateTime.now(),
-        );
-        
-        // 同時保存到 AvatarService
-        if (avatarPath != null) {
-          await AvatarService.saveUserAvatar(avatarPath);
-        } else {
-          await AvatarService.clearUserAvatar();
-        }
-        
-        notifyListeners();
-      }
-      return success;
-    } catch (e) {
-      debugPrint('更新頭像失敗: $e');
-      return false;
-    } finally {
-      _setSaving(false);
+    
+    final success = await _avatarManager.updateAvatar(_currentUser!, avatarPath, isCustom: isCustom);
+    if (success) {
+      // 重新獲取用戶數據以確保同步
+      await refresh();
     }
+    return success;
   }
 
-  /// 選擇頭像
+  /// 選擇頭像（委託給頭像管理器）
   Future<void> selectAvatar(BuildContext context) async {
-    try {
-      final selectedAvatar = await _avatarService.showAvatarPicker(context);
-      if (selectedAvatar != null) {
-        // 判斷是否為自定義頭像（通常自定義頭像路徑包含文件擴展名）
-        final isCustom = selectedAvatar.contains('.') && 
-                        (selectedAvatar.endsWith('.jpg') || 
-                         selectedAvatar.endsWith('.png') || 
-                         selectedAvatar.endsWith('.jpeg'));
-        await updateAvatar(selectedAvatar, isCustom: isCustom);
-      }
-    } catch (e) {
-      debugPrint('選擇頭像失敗: $e');
+    await _avatarManager.selectAvatar(context, _currentUser);
+    if (_currentUser != null && !_avatarManager.hasTempAvatar) {
+      // 如果有用戶且不是臨時頭像，刷新用戶數據
+      await refresh();
     }
   }
 
-  /// 創建新用戶
+  /// 創建新用戶（整合頭像管理器和用戶管理器）
   Future<bool> createUser({
     required String name,
-    required String userCode,
+    String? userCode,
     String avatarType = 'male_01',
     String? avatarSource,
   }) async {
-    if (name.trim().isEmpty || userCode.trim().isEmpty) return false;
+    if (name.trim().isEmpty) return false;
 
-    _setSaving(true);
-    try {
-      final userId = await _userRepository.createUser(
-        userCode: userCode.trim(),
-        name: name.trim(),
-        avatarType: avatarType,
-        avatarSource: avatarSource,
-        isCurrentUser: true,
-      );
+    // 獲取頭像參數（如果有臨時頭像的話）
+    final avatarParams = _avatarManager.getAvatarParamsForCreation(avatarType);
+    final finalAvatarType = avatarParams['avatarType'] as String;
+    final finalAvatarSource = avatarParams['avatarSource'] as String?;
+    
+    debugPrint('🎯 創建用戶 - name: $name, avatarType: $finalAvatarType, avatarSource: $finalAvatarSource');
 
-      if (userId > 0) {
-        // 重新獲取創建的用戶
-        _currentUser = await _userRepository.getCurrentUser();
-        
-        // 保存頭像到 AvatarService
-        if (avatarSource != null) {
-          await AvatarService.saveUserAvatar(avatarSource);
-        }
-        
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      debugPrint('創建用戶失敗: $e');
-      return false;
-    } finally {
-      _setSaving(false);
+    // 創建用戶
+    final newUser = await _userManager.createUser(
+      name: name,
+      userCode: userCode,
+      avatarType: finalAvatarType,
+      avatarSource: finalAvatarSource,
+    );
+
+    if (newUser != null) {
+      _currentUser = newUser;
+      
+      // 清除臨時頭像
+      _avatarManager.clearTempAvatar();
+      
+      notifyListeners();
+      return true;
     }
+    return false;
   }
 
   /// 刷新用戶數據
   Future<void> refresh() async {
-    await initialize();
+    _setLoading(true);
+    try {
+      _currentUser = await _userManager.getCurrentUser();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('刷新用戶數據失敗: $e');
+    } finally {
+      _setLoading(false);
+    }
   }
 
   /// 設置加載狀態
@@ -184,9 +146,12 @@ class ProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 設置保存狀態
-  void _setSaving(bool saving) {
-    _isSaving = saving;
-    notifyListeners();
+  @override
+  void dispose() {
+    _avatarManager.removeListener(_onManagerChanged);
+    _userManager.removeListener(_onManagerChanged);
+    _avatarManager.dispose();
+    _userManager.dispose();
+    super.dispose();
   }
 } 
