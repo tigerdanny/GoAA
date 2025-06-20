@@ -81,6 +81,8 @@ class MqttConnectionManager {
       await _client!.connect(_username, _password);
 
       if (isConnected) {
+        // 首先确保在服务器上创建必要的群组主题
+        await _ensureGroupsExist();
         _setupSubscriptions(); // 默認只訂閱好友功能，帳務功能需要另外訂閱
         _startHeartbeat();
         await _publishUserOnline();
@@ -166,6 +168,31 @@ class MqttConnectionManager {
     final systemTopics = MqttTopics.getSystemSubscriptionTopics(_currentUserId!);
     for (final topic in systemTopics) {
       subscribeToTopic(topic);
+    }
+  }
+
+  /// 確保服務器上存在必要的群組主題
+  Future<void> _ensureGroupsExist() async {
+    if (!isConnected || _currentUserId == null) return;
+    
+    try {
+      // 创建好友群组主题（发布一个初始化消息到好友群组）
+      await publishMessage(MqttTopics.friendsUserOnline, {
+        'action': 'group_init',
+        'group': 'friends',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      
+      // 创建账务群组主题（发布一个初始化消息到账务群组）
+      await publishMessage(MqttTopics.expensesUserNotifications(_currentUserId!), {
+        'action': 'group_init', 
+        'group': 'expenses',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      
+      debugPrint('✅ MQTT群組初始化完成');
+    } catch (e) {
+      debugPrint('⚠️ MQTT群組初始化失敗: $e');
     }
   }
 

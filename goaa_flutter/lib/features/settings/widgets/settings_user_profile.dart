@@ -102,8 +102,7 @@ class SettingsUserProfile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                l10n?.userCode(_formatUserCode(currentUser?.userCode ?? 'N/A')) ?? 
-                '用戶代碼：${_formatUserCode(currentUser?.userCode ?? "N/A")}',
+                                '用戶代碼',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontFamily: 'monospace',
