@@ -23,7 +23,7 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   late final GeneratedColumn<String> userCode = GeneratedColumn<String>(
       'user_code', aliasedName, false,
       additionalChecks:
-          GeneratedColumn.checkTextLength(minTextLength: 8, maxTextLength: 12),
+          GeneratedColumn.checkTextLength(minTextLength: 32, maxTextLength: 36),
       type: DriftSqlType.string,
       requiredDuringInsert: true,
       defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
