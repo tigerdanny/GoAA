@@ -6,6 +6,7 @@ import '../../../core/database/database.dart' as db;
 import '../../../core/models/daily_quote.dart' as model;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/avatar_service.dart';
+import '../../../core/widgets/user_id_dialog.dart';
 
 /// 首页顶部标题区域组件
 class HomeHeader extends StatelessWidget {
@@ -168,28 +169,46 @@ class HomeHeader extends StatelessWidget {
                         // 用戶ID + 操作按鈕
                         Row(
                           children: [
-                            // 用戶代碼（截斷顯示）
+                            // 用戶ID（點擊顯示）
                             if (currentUser?.userCode != null) ...[
                               GestureDetector(
                                 onTap: () {
-                                  Clipboard.setData(ClipboardData(text: currentUser?.userCode ?? ''));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('用戶代碼已複製'),
-                                      duration: Duration(seconds: 2),
-                                    ),
+                                  UserIdDialog.show(
+                                    context,
+                                    currentUser!.userCode,
+                                    userName: currentUser?.name,
                                   );
                                 },
-                                child: Text(
-                                  // 顯示前12位字符加省略號
-                                  currentUser!.userCode.length > 12 
-                                    ? '${currentUser!.userCode.substring(0, 12)}...' 
-                                    : currentUser!.userCode,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'monospace',
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.badge_outlined,
+                                        size: 12,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Text(
+                                        '用戶ID',
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      const Icon(
+                                        Icons.touch_app,
+                                        size: 10,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
