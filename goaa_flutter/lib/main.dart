@@ -9,7 +9,7 @@ import 'core/services/language_service.dart';
 import 'core/services/daily_quote/daily_quote_repository.dart';
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
-import 'core/services/friend_request_service.dart';
+import 'core/services/mqtt/mqtt_app_service.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'dart:io';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
@@ -109,10 +109,10 @@ Future<void> _backgroundInitialization() async {
     debugPrint('✅ 資料庫初始化完成');
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 3. 啟動全局好友請求監聽（獨立且隨時監聽）
-    final friendRequestService = FriendRequestService();
-    await friendRequestService.startService();
-    PerformanceMonitor.recordTimestamp('好友請求監聽啟動完成');
+    // 3. 啟動 MQTT APP 服務（統一管理 friends 和 expenses 群組）
+    final mqttAppService = MqttAppService();
+    await mqttAppService.initialize();
+    PerformanceMonitor.recordTimestamp('MQTT APP 服務啟動完成');
     
     // 4. 每日金句服務（可選，失敗不影響）
     final quoteRepository = DailyQuoteRepository();
