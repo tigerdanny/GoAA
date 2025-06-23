@@ -18,6 +18,8 @@ class ProfileUserManager extends ChangeNotifier {
   Future<User?> createUser({
     required String name,
     String? userCode,
+    String? email,
+    String? phone,
     String avatarType = 'male_01',
     String? avatarSource,
   }) async {
@@ -30,6 +32,8 @@ class ProfileUserManager extends ChangeNotifier {
         return await _attemptCreateUser(
           userCode: userCode!.trim(),
           name: name.trim(),
+          email: email,
+          phone: phone,
           avatarType: avatarType,
           avatarSource: avatarSource,
         );
@@ -44,6 +48,8 @@ class ProfileUserManager extends ChangeNotifier {
           final user = await _attemptCreateUser(
             userCode: generatedCode,
             name: name.trim(),
+            email: email,
+            phone: phone,
             avatarType: avatarType,
             avatarSource: avatarSource,
           );
@@ -76,12 +82,16 @@ class ProfileUserManager extends ChangeNotifier {
   Future<User?> _attemptCreateUser({
     required String userCode,
     required String name,
+    String? email,
+    String? phone,
     required String avatarType,
     String? avatarSource,
   }) async {
     final userId = await _userRepository.createUser(
       userCode: userCode,
       name: name,
+      email: email,
+      phone: phone,
       avatarType: avatarType,
       avatarSource: avatarSource,
       isCurrentUser: true,
@@ -123,6 +133,38 @@ class ProfileUserManager extends ChangeNotifier {
     } catch (e) {
       debugPrint('更新用戶名稱失敗: $e');
       return null;
+    } finally {
+      _setSaving(false);
+    }
+  }
+
+  /// 更新用戶信息（包含名稱、邮箱、手机号码等）
+  Future<bool> updateUserInfo(User currentUser, {
+    String? name,
+    String? email,
+    String? phone,
+    String? avatarType,
+    String? avatarSource,
+  }) async {
+    _setSaving(true);
+    try {
+      final success = await _userRepository.updateUser(
+        currentUser.id,
+        name: name?.trim(),
+        email: email?.trim(),
+        phone: phone?.trim(),
+        avatarType: avatarType,
+        avatarSource: avatarSource,
+      );
+      
+      if (success) {
+        debugPrint('✅ 用戶信息更新成功');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('更新用戶信息失敗: $e');
+      return false;
     } finally {
       _setSaving(false);
     }
