@@ -4,6 +4,45 @@ import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
 import '../../../core/database/repositories/friend_repository.dart';
 import '../../../core/database/repositories/user_repository.dart';
+import '../widgets/add_friend_dialog.dart';
+import '../services/mqtt_user_search_service.dart';
+
+/// 等待中的好友請求
+class PendingFriendRequest {
+  final String id;
+  final String targetName;
+  final String targetEmail;
+  final String targetPhone;
+  final DateTime requestTime;
+  final String status; // 'pending', 'accepted', 'rejected'
+
+  PendingFriendRequest({
+    required this.id,
+    required this.targetName,
+    required this.targetEmail,
+    required this.targetPhone,
+    required this.requestTime,
+    this.status = 'pending',
+  });
+
+  PendingFriendRequest copyWith({
+    String? id,
+    String? targetName,
+    String? targetEmail,
+    String? targetPhone,
+    DateTime? requestTime,
+    String? status,
+  }) {
+    return PendingFriendRequest(
+      id: id ?? this.id,
+      targetName: targetName ?? this.targetName,
+      targetEmail: targetEmail ?? this.targetEmail,
+      targetPhone: targetPhone ?? this.targetPhone,
+      requestTime: requestTime ?? this.requestTime,
+      status: status ?? this.status,
+    );
+  }
+}
 
 /// 好友功能控制器
 /// 負責管理好友列表、在線狀態、好友請求等功能
@@ -11,14 +50,16 @@ class FriendsController extends ChangeNotifier {
   final MqttAppService _mqttAppService = MqttAppService();
   final FriendRepository _friendRepository = FriendRepository();
   final UserRepository _userRepository = UserRepository();
+  final MqttUserSearchService _searchService = MqttUserSearchService();
 
   // 狀態變量
-  final List<String> _friends = [];
   final List<OnlineUser> _onlineUsers = [];
   final List<GoaaMqttMessage> _friendRequests = [];
-  final List<dynamic> _searchResults = [];
+  final List<String> _friends = [];
+  final List<PendingFriendRequest> _pendingRequests = []; // 等待中的好友請求
   bool _hasFriends = false;
   bool _isSearching = false;
+  final List<UserSearchResult> _searchResults = [];
 
   // 訂閱
   StreamSubscription<List<OnlineUser>>? _onlineUsersSubscription;
@@ -26,45 +67,34 @@ class FriendsController extends ChangeNotifier {
   StreamSubscription<bool>? _connectionSubscription;
 
   // Getters
-  List<String> get friends => List.unmodifiable(_friends);
   List<OnlineUser> get onlineUsers => List.unmodifiable(_onlineUsers);
   List<GoaaMqttMessage> get friendRequests => List.unmodifiable(_friendRequests);
-  List<dynamic> get searchResults => List.unmodifiable(_searchResults);
+  List<String> get friends => List.unmodifiable(_friends);
+  List<PendingFriendRequest> get pendingRequests => List.unmodifiable(_pendingRequests);
   bool get hasFriends => _hasFriends;
   bool get isSearching => _isSearching;
+  List<UserSearchResult> get searchResults => List.unmodifiable(_searchResults);
   bool get isConnected => _mqttAppService.isConnected;
 
-  FriendsController() {
-    _initializeController();
-  }
-
-  /// 初始化控制器
-  void _initializeController() {
-    debugPrint('🎮 初始化好友控制器...');
+  /// 初始化好友控制器
+  Future<void> initialize() async {
+    debugPrint('🎯 初始化好友控制器...');
     
-    // 加載本地好友數據
-    _loadFriendsData();
+    // 初始化 MQTT 用戶搜索服務
+    await _searchService.initialize();
     
-    // 設置 MQTT 監聽器
-    _setupMqttListeners();
+    // 只有在有好友的情況下才設置 MQTT 監聽
+    if (_hasFriends) {
+      _setupMqttListeners();
+    }
     
     debugPrint('✅ 好友控制器初始化完成');
   }
 
-  /// 加載好友數據
-  void _loadFriendsData() {
-    // 實際實現時需要從 UserRepository 或 FriendRepository 加載
-    // 這裡暫時使用模擬數據
-    _friends.clear();
-    _hasFriends = _friends.isNotEmpty;
-    
-    debugPrint('📂 加載好友數據: ${_friends.length} 個好友');
-  }
-
   /// 設置 MQTT 監聽器
   void _setupMqttListeners() {
-    debugPrint('📡 設置 MQTT 監聽器...');
-
+    debugPrint('🔧 設置 MQTT 監聽器...');
+    
     // 監聽在線用戶
     _onlineUsersSubscription = _mqttAppService.onlineUsersStream.listen(
       (users) {
@@ -122,6 +152,9 @@ class FriendsController extends ChangeNotifier {
           _saveFriendToDatabase(message);
         }
         
+        // 更新等待中的請求狀態
+        _updatePendingRequestStatus(message.fromUserId, 'accepted');
+        
         if (!_friends.contains(message.fromUserId)) {
           _friends.add(message.fromUserId);
           _hasFriends = true;
@@ -131,13 +164,25 @@ class FriendsController extends ChangeNotifier {
         break;
         
       case GoaaMqttMessageType.friendReject:
+        // 更新等待中的請求狀態
+        _updatePendingRequestStatus(message.fromUserId, 'rejected');
         debugPrint('❌ 好友請求被拒絕: ${message.fromUserId}');
-        // 可以在這裡處理拒絕邏輯
         break;
         
       default:
         debugPrint('⚠️ 未處理的好友消息類型: ${message.type}');
     }
+  }
+
+  /// 更新等待中請求的狀態
+  void _updatePendingRequestStatus(String userId, String status) {
+    for (int i = 0; i < _pendingRequests.length; i++) {
+      if (_pendingRequests[i].id == userId) {
+        _pendingRequests[i] = _pendingRequests[i].copyWith(status: status);
+        break;
+      }
+    }
+    notifyListeners();
   }
 
   /// 保存好友信息到數據庫
@@ -186,9 +231,11 @@ class FriendsController extends ChangeNotifier {
     return _onlineUsers.where((user) => _friends.contains(user.userId)).toList();
   }
 
-  /// 搜索用戶
-  Future<void> searchUsers(String query) async {
-    if (query.trim().isEmpty) {
+  /// 搜索用戶（通過姓名、信箱、電話）
+  Future<void> searchUsers(FriendSearchInfo searchInfo) async {
+    if (searchInfo.name.trim().isEmpty && 
+        searchInfo.email.trim().isEmpty && 
+        searchInfo.phone.trim().isEmpty) {
       _searchResults.clear();
       _isSearching = false;
       notifyListeners();
@@ -199,19 +246,22 @@ class FriendsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 搜索用戶: $query');
+      debugPrint('🔍 開始MQTT用戶搜索: ${searchInfo.name}');
+      debugPrint('   Email: ${searchInfo.email}');
+      debugPrint('   Phone: ${searchInfo.phone}');
       
-      // 實際實現時需要調用搜索 API
-      // final results = await _friendSearchService.searchUsers(query);
-      // _searchResults = results;
+      // 使用 MQTT 搜索服務
+      final results = await _searchService.searchUsers(searchInfo);
+      _searchResults.clear();
+      _searchResults.addAll(results);
       
-      // 暫時的模擬實現
-      await Future.delayed(const Duration(milliseconds: 500));
-      _searchResults.clear(); // 暫時返回空結果
+      debugPrint('📊 MQTT搜索結果: ${_searchResults.length} 個用戶');
+      for (final result in _searchResults) {
+        debugPrint('   - ${result.userName} (${result.userCode}) 匹配度: ${result.matchScore}');
+      }
       
-      debugPrint('📊 搜索結果: ${_searchResults.length} 個用戶');
     } catch (e) {
-      debugPrint('❌ 搜索用戶失敗: $e');
+      debugPrint('❌ MQTT搜索用戶失敗: $e');
       _searchResults.clear();
     } finally {
       _isSearching = false;
@@ -226,7 +276,74 @@ class FriendsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 發送好友請求
+  /// 發送好友請求（通過搜索結果）
+  Future<bool> sendFriendRequestToUser(UserSearchResult user) async {
+    try {
+      debugPrint('📤 發送好友請求給: ${user.userName} (${user.userCode})');
+      
+      // 創建等待中的請求記錄
+      final pendingRequest = PendingFriendRequest(
+        id: user.userId,
+        targetName: user.userName,
+        targetEmail: user.email ?? '',
+        targetPhone: user.phone ?? '',
+        requestTime: DateTime.now(),
+      );
+      
+      _pendingRequests.add(pendingRequest);
+      notifyListeners();
+      
+      // 發送 MQTT 好友請求
+      await _mqttAppService.sendFriendRequest(
+        toUserId: user.userId,
+        message: '好友請求',
+      );
+      
+      debugPrint('✅ 好友請求發送成功');
+      return true;
+    } catch (e) {
+      debugPrint('❌ 發送好友請求異常: $e');
+      return false;
+    }
+  }
+
+  /// 發送好友請求（通過搜索信息）
+  Future<bool> sendFriendRequestByInfo(FriendSearchInfo searchInfo) async {
+    try {
+      debugPrint('📤 發送好友請求: ${searchInfo.name}');
+      
+      // 創建等待中的請求記錄
+      final pendingRequest = PendingFriendRequest(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        targetName: searchInfo.name,
+        targetEmail: searchInfo.email,
+        targetPhone: searchInfo.phone,
+        requestTime: DateTime.now(),
+      );
+      
+      _pendingRequests.add(pendingRequest);
+      notifyListeners();
+      
+      // 通過搜索信息找到用戶並發送請求
+      await searchUsers(searchInfo);
+      if (_searchResults.isNotEmpty) {
+        // 發送給第一個匹配的用戶
+        final targetUser = _searchResults.first;
+        await _mqttAppService.sendFriendRequest(
+          toUserId: targetUser.userId,
+          message: '好友請求',
+        );
+      }
+      
+      debugPrint('✅ 好友請求發送成功');
+      return true;
+    } catch (e) {
+      debugPrint('❌ 發送好友請求異常: $e');
+      return false;
+    }
+  }
+
+  /// 發送好友請求（舊版本，通過 userId）
   Future<bool> sendFriendRequest(String targetUserId) async {
     try {
       debugPrint('📤 發送好友請求給: $targetUserId');
@@ -296,6 +413,12 @@ class FriendsController extends ChangeNotifier {
     }
   }
 
+  /// 移除等待中的請求
+  void removePendingRequest(String requestId) {
+    _pendingRequests.removeWhere((request) => request.id == requestId);
+    notifyListeners();
+  }
+
   /// 手動重連（委託給 MQTT APP 服務）
   Future<void> reconnect() async {
     debugPrint('🔄 請求重新連接 MQTT...');
@@ -311,6 +434,7 @@ class FriendsController extends ChangeNotifier {
     _friendMessagesSubscription?.cancel();
     _connectionSubscription?.cancel();
     _friendRepository.dispose();
+    _searchService.dispose();
     
     super.dispose();
   }

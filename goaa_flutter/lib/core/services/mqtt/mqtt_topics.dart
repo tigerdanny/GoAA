@@ -20,6 +20,14 @@ class MqttTopics {
   static const String friendsAllUsersRequests = '$_friendsGroup/+/requests';
   static const String friendsAllUsersResponses = '$_friendsGroup/+/responses';
   
+  // ==================== 用戶搜索功能 ====================
+  
+  /// 用戶搜索 - 搜索請求主題（公共廣播）
+  static const String userSearchRequest = '$_basePrefix/user/search/request';
+  
+  /// 用戶搜索 - 搜索響應主題（個人接收）
+  static String userSearchResponse(String requesterId) => '$_basePrefix/user/search/response/$requesterId';
+  
   // ==================== 帳務功能群組 ====================
   static const String _expensesGroup = '$_basePrefix/expenses';
   
@@ -120,6 +128,10 @@ class MqttTopics {
       
       // 訂閱發送給自己的好友回應
       friendsUserResponses(userId),
+      
+      // 訂閱用戶搜索功能
+      userSearchRequest, // 監聽搜索請求
+      userSearchResponse(userId), // 監聽發送給自己的搜索響應
       
       // 可選：訂閱所有好友請求和回應（如果需要全局監控）
       // friendsAllUsersRequests,

@@ -157,19 +157,20 @@ class MqttService {
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
       case GoaaMqttMessageType.friendInfoShare:
+      case GoaaMqttMessageType.userSearchRequest:
+      case GoaaMqttMessageType.userSearchResponse:
         return true;
         
       // 帳務功能群組 - 轉發到應用層
-      case GoaaMqttMessageType.expenseShare:
+      case GoaaMqttMessageType.expenseCreate:
       case GoaaMqttMessageType.expenseUpdate:
-      case GoaaMqttMessageType.expenseSettlement:
-      case GoaaMqttMessageType.expenseNotification:
-      case GoaaMqttMessageType.groupInvitation:
+      case GoaaMqttMessageType.expenseDelete:
         return true;
         
-      // 系統功能群組 - 轉發到應用層
-      case GoaaMqttMessageType.systemAnnouncement:
-      case GoaaMqttMessageType.systemMaintenance:
+      // 群組功能 - 轉發到應用層
+      case GoaaMqttMessageType.groupMessage:
+      case GoaaMqttMessageType.groupJoin:
+      case GoaaMqttMessageType.groupLeave:
         return true;
         
       // 基礎系統消息 - 不轉發（由用戶管理器處理）
@@ -177,6 +178,10 @@ class MqttService {
       case GoaaMqttMessageType.userOffline:
       case GoaaMqttMessageType.heartbeat:
         return false;
+        
+      // 默認情況 - 轉發到應用層
+      default:
+        return true;
     }
   }
 

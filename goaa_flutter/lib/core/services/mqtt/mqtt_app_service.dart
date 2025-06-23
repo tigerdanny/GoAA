@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'mqtt_connection_manager.dart';
 import 'mqtt_models.dart';
-import 'mqtt_topics.dart';
+import 'mqtt_topics.dart' as topics;
 import '../user_id_service.dart';
 import '../../database/repositories/user_repository.dart';
 
@@ -124,6 +124,8 @@ class MqttAppService {
       case GoaaMqttMessageType.friendRequest:
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
+      case GoaaMqttMessageType.userSearchRequest:
+      case GoaaMqttMessageType.userSearchResponse:
         // 這些消息直接轉發給好友控制器處理
         break;
       default:
@@ -193,7 +195,7 @@ class MqttAppService {
     final userName = 'User_${userId.substring(0, 8)}';
 
     // 第一階段：只發送基本信息（姓名或UUID）
-    await _mqttManager.publishMessage(MqttTopics.friendsUserRequests(toUserId), {
+    await _mqttManager.publishMessage(topics.MqttTopics.friendsUserRequests(toUserId), {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'fromUserId': userId,
       'fromUserName': userName,
@@ -222,7 +224,7 @@ class MqttAppService {
       await _sendCompleteUserInfo(requestId, fromUserId, userId, userName);
     } else {
       // 拒絕時只發送簡單回應
-      await _mqttManager.publishMessage(MqttTopics.friendsUserResponses(fromUserId), {
+      await _mqttManager.publishMessage(topics.MqttTopics.friendsUserResponses(fromUserId), {
         'id': requestId,
         'fromUserId': fromUserId,
         'toUserId': userId,
@@ -248,7 +250,7 @@ class MqttAppService {
     final currentUser = await userRepository.getCurrentUser();
     
     // 發送完整個人信息到原請求者
-    await _mqttManager.publishMessage(MqttTopics.friendsUserResponses(fromUserId), {
+    await _mqttManager.publishMessage(topics.MqttTopics.friendsUserResponses(fromUserId), {
       'id': requestId,
       'fromUserId': fromUserId,
       'toUserId': userId,
@@ -276,6 +278,15 @@ class MqttAppService {
   /// 取消訂閱帳務群組
   Future<void> unsubscribeFromExpensesGroup(String groupId) async {
     await _mqttManager.unsubscribeFromExpensesGroup(groupId);
+  }
+
+  /// 發布消息到指定主題
+  Future<void> publishMessage(String topic, Map<String, dynamic> message) async {
+    if (!isConnected) {
+      throw Exception('MQTT 未連接');
+    }
+    
+    await _mqttManager.publishMessage(topic, message);
   }
 
   /// 重新連接

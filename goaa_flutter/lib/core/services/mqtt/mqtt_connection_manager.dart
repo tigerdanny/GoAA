@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
-import 'mqtt_models.dart';
+import 'mqtt_models.dart' hide MqttConnectionState;
 import 'mqtt_topics.dart';
 
 /// MQTT 連接管理器
