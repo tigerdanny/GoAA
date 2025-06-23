@@ -34,6 +34,34 @@ class MqttConnectionManager {
   Stream<GoaaMqttMessage> get messageStream => _messageController.stream;
   bool get isConnected => _client?.connectionStatus?.state == MqttConnectionState.connected;
 
+  /// 安全解碼MQTT負載
+  String _safeDecodePayload(Uint8List bytes) {
+    try {
+      // 首先嘗試標準UTF-8解碼
+      return utf8.decode(bytes);
+    } catch (e) {
+      debugPrint('⚠️ UTF-8解碼失敗，嘗試其他方法: $e');
+      
+      try {
+        // 嘗試使用allowMalformed標誌
+        return utf8.decode(bytes, allowMalformed: true);
+      } catch (e2) {
+        debugPrint('⚠️ 容錯UTF-8解碼失敗，使用字節轉換: $e2');
+        
+        try {
+          // 最後嘗試：直接字節轉字符
+          return String.fromCharCodes(bytes);
+        } catch (e3) {
+          debugPrint('⚠️ 字節轉換失敗，使用ASCII過濾: $e3');
+          
+          // 最後的最後：只保留ASCII範圍的字節
+          final asciiBytes = bytes.where((byte) => byte >= 32 && byte <= 126).toList();
+          return String.fromCharCodes(asciiBytes);
+        }
+      }
+    }
+  }
+
   /// 連接到 MQTT 服務器
   Future<bool> connect({
     required String userId,
@@ -268,13 +296,28 @@ class MqttConnectionManager {
         }
         
         final topic = message.topic;
-        final payload = MqttPublishPayload.bytesToStringAsString(
-          (message.payload as MqttPublishMessage).payload.message,
-        );
-
-        debugPrint('📨 收到MQTT消息 - 主題: $topic, 內容: $payload');
+        final publishMessage = message.payload as MqttPublishMessage;
         
-        final data = jsonDecode(payload) as Map<String, dynamic>;
+        // 🔧 使用安全解碼方法獲取負載內容
+        final payload = _safeDecodePayload(Uint8List.fromList(publishMessage.payload.message));
+
+        debugPrint('📨 收到MQTT消息 - 主題: $topic, 內容長度: ${payload.length}');
+        
+        // 檢查負載是否為有效JSON
+        if (payload.trim().isEmpty) {
+          debugPrint('⚠️ 負載為空，跳過消息');
+          continue;
+        }
+        
+        // 🔧 安全解析JSON
+        Map<String, dynamic> data;
+        try {
+          data = jsonDecode(payload) as Map<String, dynamic>;
+        } catch (jsonError) {
+          debugPrint('❌ JSON解析失敗: $jsonError');
+          debugPrint('   負載內容: ${payload.length > 200 ? '${payload.substring(0, 200)}...' : payload}');
+          continue;
+        }
         final mqttMessage = _parseMessage(topic, data);
         
         if (mqttMessage != null) {
@@ -288,16 +331,12 @@ class MqttConnectionManager {
         debugPrint('   主題: ${message.topic}');
         debugPrint('   類型: ${message.payload.runtimeType}');
         
-        // 嘗試獲取原始負載內容以便調試
-        try {
-          if (message.payload is MqttPublishMessage) {
-            final payload = MqttPublishPayload.bytesToStringAsString(
-              (message.payload as MqttPublishMessage).payload.message,
-            );
-            debugPrint('   負載: $payload');
-          }
-        } catch (payloadError) {
-          debugPrint('   無法獲取負載內容: $payloadError');
+        // 提供更詳細的錯誤信息
+        if (message.payload is MqttPublishMessage) {
+          final publishMessage = message.payload as MqttPublishMessage;
+          final bytes = publishMessage.payload.message;
+          debugPrint('   負載字節長度: ${bytes.length}');
+          debugPrint('   前10個字節: ${bytes.take(10).toList()}');
         }
       }
     }
