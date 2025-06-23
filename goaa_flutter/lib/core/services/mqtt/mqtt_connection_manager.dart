@@ -261,19 +261,44 @@ class MqttConnectionManager {
   void _onMessageReceived(List<MqttReceivedMessage<MqttMessage>> messages) {
     for (final message in messages) {
       try {
+        // 🔧 只處理publish消息，忽略ack等控制消息
+        if (message.payload is! MqttPublishMessage) {
+          debugPrint('⏭️ 跳過非publish消息: ${message.payload.runtimeType}');
+          continue;
+        }
+        
         final topic = message.topic;
         final payload = MqttPublishPayload.bytesToStringAsString(
           (message.payload as MqttPublishMessage).payload.message,
         );
 
+        debugPrint('📨 收到MQTT消息 - 主題: $topic, 內容: $payload');
+        
         final data = jsonDecode(payload) as Map<String, dynamic>;
         final mqttMessage = _parseMessage(topic, data);
         
         if (mqttMessage != null) {
+          debugPrint('✅ 消息解析成功: ${mqttMessage.type}');
           _messageController.add(mqttMessage);
+        } else {
+          debugPrint('⚠️ 消息解析結果為空，主題: $topic');
         }
       } catch (e) {
-        debugPrint('解析消息失敗: $e');
+        debugPrint('❌ 解析消息失敗: $e');
+        debugPrint('   主題: ${message.topic}');
+        debugPrint('   類型: ${message.payload.runtimeType}');
+        
+        // 嘗試獲取原始負載內容以便調試
+        try {
+          if (message.payload is MqttPublishMessage) {
+            final payload = MqttPublishPayload.bytesToStringAsString(
+              (message.payload as MqttPublishMessage).payload.message,
+            );
+            debugPrint('   負載: $payload');
+          }
+        } catch (payloadError) {
+          debugPrint('   無法獲取負載內容: $payloadError');
+        }
       }
     }
   }
@@ -376,9 +401,9 @@ class MqttConnectionManager {
         id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         type: type,
         fromUserId: fromUserId.isNotEmpty ? fromUserId : (data['userId'] ?? data['fromUserId'] ?? ''),
-        toUserId: data['toUserId'],
+        toUserId: data['toUserId'] ?? '', // 🔧 修復：確保不為null
         data: data,
-        timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.tryParse(data['timestamp'] ?? '') ?? DateTime.now(), // 🔧 修復：使用tryParse避免解析錯誤
         group: group,
       );
     } catch (e) {
