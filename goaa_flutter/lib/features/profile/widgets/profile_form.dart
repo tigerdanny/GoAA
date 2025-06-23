@@ -9,18 +9,14 @@ import 'phone_number_formatter.dart';
 /// 個人資料表單組件
 class ProfileForm extends StatelessWidget {
   final TextEditingController nameController;
-  final TextEditingController? userCodeController;
   final TextEditingController emailController;
   final TextEditingController phoneController;
-  final bool showUserCode;
 
   const ProfileForm({
     super.key,
     required this.nameController,
-    this.userCodeController,
     required this.emailController,
     required this.phoneController,
-    this.showUserCode = false,
   });
 
   @override
@@ -54,8 +50,6 @@ class ProfileForm extends StatelessWidget {
           selectAllOnTap: true,
         ),
         const SizedBox(height: 16),
-        
-        // 用戶代碼將自動生成，不需要用戶輸入
         
         // 電子郵件（選填）
         ProfileFieldBuilder.buildTextField(

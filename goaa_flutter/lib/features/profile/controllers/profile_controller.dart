@@ -88,14 +88,6 @@ class ProfileController extends ChangeNotifier {
     return false;
   }
 
-  /// 更新用戶代碼 - 注意：UserRepository 不支持更新 userCode
-  Future<bool> updateUserCode(String userCode) async {
-    // 由於 UserRepository.updateUser 不支持更新 userCode，
-    // 這個功能可能需要在數據庫層面添加支持
-    debugPrint('警告：當前不支持更新用戶代碼');
-    return false;
-  }
-
   /// 更新頭像（委託給頭像管理器）
   Future<bool> updateAvatar(String? avatarPath, {bool isCustom = false}) async {
     if (_currentUser == null) return false;

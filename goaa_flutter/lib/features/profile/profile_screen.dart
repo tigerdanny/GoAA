@@ -7,7 +7,6 @@ import 'widgets/profile_app_bar.dart';
 import 'widgets/profile_avatar_section.dart';
 import 'widgets/profile_form.dart';
 import 'widgets/profile_save_button.dart';
-import 'widgets/user_info_display.dart';
 
 /// 個人資料頁面
 class ProfileScreen extends StatefulWidget {
@@ -20,7 +19,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _userCodeController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   
@@ -37,7 +35,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _userCodeController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _controller.removeListener(_onControllerChanged);
@@ -52,7 +49,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // 如果有現有用戶，填充表單
     if (_controller.currentUser != null) {
       _nameController.text = _controller.userName ?? '';
-      _userCodeController.text = _controller.userCode ?? '';
       _emailController.text = _controller.currentUser?.email ?? '';
       _phoneController.text = _controller.currentUser?.phone ?? '';
     }
@@ -165,10 +161,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // 個人資料表單
                       ProfileForm(
                         nameController: _nameController,
-                        userCodeController: _userCodeController,
                         emailController: _emailController,
                         phoneController: _phoneController,
-                        showUserCode: false, // 不再顯示用戶代碼輸入框
                       ),
                       
                       const SizedBox(height: 48),
@@ -182,12 +176,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       
                       const SizedBox(height: 32),
                       
-                      // 用戶信息顯示（如果有現有用戶）
-                      if (_controller.currentUser != null)
-                        UserInfoDisplay(
-                          userId: _controller.currentUser!.id.toString(),
-                          userCode: _controller.currentUser!.userCode,
-                        ),
+                      // 移除個人識別資訊顯示
+                      // 用戶ID和用戶代碼已經在其他地方（如設置頁面）提供查看功能
                     ],
                   ),
                 ),
