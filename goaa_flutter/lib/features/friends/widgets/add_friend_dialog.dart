@@ -1,17 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
+/// 搜索類型枚舉
+enum SearchType {
+  name('姓名'),
+  email('信箱'),
+  phone('電話');
+  
+  const SearchType(this.displayName);
+  final String displayName;
+}
+
 /// 好友搜索信息
 class FriendSearchInfo {
-  final String name;
-  final String email;
-  final String phone;
+  final SearchType searchType;
+  final String searchValue;
   
   FriendSearchInfo({
-    required this.name,
-    required this.email,
-    required this.phone,
+    required this.searchType,
+    required this.searchValue,
   });
+  
+  // 為了兼容性，提供舊的屬性
+  String get name => searchType == SearchType.name ? searchValue : '';
+  String get email => searchType == SearchType.email ? searchValue : '';
+  String get phone => searchType == SearchType.phone ? searchValue : '';
 }
 
 /// 添加好友对话框组件
@@ -29,27 +42,71 @@ class AddFriendDialog extends StatefulWidget {
 
 class _AddFriendDialogState extends State<AddFriendDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _searchController = TextEditingController();
+  SearchType _selectedSearchType = SearchType.name;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   void _handleConfirm() {
     if (_formKey.currentState?.validate() ?? false) {
+      final searchValue = _searchController.text.trim();
+      
+      if (searchValue.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('請輸入搜索內容'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      
       final searchInfo = FriendSearchInfo(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        searchType: _selectedSearchType,
+        searchValue: searchValue,
       );
       Navigator.pop(context);
       widget.onConfirm(searchInfo);
+    }
+  }
+
+  // 根據搜索類型獲取鍵盤類型
+  TextInputType _getKeyboardType() {
+    switch (_selectedSearchType) {
+      case SearchType.email:
+        return TextInputType.emailAddress;
+      case SearchType.phone:
+        return TextInputType.phone;
+      case SearchType.name:
+        return TextInputType.text;
+    }
+  }
+
+  // 根據搜索類型獲取提示文字
+  String _getHintText() {
+    switch (_selectedSearchType) {
+      case SearchType.name:
+        return '請輸入好友的姓名';
+      case SearchType.email:
+        return '請輸入好友的信箱地址';
+      case SearchType.phone:
+        return '請輸入好友的電話號碼';
+    }
+  }
+
+  // 根據搜索類型獲取圖標
+  IconData _getIcon() {
+    switch (_selectedSearchType) {
+      case SearchType.name:
+        return Icons.person;
+      case SearchType.email:
+        return Icons.email;
+      case SearchType.phone:
+        return Icons.phone;
     }
   }
 
@@ -79,87 +136,98 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '請輸入好友的資訊以搜索並添加',
+              '請選擇搜索類型並輸入對應的信息',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
             
-            // 姓名輸入框
+            // 搜索類型選擇器
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '搜索類型',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: SearchType.values.map((type) {
+                      return Expanded(
+                        child: RadioListTile<SearchType>(
+                          title: Text(
+                            type.displayName,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          value: type,
+                          groupValue: _selectedSearchType,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedSearchType = value!;
+                              _searchController.clear(); // 清空輸入框
+                            });
+                          },
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // 搜索輸入框
             TextFormField(
-              controller: _nameController,
+              controller: _searchController,
+              keyboardType: _getKeyboardType(),
               decoration: InputDecoration(
-                labelText: '姓名 *',
-                hintText: '請輸入好友的姓名',
+                labelText: '請輸入${_selectedSearchType.displayName}',
+                hintText: _getHintText(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                prefixIcon: const Icon(Icons.person, color: AppColors.primary),
+                prefixIcon: Icon(_getIcon(), color: AppColors.primary),
               ),
               validator: (value) {
                 if (value?.trim().isEmpty ?? true) {
-                  return '請輸入姓名';
+                  return '請輸入${_selectedSearchType.displayName}';
+                }
+                
+                // 根據搜索類型進行格式驗證
+                switch (_selectedSearchType) {
+                  case SearchType.email:
+                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value!)) {
+                      return '請輸入有效的信箱格式';
+                    }
+                    break;
+                  case SearchType.phone:
+                    final phoneRegex = RegExp(r'^[\+]?[0-9\-\s\(\)]{8,}$');
+                    if (!phoneRegex.hasMatch(value!)) {
+                      return '請輸入有效的電話格式';
+                    }
+                    break;
+                  case SearchType.name:
+                    if (value!.trim().length < 2) {
+                      return '姓名至少需要2個字符';
+                    }
+                    break;
                 }
                 return null;
               },
-            ),
-            const SizedBox(height: 12),
-            
-            // 信箱輸入框
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: '信箱',
-                hintText: '請輸入好友的信箱（選填）',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.email, color: AppColors.primary),
-              ),
-              validator: (value) {
-                if (value?.isNotEmpty == true) {
-                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                  if (!emailRegex.hasMatch(value!)) {
-                    return '請輸入有效的信箱格式';
-                  }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            
-            // 電話輸入框
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: '電話',
-                hintText: '請輸入好友的電話（選填）',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.phone, color: AppColors.primary),
-              ),
-              validator: (value) {
-                if (value?.isNotEmpty == true) {
-                  final phoneRegex = RegExp(r'^[\+]?[0-9\-\s\(\)]{8,}$');
-                  if (!phoneRegex.hasMatch(value!)) {
-                    return '請輸入有效的電話格式';
-                  }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 8),
-            
-            Text(
-              '* 必填項目，信箱和電話至少填寫一項',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
             ),
           ],
         ),
@@ -182,4 +250,4 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
       ],
     );
   }
-} 
+}

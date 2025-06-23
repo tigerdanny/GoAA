@@ -84,7 +84,7 @@ class MqttConnectionManager {
       if (isConnected) {
         // 首先确保在服务器上创建必要的群组主题
         await _ensureGroupsExist();
-        _setupSubscriptions(); // 默認只訂閱好友功能，帳務功能需要另外訂閱
+        _setupMessageListener(); // 只設置消息監聽，不自動訂閱群組
         _startHeartbeat();
         await _publishUserOnline();
         return true;
@@ -161,16 +161,7 @@ class MqttConnectionManager {
     }
   }
 
-  /// 設置系統功能訂閱
-  void _setupSystemSubscriptions() {
-    if (!isConnected || _currentUserId == null) return;
 
-    // 訂閱系統功能相關主題
-    final systemTopics = MqttTopics.getSystemSubscriptionTopics(_currentUserId!);
-    for (final topic in systemTopics) {
-      subscribeToTopic(topic);
-    }
-  }
 
   /// 確保服務器上存在必要的群組主題
   Future<void> _ensureGroupsExist() async {
@@ -186,18 +177,15 @@ class MqttConnectionManager {
     }
   }
 
-  /// 設置所有訂閱
-  void _setupSubscriptions({List<String> userGroupIds = const []}) {
+  /// 設置消息監聽（不自動訂閱群組）
+  void _setupMessageListener() {
     if (!isConnected || _currentUserId == null) return;
 
-    // 設置各功能群組的訂閱
-    _setupFriendsSubscriptions();
-    _setupExpensesSubscriptions(userGroupIds);
-    _setupSystemSubscriptions();
-
-    // 設置消息監聽
+    // 只設置消息監聽，不自動訂閱群組
     _client!.updates!.listen(_onMessageReceived);
   }
+
+
 
   /// 開始心跳
   void _startHeartbeat() {
@@ -383,6 +371,14 @@ class MqttConnectionManager {
     }
   }
 
+  /// 手動訂閱好友功能群組
+  Future<void> subscribeToFriendsGroup() async {
+    if (!isConnected || _currentUserId == null) return;
+    
+    _setupFriendsSubscriptions();
+    debugPrint('📝 已訂閱好友功能群組');
+  }
+
   /// 訂閱帳務群組（當用戶加入群組時調用）
   Future<void> subscribeToExpensesGroup(String groupId) async {
     if (!isConnected) return;
@@ -391,6 +387,14 @@ class MqttConnectionManager {
     await subscribeToTopic(MqttTopics.expensesGroupUpdates(groupId));
     await subscribeToTopic(MqttTopics.expensesGroupSettlements(groupId));
     await subscribeToTopic(MqttTopics.expensesGroupMembers(groupId));
+  }
+
+  /// 手動訂閱帳務功能群組（所有帳務相關主題）
+  Future<void> subscribeToAllExpensesGroups([List<String> groupIds = const []]) async {
+    if (!isConnected || _currentUserId == null) return;
+    
+    _setupExpensesSubscriptions(groupIds);
+    debugPrint('📝 已訂閱帳務功能群組');
   }
 
   /// 取消訂閱帳務群組（當用戶退出群組時調用）

@@ -419,6 +419,8 @@ class FriendsController extends ChangeNotifier {
     notifyListeners();
   }
 
+
+
   /// 手動重連（委託給 MQTT APP 服務）
   Future<void> reconnect() async {
     debugPrint('🔄 請求重新連接 MQTT...');

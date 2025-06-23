@@ -270,7 +270,17 @@ class MqttAppService {
     });
   }
 
-  /// 訂閱帳務群組
+  /// 手動訂閱好友功能群組
+  Future<void> subscribeToFriendsGroup() async {
+    await _mqttManager.subscribeToFriendsGroup();
+  }
+
+  /// 手動訂閱帳務功能群組
+  Future<void> subscribeToExpensesGroups([List<String> groupIds = const []]) async {
+    await _mqttManager.subscribeToAllExpensesGroups(groupIds);
+  }
+
+  /// 訂閱特定帳務群組
   Future<void> subscribeToExpensesGroup(String groupId) async {
     await _mqttManager.subscribeToExpensesGroup(groupId);
   }

@@ -14,6 +14,9 @@ class FriendsListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final friendRequests = controller.friendRequests;
+    final pendingRequests = controller.pendingRequests;
+    
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -22,15 +25,17 @@ class FriendsListView extends StatelessWidget {
           // 好友名單區域
           _buildFriendsSection(context),
           
-          const SizedBox(height: 24),
+          // 要求添加好友名單區域（有請求時才顯示）
+          if (friendRequests.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildFriendRequestsSection(context),
+          ],
           
-          // 要求添加好友區域
-          _buildFriendRequestsSection(context),
-          
-          const SizedBox(height: 24),
-          
-          // 等待添加好友名單區域
-          _buildPendingRequestsSection(context),
+          // 等待添加好友名單區域（有等待中的請求時才顯示）
+          if (pendingRequests.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildPendingRequestsSection(context),
+          ],
           
           const SizedBox(height: 16),
         ],
@@ -123,7 +128,7 @@ class FriendsListView extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '要求添加好友',
+              '要求添加好友名單',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -161,15 +166,7 @@ class FriendsListView extends StatelessWidget {
         const SizedBox(height: 12),
         
         // 好友請求列表
-        if (friendRequests.isEmpty)
-          _buildEmptyState(
-            context,
-            icon: Icons.person_add_alt_1_outlined,
-            title: '暫無好友請求',
-            subtitle: '收到的好友請求會在這裡顯示',
-          )
-        else
-          ...friendRequests.map((request) => _buildFriendRequestItem(context, request)),
+        ...friendRequests.map((request) => _buildFriendRequestItem(context, request)),
       ],
     );
   }
@@ -229,15 +226,7 @@ class FriendsListView extends StatelessWidget {
         const SizedBox(height: 12),
         
         // 等待中的請求列表
-        if (pendingRequests.isEmpty)
-          _buildEmptyState(
-            context,
-            icon: Icons.hourglass_empty,
-            title: '暫無等待中的請求',
-            subtitle: '發送好友請求後會在這裡顯示',
-          )
-        else
-          ...pendingRequests.map((request) => _buildPendingRequestItem(context, request)),
+        ...pendingRequests.map((request) => _buildPendingRequestItem(context, request)),
       ],
     );
   }
