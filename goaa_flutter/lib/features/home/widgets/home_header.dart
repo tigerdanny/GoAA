@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/database/database.dart' as db;
 import '../../../core/models/daily_quote.dart' as model;
@@ -185,16 +184,16 @@ class HomeHeader extends StatelessWidget {
                                     color: AppColors.primary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Row(
+                                  child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.badge_outlined,
                                         size: 12,
                                         color: AppColors.primary,
                                       ),
-                                      const SizedBox(width: 4),
-                                      const Text(
+                                      SizedBox(width: 4),
+                                      Text(
                                         '用戶ID',
                                         style: TextStyle(
                                           color: AppColors.primary,
@@ -202,8 +201,8 @@ class HomeHeader extends StatelessWidget {
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const SizedBox(width: 2),
-                                      const Icon(
+                                      SizedBox(width: 2),
+                                      Icon(
                                         Icons.touch_app,
                                         size: 10,
                                         color: AppColors.primary,
