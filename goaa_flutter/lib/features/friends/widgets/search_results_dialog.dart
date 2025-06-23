@@ -3,7 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
 
 /// 用戶搜索結果對話框
-class SearchResultsDialog extends StatelessWidget {
+class SearchResultsDialog extends StatefulWidget {
   final List<UserSearchResult> searchResults;
   final Function(UserSearchResult) onSendRequest;
   final bool isLoading;
@@ -16,41 +16,103 @@ class SearchResultsDialog extends StatelessWidget {
   });
 
   @override
+  State<SearchResultsDialog> createState() => _SearchResultsDialogState();
+}
+
+class _SearchResultsDialogState extends State<SearchResultsDialog>
+    with TickerProviderStateMixin {
+  late AnimationController _slideController;
+  late AnimationController _fadeController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    ));
+
+    // 開始動畫
+    _fadeController.forward();
+    _slideController.forward();
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Row(
-        children: [
-          const Icon(Icons.search, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Text(
-            '搜索結果',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 400,
-        child: _buildContent(context),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('關閉', style: TextStyle(color: AppColors.textSecondary)),
+          title: Row(
+            children: [
+              const Icon(Icons.search, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                '搜索結果',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: _buildContent(context),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('關閉', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildContent(BuildContext context) {
-    if (isLoading) {
+    if (widget.isLoading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,7 +128,7 @@ class SearchResultsDialog extends StatelessWidget {
       );
     }
 
-    if (searchResults.isEmpty) {
+    if (widget.searchResults.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -96,13 +158,13 @@ class SearchResultsDialog extends StatelessWidget {
     }
 
     return ListView.separated(
-      itemCount: searchResults.length,
+      itemCount: widget.searchResults.length,
       separatorBuilder: (context, index) => const Divider(
         color: AppColors.divider,
         height: 1,
       ),
       itemBuilder: (context, index) {
-        final user = searchResults[index];
+        final user = widget.searchResults[index];
         return _buildUserItem(context, user);
       },
     );
@@ -183,7 +245,7 @@ class SearchResultsDialog extends StatelessWidget {
       trailing: ElevatedButton(
         onPressed: () {
           Navigator.pop(context);
-          onSendRequest(user);
+          widget.onSendRequest(user);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,

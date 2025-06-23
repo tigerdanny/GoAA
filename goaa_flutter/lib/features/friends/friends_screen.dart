@@ -6,6 +6,7 @@ import 'controllers/friends_controller.dart';
 import 'widgets/friends_list_view.dart';
 import 'widgets/add_friend_dialog.dart';
 import 'widgets/search_results_dialog.dart';
+import 'widgets/search_progress_dialog.dart';
 import 'dart:async';
 
 /// 好友資訊頁面
@@ -53,11 +54,23 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       context: context,
       builder: (dialogContext) => AddFriendDialog(
         onConfirm: (FriendSearchInfo searchInfo) async {
-          // 先進行搜索
-          await _controller.searchUsers(searchInfo);
-          
+          // 顯示搜索進度對話框
+          _showSearchProgressDialog(searchInfo);
+        },
+      ),
+    );
+  }
+
+  /// 顯示搜索進度對話框
+  void _showSearchProgressDialog(FriendSearchInfo searchInfo) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 防止用戶在搜索過程中關閉
+      builder: (dialogContext) => SearchProgressDialog(
+        searchFuture: _controller.searchUsers(searchInfo),
+        onSearchComplete: () {
           if (mounted) {
-            // 顯示搜索結果對話框
+            // 搜索完成後顯示搜索結果對話框
             _showSearchResultsDialog();
           }
         },
