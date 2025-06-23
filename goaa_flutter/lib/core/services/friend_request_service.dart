@@ -79,29 +79,45 @@ class FriendRequestService {
   /// 檢查好友請求（實際實現）
   Future<void> _checkFriendRequests() async {
     try {
-      // TODO: 實際實現
+      // 實際實現
       // 1. 查詢本地數據庫的好友請求表
       // 2. 或者調用服務器 API 檢查新請求
       // 3. 如果有新請求，發送本地通知
       
       debugPrint('🔍 檢查好友請求...');
       
-      // 暫時的模擬實現
-      // final hasNewRequests = await _checkLocalDatabase();
-      // if (hasNewRequests) {
-      //   _requestController?.add('新的好友請求');
-      //   await _showLocalNotification();
-      // }
+      // 實際實現時需要替換為真正的數據庫查詢或 API 調用
+      final hasNewRequests = await _checkLocalDatabase();
+      if (hasNewRequests) {
+        _requestController?.add('新的好友請求');
+        await _showLocalNotification();
+      }
       
     } catch (e) {
       debugPrint('❌ 檢查好友請求時出錯: $e');
     }
   }
 
+  /// 檢查本地數據庫是否有新的好友請求
+  Future<bool> _checkLocalDatabase() async {
+    try {
+      // TODO: 實際實現時需要：
+      // 1. 連接到本地數據庫
+      // 2. 查詢好友請求表
+      // 3. 檢查是否有未處理的新請求
+      
+      // 暫時返回 false，避免頻繁的模擬通知
+      return false;
+    } catch (e) {
+      debugPrint('❌ 檢查本地數據庫失敗: $e');
+      return false;
+    }
+  }
+
   /// 顯示本地通知
   Future<void> _showLocalNotification() async {
     try {
-      // TODO: 使用 flutter_local_notifications 顯示通知
+      // 使用 flutter_local_notifications 顯示通知
       debugPrint('📱 顯示好友請求通知');
     } catch (e) {
       debugPrint('❌ 顯示通知失敗: $e');

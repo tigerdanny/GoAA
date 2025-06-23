@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:goaa_flutter/core/services/mqtt_service.dart';
 import 'package:goaa_flutter/core/services/mqtt/mqtt_models.dart';
 import 'package:goaa_flutter/core/services/user_id_service.dart';
-import '../../../core/services/friend_request_service.dart';
 
 /// 好友管理控制器
 class FriendsController extends ChangeNotifier {
@@ -38,18 +37,7 @@ class FriendsController extends ChangeNotifier {
   bool get hasFriends => _hasFriends;
   bool get friendRequestsListenerActive => _friendRequestsListenerActive;
   
-  /// 啟動全局好友請求監聽（應在應用啟動時調用）
-  /// 這個方法應該在應用啟動時就調用，不依賴於是否進入好友頁面
-  static Future<void> startGlobalFriendRequestsListener() async {
-    try {
-      // 使用獨立的好友請求服務
-      final friendRequestService = FriendRequestService();
-      await friendRequestService.startService();
-      debugPrint('✅ 全局好友請求監聽服務已啟動');
-    } catch (e) {
-      debugPrint('❌ 全局好友請求監聽服務啟動失敗: $e');
-    }
-  }
+
 
   /// 初始化好友列表（從數據庫加載）
   Future<void> initializeFriends() async {

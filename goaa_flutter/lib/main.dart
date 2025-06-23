@@ -9,7 +9,6 @@ import 'core/services/language_service.dart';
 import 'core/services/daily_quote/daily_quote_repository.dart';
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
-import 'features/friends/controllers/friends_controller.dart';
 import 'core/services/friend_request_service.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'dart:io';
@@ -111,7 +110,8 @@ Future<void> _backgroundInitialization() async {
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
     // 3. 啟動全局好友請求監聽（獨立且隨時監聽）
-    await FriendsController.startGlobalFriendRequestsListener();
+    final friendRequestService = FriendRequestService();
+    await friendRequestService.startService();
     PerformanceMonitor.recordTimestamp('好友請求監聽啟動完成');
     
     // 4. 每日金句服務（可選，失敗不影響）
