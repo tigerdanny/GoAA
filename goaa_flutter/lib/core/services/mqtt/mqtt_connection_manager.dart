@@ -326,6 +326,21 @@ class MqttConnectionManager {
         } else {
           return null;
         }
+      } else if (MqttTopics.isUserSearchTopic(topic)) {
+        // 🔍 用戶搜索功能消息解析（特殊處理）
+        group = 'friends'; // 歸類到好友群組
+        fromUserId = data['fromUserId'] ?? '';
+        
+        if (MqttTopics.isUserSearchRequestTopic(topic)) {
+          type = GoaaMqttMessageType.userSearchRequest;
+          debugPrint('🔍 解析搜索請求: $topic');
+        } else if (MqttTopics.isUserSearchResponseTopic(topic)) {
+          type = GoaaMqttMessageType.userSearchResponse;
+          debugPrint('📨 解析搜索響應: $topic');
+        } else {
+          debugPrint('⚠️ 未知的用戶搜索主題: $topic');
+          return null;
+        }
       } else if (MqttTopics.isExpensesGroupTopic(topic)) {
         // 帳務功能群組消息解析
         fromUserId = data['userId'] ?? data['fromUserId'] ?? '';
@@ -353,6 +368,7 @@ class MqttConnectionManager {
           return null;
         }
       } else {
+        debugPrint('⚠️ 未知的主題群組: $topic');
         return null;
       }
 

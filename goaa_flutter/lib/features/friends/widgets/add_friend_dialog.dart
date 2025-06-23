@@ -136,10 +136,52 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '請選擇搜索類型並輸入對應的信息',
+              '請輸入好友信息並選擇搜索類型',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.textSecondary,
               ),
+            ),
+            const SizedBox(height: 16),
+            
+            // 搜索輸入框
+            TextFormField(
+              controller: _searchController,
+              keyboardType: _getKeyboardType(),
+              decoration: InputDecoration(
+                labelText: '請輸入${_selectedSearchType.displayName}',
+                hintText: _getHintText(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: Icon(_getIcon(), color: AppColors.primary),
+              ),
+              validator: (value) {
+                if (value?.trim().isEmpty ?? true) {
+                  return '請輸入${_selectedSearchType.displayName}';
+                }
+                
+                // 根據搜索類型進行格式驗證
+                switch (_selectedSearchType) {
+                  case SearchType.email:
+                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                    if (!emailRegex.hasMatch(value!)) {
+                      return '請輸入有效的信箱格式';
+                    }
+                    break;
+                  case SearchType.phone:
+                    final phoneRegex = RegExp(r'^[\+]?[0-9\-\s\(\)]{8,}$');
+                    if (!phoneRegex.hasMatch(value!)) {
+                      return '請輸入有效的電話格式';
+                    }
+                    break;
+                  case SearchType.name:
+                    if (value!.trim().length < 2) {
+                      return '姓名至少需要2個字符';
+                    }
+                    break;
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             
@@ -186,48 +228,6 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            // 搜索輸入框
-            TextFormField(
-              controller: _searchController,
-              keyboardType: _getKeyboardType(),
-              decoration: InputDecoration(
-                labelText: '請輸入${_selectedSearchType.displayName}',
-                hintText: _getHintText(),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: Icon(_getIcon(), color: AppColors.primary),
-              ),
-              validator: (value) {
-                if (value?.trim().isEmpty ?? true) {
-                  return '請輸入${_selectedSearchType.displayName}';
-                }
-                
-                // 根據搜索類型進行格式驗證
-                switch (_selectedSearchType) {
-                  case SearchType.email:
-                    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                    if (!emailRegex.hasMatch(value!)) {
-                      return '請輸入有效的信箱格式';
-                    }
-                    break;
-                  case SearchType.phone:
-                    final phoneRegex = RegExp(r'^[\+]?[0-9\-\s\(\)]{8,}$');
-                    if (!phoneRegex.hasMatch(value!)) {
-                      return '請輸入有效的電話格式';
-                    }
-                    break;
-                  case SearchType.name:
-                    if (value!.trim().length < 2) {
-                      return '姓名至少需要2個字符';
-                    }
-                    break;
-                }
-                return null;
-              },
             ),
           ],
         ),

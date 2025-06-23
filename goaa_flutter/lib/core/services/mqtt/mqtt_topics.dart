@@ -71,6 +71,7 @@ class MqttTopics {
   /// 從主題中提取群組類型
   static String? getTopicGroup(String topic) {
     if (isFriendsGroupTopic(topic)) return 'friends';
+    if (isUserSearchTopic(topic)) return 'friends'; // 用戶搜索歸類到好友群組
     if (isExpensesGroupTopic(topic)) return 'expenses';
     if (isSystemGroupTopic(topic)) return 'system';
     return null;
@@ -115,6 +116,29 @@ class MqttTopics {
   static bool isFriendRequestTopic(String topic) {
     return topic.startsWith('$_friendsGroup/') && 
            (topic.endsWith('/requests') || topic.endsWith('/responses'));
+  }
+  
+  /// 檢查主題是否為用戶搜索主題
+  static bool isUserSearchTopic(String topic) {
+    return topic.startsWith('$_basePrefix/user/search/');
+  }
+  
+  /// 檢查主題是否為用戶搜索請求主題
+  static bool isUserSearchRequestTopic(String topic) {
+    return topic == userSearchRequest;
+  }
+  
+  /// 檢查主題是否為用戶搜索響應主題
+  static bool isUserSearchResponseTopic(String topic) {
+    return topic.startsWith('$_basePrefix/user/search/response/');
+  }
+  
+  /// 從用戶搜索響應主題中提取請求者ID
+  static String? extractRequesterIdFromSearchResponseTopic(String topic) {
+    // 匹配 goaa/user/search/response/{requesterId} 格式
+    final regex = RegExp(r'^goaa/user/search/response/([^/]+)$');
+    final match = regex.firstMatch(topic);
+    return match?.group(1);
   }
   
   /// 獲取所有需要訂閱的好友功能主題
