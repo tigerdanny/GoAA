@@ -1,78 +1,73 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
+import '../services/friend_search_service.dart';
 
-/// 好友管理控制器
-/// 不再直接管理 MQTT 連接，而是監聽全局 MQTT APP 服務的好友事件
+/// 好友功能控制器
+/// 負責管理好友列表、在線狀態、好友請求等功能
 class FriendsController extends ChangeNotifier {
   final MqttAppService _mqttAppService = MqttAppService();
-  
-  // 狀態
-  List<OnlineUser> _onlineUsers = [];
-  List<OnlineUser> _searchResults = [];
-  final List<String> _friends = []; // 從數據庫加載實際好友列表
+  final FriendSearchService _friendSearchService = FriendSearchService();
+
+  // 狀態變量
+  final List<String> _friends = [];
+  final List<OnlineUser> _onlineUsers = [];
   final List<GoaaMqttMessage> _friendRequests = [];
-  
-  bool _isSearching = false;
+  final List<dynamic> _searchResults = [];
   bool _hasFriends = false;
-  
+  bool _isSearching = false;
+
   // 訂閱
   StreamSubscription<List<OnlineUser>>? _onlineUsersSubscription;
   StreamSubscription<GoaaMqttMessage>? _friendMessagesSubscription;
   StreamSubscription<bool>? _connectionSubscription;
-  
+
   // Getters
-  List<OnlineUser> get onlineUsers => _onlineUsers;
-  List<OnlineUser> get searchResults => _searchResults;
-  List<String> get friends => _friends;
-  List<GoaaMqttMessage> get friendRequests => _friendRequests;
-  bool get isSearching => _isSearching;
+  List<String> get friends => List.unmodifiable(_friends);
+  List<OnlineUser> get onlineUsers => List.unmodifiable(_onlineUsers);
+  List<GoaaMqttMessage> get friendRequests => List.unmodifiable(_friendRequests);
+  List<dynamic> get searchResults => List.unmodifiable(_searchResults);
   bool get hasFriends => _hasFriends;
-  
-  // 從 MQTT APP 服務獲取連接狀態
-  bool get isConnecting => _mqttAppService.isConnecting;
+  bool get isSearching => _isSearching;
   bool get isConnected => _mqttAppService.isConnected;
 
-  /// 初始化好友列表和監聽
-  Future<void> initializeFriends() async {
-    debugPrint('🚀 初始化好友控制器...');
+  FriendsController() {
+    _initializeController();
+  }
+
+  /// 初始化控制器
+  void _initializeController() {
+    debugPrint('🎮 初始化好友控制器...');
     
-    // 1. 從數據庫加載實際好友列表
-    await _loadFriendsFromDatabase();
+    // 加載本地好友數據
+    _loadFriendsData();
     
-    // 2. 設置 MQTT APP 服務監聽
-    _setupMqttAppServiceListeners();
+    // 設置 MQTT 監聽器
+    _setupMqttListeners();
     
     debugPrint('✅ 好友控制器初始化完成');
-    notifyListeners();
   }
 
-  /// 從數據庫加載好友列表
-  Future<void> _loadFriendsFromDatabase() async {
-    try {
-      // TODO: 實際實現時需要從 UserRepository 或 FriendRepository 加載
-      // final friendsList = await _friendRepository.getAllFriends();
-      // _friends.clear();
-      // _friends.addAll(friendsList);
-      
-      _friends.clear(); // 暫時使用空列表
-      _hasFriends = _friends.isNotEmpty;
-      
-      debugPrint('📊 加載好友列表: ${_friends.length} 個好友');
-    } catch (e) {
-      debugPrint('❌ 加載好友列表失敗: $e');
-    }
-  }
-
-  /// 設置 MQTT APP 服務監聽器
-  void _setupMqttAppServiceListeners() {
-    debugPrint('📡 設置 MQTT APP 服務監聽器...');
+  /// 加載好友數據
+  void _loadFriendsData() {
+    // TODO: 實際實現時需要從 UserRepository 或 FriendRepository 加載
+    // 這裡暫時使用模擬數據
+    _friends.clear();
+    _hasFriends = _friends.isNotEmpty;
     
-    // 監聽在線用戶變化
+    debugPrint('📂 加載好友數據: ${_friends.length} 個好友');
+  }
+
+  /// 設置 MQTT 監聽器
+  void _setupMqttListeners() {
+    debugPrint('📡 設置 MQTT 監聽器...');
+
+    // 監聽在線用戶
     _onlineUsersSubscription = _mqttAppService.onlineUsersStream.listen(
       (users) {
-        _onlineUsers = users;
+        _onlineUsers.clear();
+        _onlineUsers.addAll(users);
         notifyListeners();
         debugPrint('👥 在線用戶更新: ${users.length} 個用戶');
       },
@@ -82,7 +77,7 @@ class FriendsController extends ChangeNotifier {
     );
 
     // 監聽好友消息
-    _friendMessagesSubscription = _mqttAppService.friendMessagesStream.listen(
+    _friendMessagesSubscription = _mqttAppService.friendsMessageStream.listen(
       (message) {
         _handleFriendMessage(message);
       },
@@ -91,8 +86,8 @@ class FriendsController extends ChangeNotifier {
       },
     );
 
-    // 監聽連接狀態變化
-    _connectionSubscription = _mqttAppService.connectionStream.listen(
+    // 監聽連接狀態
+    _connectionSubscription = _mqttAppService.connectionStatusStream.listen(
       (connected) {
         notifyListeners(); // 更新 UI 顯示連接狀態
         debugPrint('🔗 MQTT 連接狀態: ${connected ? "已連接" : "已斷開"}');
@@ -102,7 +97,7 @@ class FriendsController extends ChangeNotifier {
       },
     );
 
-    debugPrint('✅ MQTT APP 服務監聽器設置完成');
+    debugPrint('✅ MQTT 監聽器設置完成');
   }
 
   /// 處理好友消息
@@ -161,16 +156,23 @@ class FriendsController extends ChangeNotifier {
       
       // 暫時的模擬實現
       await Future.delayed(const Duration(milliseconds: 500));
-      _searchResults = []; // 暫時返回空結果
+      _searchResults.clear(); // 暫時返回空結果
       
       debugPrint('📊 搜索結果: ${_searchResults.length} 個用戶');
     } catch (e) {
       debugPrint('❌ 搜索用戶失敗: $e');
-      _searchResults = [];
+      _searchResults.clear();
     } finally {
       _isSearching = false;
       notifyListeners();
     }
+  }
+
+  /// 清空搜索結果
+  void clearSearch() {
+    _searchResults.clear();
+    _isSearching = false;
+    notifyListeners();
   }
 
   /// 發送好友請求
@@ -178,24 +180,13 @@ class FriendsController extends ChangeNotifier {
     try {
       debugPrint('📤 發送好友請求給: $targetUserId');
       
-      final message = GoaaMqttMessage(
-        type: GoaaMqttMessageType.friendRequest,
-        group: 'friends',
-        fromUserId: '', // 會在 MQTT 服務中自動填充
+      await _mqttAppService.sendFriendRequest(
         toUserId: targetUserId,
-        content: '好友請求',
-        timestamp: DateTime.now(),
+        message: '好友請求',
       );
 
-      final success = await _mqttAppService.sendFriendMessage(message);
-      
-      if (success) {
-        debugPrint('✅ 好友請求發送成功');
-      } else {
-        debugPrint('❌ 好友請求發送失敗');
-      }
-      
-      return success;
+      debugPrint('✅ 好友請求發送成功');
+      return true;
     } catch (e) {
       debugPrint('❌ 發送好友請求異常: $e');
       return false;
@@ -207,34 +198,24 @@ class FriendsController extends ChangeNotifier {
     try {
       debugPrint('✅ 接受好友請求: ${request.fromUserId}');
       
-      final message = GoaaMqttMessage(
-        type: GoaaMqttMessageType.friendAccept,
-        group: 'friends',
-        fromUserId: '', // 會在 MQTT 服務中自動填充
-        toUserId: request.fromUserId,
-        content: '接受好友請求',
-        timestamp: DateTime.now(),
+      await _mqttAppService.respondToFriendRequest(
+        requestId: request.id,
+        fromUserId: request.fromUserId,
+        accept: true,
       );
 
-      final success = await _mqttAppService.sendFriendMessage(message);
-      
-      if (success) {
-        // 添加到本地好友列表
-        if (!_friends.contains(request.fromUserId)) {
-          _friends.add(request.fromUserId);
-          _hasFriends = true;
-        }
-        
-        // 從請求列表中移除
-        _friendRequests.remove(request);
-        notifyListeners();
-        
-        debugPrint('✅ 好友請求接受成功');
-      } else {
-        debugPrint('❌ 好友請求接受失敗');
+      // 添加到本地好友列表
+      if (!_friends.contains(request.fromUserId)) {
+        _friends.add(request.fromUserId);
+        _hasFriends = true;
       }
       
-      return success;
+      // 從請求列表中移除
+      _friendRequests.remove(request);
+      notifyListeners();
+      
+      debugPrint('✅ 好友請求接受成功');
+      return true;
     } catch (e) {
       debugPrint('❌ 接受好友請求異常: $e');
       return false;
@@ -246,28 +227,18 @@ class FriendsController extends ChangeNotifier {
     try {
       debugPrint('❌ 拒絕好友請求: ${request.fromUserId}');
       
-      final message = GoaaMqttMessage(
-        type: GoaaMqttMessageType.friendReject,
-        group: 'friends',
-        fromUserId: '', // 會在 MQTT 服務中自動填充
-        toUserId: request.fromUserId,
-        content: '拒絕好友請求',
-        timestamp: DateTime.now(),
+      await _mqttAppService.respondToFriendRequest(
+        requestId: request.id,
+        fromUserId: request.fromUserId,
+        accept: false,
       );
 
-      final success = await _mqttAppService.sendFriendMessage(message);
+      // 從請求列表中移除
+      _friendRequests.remove(request);
+      notifyListeners();
       
-      if (success) {
-        // 從請求列表中移除
-        _friendRequests.remove(request);
-        notifyListeners();
-        
-        debugPrint('✅ 好友請求拒絕成功');
-      } else {
-        debugPrint('❌ 好友請求拒絕失敗');
-      }
-      
-      return success;
+      debugPrint('✅ 好友請求拒絕成功');
+      return true;
     } catch (e) {
       debugPrint('❌ 拒絕好友請求異常: $e');
       return false;

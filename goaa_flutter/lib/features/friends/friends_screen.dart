@@ -47,8 +47,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
 
   /// 初始化控制器
   Future<void> _initializeController() async {
-    // 初始化好友列表，根據是否有好友決定是否連接 MQTT
-    await _controller.initializeFriends();
+    // 控制器會自動初始化
   }
 
   /// 搜索變化處理
@@ -70,7 +69,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       context,
       user,
       () async {
-        await _controller.sendFriendRequest(user);
+        await _controller.sendFriendRequest(user.userId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -89,8 +88,20 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
     FriendRequestDialogs.showFriendRequestsList(
       context,
       _controller.friendRequests,
-      _controller.acceptFriendRequest,
-      _controller.rejectFriendRequest,
+      (String userId) {
+        // 根據 userId 找到對應的請求
+        final request = _controller.friendRequests.firstWhere(
+          (req) => req.fromUserId == userId,
+        );
+        _controller.acceptFriendRequest(request);
+      },
+      (String userId) {
+        // 根據 userId 找到對應的請求
+        final request = _controller.friendRequests.firstWhere(
+          (req) => req.fromUserId == userId,
+        );
+        _controller.rejectFriendRequest(request);
+      },
     );
   }
 
@@ -101,8 +112,8 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       body: Column(
         children: [
           _buildSearchBar(),
-          // 只在有好友且正在連接時顯示連接指示器
-          if (_controller.hasFriends && _controller.isConnecting) _buildConnectingIndicator(),
+          // 只在有好友且未連接時顯示連接指示器
+          if (_controller.hasFriends && !_controller.isConnected) _buildConnectingIndicator(),
           Expanded(child: _buildContent()),
         ],
       ),
@@ -140,7 +151,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
         if (_controller.friendRequests.isNotEmpty) _buildNotificationBadge(),
         IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: _controller.isConnecting ? null : _controller.reconnect,
+          onPressed: _controller.reconnect,
         ),
       ],
     );
@@ -234,7 +245,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
         // 如果在搜索模式
         if (_searchController.text.trim().isNotEmpty) {
           return FriendsListView(
-            users: _controller.searchResults,
+            users: _controller.searchResults.cast<OnlineUser>(),
             friends: _controller.friends,
             title: '',
             isSearching: _controller.isSearching,
@@ -248,7 +259,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
         }
 
         // 有好友但離線時，顯示離線狀態
-        if (!_controller.isConnected && !_controller.isConnecting) {
+        if (!_controller.isConnected) {
           return _buildOfflineState();
         }
 

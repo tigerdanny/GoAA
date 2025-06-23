@@ -1,315 +1,276 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
-import 'mqtt_service.dart';
+import 'mqtt_connection_manager.dart';
 import 'mqtt_models.dart';
 import '../user_id_service.dart';
 
 /// APP 級別的 MQTT 服務
-/// 負責統一管理 MQTT 連接，訂閱 friends 和 expenses 群組
-/// 在 APP 啟動時自動連接，提供全局的 MQTT 功能
+/// 負責管理整個應用的 MQTT 連接和消息分發
 class MqttAppService {
   static final MqttAppService _instance = MqttAppService._internal();
   factory MqttAppService() => _instance;
   MqttAppService._internal();
 
-  final MqttService _mqttService = MqttService();
+  final MqttConnectionManager _mqttManager = MqttConnectionManager();
   final UserIdService _userIdService = UserIdService();
 
-  // 服務狀態
-  bool _isConnecting = false;
-  bool _isConnected = false;
-  bool _isInitialized = false;
+  // 狀態流控制器
+  final StreamController<bool> _connectionStatusController = StreamController<bool>.broadcast();
+  final StreamController<GoaaMqttMessage> _friendsMessageController = StreamController<GoaaMqttMessage>.broadcast();
+  final StreamController<GoaaMqttMessage> _expensesMessageController = StreamController<GoaaMqttMessage>.broadcast();
+  final StreamController<List<OnlineUser>> _onlineUsersController = StreamController<List<OnlineUser>>.broadcast();
 
-  // 訂閱狀態
-  final Map<String, StreamSubscription> _subscriptions = {};
+  // 在線用戶列表
+  final Map<String, OnlineUser> _onlineUsers = {};
+  
+  // 消息訂閱
+  StreamSubscription<bool>? _connectionSubscription;
+  StreamSubscription<GoaaMqttMessage>? _messageSubscription;
 
-  // 事件流控制器
-  final StreamController<List<OnlineUser>> _onlineUsersController = 
-      StreamController<List<OnlineUser>>.broadcast();
-  final StreamController<GoaaMqttMessage> _friendMessagesController = 
-      StreamController<GoaaMqttMessage>.broadcast();
-  final StreamController<GoaaMqttMessage> _expenseMessagesController = 
-      StreamController<GoaaMqttMessage>.broadcast();
-  final StreamController<bool> _connectionController = 
-      StreamController<bool>.broadcast();
-
-  // Getters
-  bool get isConnecting => _isConnecting;
-  bool get isConnected => _isConnected;
-  bool get isInitialized => _isInitialized;
-
-  // 事件流
+  // 公開的流
+  Stream<bool> get connectionStatusStream => _connectionStatusController.stream;
+  Stream<GoaaMqttMessage> get friendsMessageStream => _friendsMessageController.stream;
+  Stream<GoaaMqttMessage> get expensesMessageStream => _expensesMessageController.stream;
   Stream<List<OnlineUser>> get onlineUsersStream => _onlineUsersController.stream;
-  Stream<GoaaMqttMessage> get friendMessagesStream => _friendMessagesController.stream;
-  Stream<GoaaMqttMessage> get expenseMessagesStream => _expenseMessagesController.stream;
-  Stream<bool> get connectionStream => _connectionController.stream;
 
-  /// 初始化並啟動 MQTT 服務
-  /// 這個方法應該在 APP 啟動時調用
-  Future<bool> initialize() async {
-    if (_isInitialized) {
-      debugPrint('📡 MQTT APP 服務已初始化');
-      return _isConnected;
-    }
+  // 狀態獲取器
+  bool get isConnected => _mqttManager.isConnected;
+  List<OnlineUser> get onlineUsers => _onlineUsers.values.toList();
 
-    debugPrint('🚀 初始化 MQTT APP 服務...');
-    
+  /// 初始化 MQTT 服務
+  Future<void> initialize() async {
     try {
-      _isInitialized = true;
-      final success = await _connectToMqtt();
+      debugPrint('🚀 初始化 MQTT App 服務...');
       
-      if (success) {
-        await _subscribeToGroups();
-        debugPrint('✅ MQTT APP 服務初始化成功');
-      } else {
-        debugPrint('❌ MQTT APP 服務初始化失敗');
-      }
-      
-      return success;
-    } catch (e) {
-      debugPrint('❌ MQTT APP 服務初始化異常: $e');
-      return false;
-    }
-  }
-
-  /// 連接到 MQTT 服務器
-  Future<bool> _connectToMqtt() async {
-    if (_isConnected) return true;
-    
-    _isConnecting = true;
-    _connectionController.add(false);
-
-    try {
       // 獲取用戶信息
-      final userId = await _userIdService.getUserId();
-      final userName = 'User_${userId.substring(0, 8)}';
-      final userCode = await _userIdService.getUserCode();
+      final userInfo = await _userIdService.getCurrentUserInfo();
+      if (userInfo == null) {
+        debugPrint('❌ 無法獲取用戶信息，跳過 MQTT 初始化');
+        return;
+      }
 
-      debugPrint('🔗 連接 MQTT 服務器...');
-      debugPrint('👤 用戶ID: ${userId.substring(0, 8)}...');
-      debugPrint('🏷️ 用戶代碼: ${userCode.substring(0, 8)}...');
+      // 設置連接監聽
+      _setupConnectionListener();
+      
+      // 設置消息監聽
+      _setupMessageListener();
 
-      // 連接 MQTT 服務
-      final connected = await _mqttService.connect(
-        userId: userId,
-        userName: userName,
-        userCode: userCode,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('⏰ MQTT 連接超時 (10秒)');
-          return false;
-        },
+      // 連接到 MQTT
+      final connected = await _mqttManager.connect(
+        userId: userInfo['userId']!,
+        userName: userInfo['userName']!,
+        userCode: userInfo['userCode']!,
       );
 
-      _isConnected = connected;
-      _connectionController.add(connected);
-
       if (connected) {
-        debugPrint('✅ MQTT 連接成功');
+        debugPrint('✅ MQTT App 服務初始化成功');
       } else {
-        debugPrint('❌ MQTT 連接失敗');
-      }
-
-      return connected;
-    } catch (e) {
-      debugPrint('❌ MQTT 連接異常: $e');
-      _isConnected = false;
-      _connectionController.add(false);
-      return false;
-    } finally {
-      _isConnecting = false;
-    }
-  }
-
-  /// 訂閱必要的群組
-  Future<void> _subscribeToGroups() async {
-    if (!_isConnected) return;
-
-    debugPrint('📡 開始訂閱 MQTT 群組...');
-
-    try {
-      // 確保群組存在並訂閱
-      await _ensureGroupExistsAndSubscribe('friends');
-      await _ensureGroupExistsAndSubscribe('expenses');
-
-      // 設置消息監聽
-      _setupMessageListeners();
-
-      debugPrint('✅ MQTT 群組訂閱完成');
-    } catch (e) {
-      debugPrint('❌ MQTT 群組訂閱失敗: $e');
-    }
-  }
-
-  /// 確保群組存在並訂閱
-  Future<void> _ensureGroupExistsAndSubscribe(String groupName) async {
-    try {
-      debugPrint('🔍 檢查群組: $groupName');
-      
-      // 嘗試訂閱群組
-      final success = await _mqttService.subscribeToGroup(groupName);
-      
-      if (success) {
-        debugPrint('✅ 成功訂閱群組: $groupName');
-      } else {
-        debugPrint('❌ 訂閱群組失敗: $groupName');
-        // 如果訂閱失敗，可能是群組不存在，嘗試創建
-        debugPrint('🔨 嘗試創建群組: $groupName');
-        await _mqttService.createGroup(groupName);
-        
-        // 重新嘗試訂閱
-        final retrySuccess = await _mqttService.subscribeToGroup(groupName);
-        if (retrySuccess) {
-          debugPrint('✅ 創建並訂閱群組成功: $groupName');
-        } else {
-          debugPrint('❌ 創建群組後訂閱仍失敗: $groupName');
-        }
+        debugPrint('❌ MQTT App 服務初始化失敗');
       }
     } catch (e) {
-      debugPrint('❌ 處理群組 $groupName 時發生異常: $e');
+      debugPrint('❌ MQTT App 服務初始化異常: $e');
     }
   }
 
-  /// 設置消息監聽器
-  void _setupMessageListeners() {
-    // 監聽在線用戶
-    _subscriptions['onlineUsers'] = _mqttService.onlineUsersStream.listen(
-      (users) {
-        _onlineUsersController.add(users);
-      },
-      onError: (error) {
-        debugPrint('❌ 在線用戶監聽錯誤: $error');
-      },
-    );
+  /// 設置連接狀態監聽
+  void _setupConnectionListener() {
+    _connectionSubscription?.cancel();
+    _connectionSubscription = _mqttManager.connectionStream.listen((isConnected) {
+      debugPrint('📡 MQTT 連接狀態: ${isConnected ? "已連接" : "已斷開"}');
+      _connectionStatusController.add(isConnected);
+      
+      if (!isConnected) {
+        // 連接斷開時清空在線用戶列表
+        _onlineUsers.clear();
+        _onlineUsersController.add([]);
+      }
+    });
+  }
 
-    // 監聽所有消息並分發到對應的流
-    _subscriptions['messages'] = _mqttService.messageStream.listen(
-      (message) {
-        _handleMessage(message);
-      },
-      onError: (error) {
-        debugPrint('❌ 消息監聽錯誤: $error');
-      },
-    );
-
-    // 監聽連接狀態
-    _subscriptions['connection'] = _mqttService.connectionStream.listen(
-      (connected) {
-        _isConnected = connected;
-        _connectionController.add(connected);
-        
-        if (!connected) {
-          debugPrint('⚠️ MQTT 連接斷開，嘗試重連...');
-          _attemptReconnect();
-        }
-      },
-      onError: (error) {
-        debugPrint('❌ 連接狀態監聽錯誤: $error');
-      },
-    );
-
-    debugPrint('✅ MQTT 消息監聽器設置完成');
+  /// 設置消息監聽
+  void _setupMessageListener() {
+    _messageSubscription?.cancel();
+    _messageSubscription = _mqttManager.messageStream.listen((message) {
+      _handleMessage(message);
+    });
   }
 
   /// 處理接收到的消息
   void _handleMessage(GoaaMqttMessage message) {
-    debugPrint('📨 收到消息: ${message.type} from ${message.group}');
-    
-    switch (message.group) {
-      case 'friends':
-        _friendMessagesController.add(message);
+    debugPrint('📨 收到消息: ${message.type.name} from ${message.fromUserId}');
+
+    // 根據消息群組分發到不同的流
+    if (message.group == 'friends') {
+      _handleFriendsMessage(message);
+      _friendsMessageController.add(message);
+    } else if (message.group == 'expenses') {
+      _handleExpensesMessage(message);
+      _expensesMessageController.add(message);
+    }
+  }
+
+  /// 處理好友群組消息
+  void _handleFriendsMessage(GoaaMqttMessage message) {
+    switch (message.type) {
+      case GoaaMqttMessageType.userOnline:
+        _handleUserOnline(message);
         break;
-      case 'expenses':
-        _expenseMessagesController.add(message);
+      case GoaaMqttMessageType.userOffline:
+        _handleUserOffline(message);
+        break;
+      case GoaaMqttMessageType.heartbeat:
+        _handleUserHeartbeat(message);
+        break;
+      case GoaaMqttMessageType.friendRequest:
+      case GoaaMqttMessageType.friendAccept:
+      case GoaaMqttMessageType.friendReject:
+        // 這些消息直接轉發給好友控制器處理
         break;
       default:
-        debugPrint('⚠️ 未知群組消息: ${message.group}');
+        break;
     }
   }
 
-  /// 嘗試重新連接
-  Future<void> _attemptReconnect() async {
-    if (_isConnecting) return;
+  /// 處理帳務群組消息
+  void _handleExpensesMessage(GoaaMqttMessage message) {
+    // 帳務消息處理邏輯
+    debugPrint('💰 處理帳務消息: ${message.type.name}');
+  }
+
+  /// 處理用戶上線
+  void _handleUserOnline(GoaaMqttMessage message) {
+    final data = message.data;
+    final user = OnlineUser(
+      userId: message.fromUserId,
+      userName: data['userName'] ?? '',
+      userCode: data['userCode'] ?? '',
+      avatar: data['avatar'],
+      lastSeen: message.timestamp,
+    );
     
-    debugPrint('🔄 嘗試重新連接 MQTT...');
-    
-    // 等待一段時間後重連
-    await Future.delayed(const Duration(seconds: 5));
-    
-    if (!_isConnected) {
-      final success = await _connectToMqtt();
-      if (success) {
-        await _subscribeToGroups();
-      }
+    _onlineUsers[user.userId] = user;
+    _onlineUsersController.add(onlineUsers);
+    debugPrint('👋 用戶上線: ${user.userName}');
+  }
+
+  /// 處理用戶離線
+  void _handleUserOffline(GoaaMqttMessage message) {
+    final userId = message.fromUserId;
+    final user = _onlineUsers.remove(userId);
+    if (user != null) {
+      _onlineUsersController.add(onlineUsers);
+      debugPrint('👋 用戶離線: ${user.userName}');
     }
   }
 
-  /// 發送好友消息
-  Future<bool> sendFriendMessage(GoaaMqttMessage message) async {
-    if (!_isConnected) {
-      debugPrint('❌ MQTT 未連接，無法發送好友消息');
-      return false;
+  /// 處理用戶心跳
+  void _handleUserHeartbeat(GoaaMqttMessage message) {
+    final userId = message.fromUserId;
+    final existingUser = _onlineUsers[userId];
+    if (existingUser != null) {
+      // 更新最後活躍時間
+      _onlineUsers[userId] = OnlineUser(
+        userId: existingUser.userId,
+        userName: existingUser.userName,
+        userCode: existingUser.userCode,
+        avatar: existingUser.avatar,
+        lastSeen: message.timestamp,
+      );
+      _onlineUsersController.add(onlineUsers);
     }
-    
-    return await _mqttService.sendMessage('friends', message);
   }
 
-  /// 發送帳務消息
-  Future<bool> sendExpenseMessage(GoaaMqttMessage message) async {
-    if (!_isConnected) {
-      debugPrint('❌ MQTT 未連接，無法發送帳務消息');
-      return false;
+  /// 發送好友請求
+  Future<void> sendFriendRequest({
+    required String toUserId,
+    required String message,
+  }) async {
+    if (!isConnected) {
+      throw Exception('MQTT 未連接');
     }
-    
-    return await _mqttService.sendMessage('expenses', message);
+
+    final userInfo = await _userIdService.getCurrentUserInfo();
+    if (userInfo == null) {
+      throw Exception('無法獲取用戶信息');
+    }
+
+    await _mqttManager.publishMessage('goaa/friends/requests', {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'fromUserId': userInfo['userId'],
+      'fromUserName': userInfo['userName'],
+      'fromUserCode': userInfo['userCode'],
+      'toUserId': toUserId,
+      'message': message,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
-  /// 手動重連
-  Future<bool> reconnect() async {
-    debugPrint('🔄 手動重新連接 MQTT...');
-    
-    // 先斷開現有連接
+  /// 回應好友請求
+  Future<void> respondToFriendRequest({
+    required String requestId,
+    required String fromUserId,
+    required bool accept,
+  }) async {
+    if (!isConnected) {
+      throw Exception('MQTT 未連接');
+    }
+
+    final userInfo = await _userIdService.getCurrentUserInfo();
+    if (userInfo == null) {
+      throw Exception('無法獲取用戶信息');
+    }
+
+    await _mqttManager.publishMessage('goaa/friends/responses', {
+      'id': requestId,
+      'fromUserId': fromUserId,
+      'toUserId': userInfo['userId'],
+      'toUserName': userInfo['userName'],
+      'toUserCode': userInfo['userCode'],
+      'action': accept ? 'accept' : 'reject',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// 訂閱帳務群組
+  Future<void> subscribeToExpensesGroup(String groupId) async {
+    await _mqttManager.subscribeToExpensesGroup(groupId);
+  }
+
+  /// 取消訂閱帳務群組
+  Future<void> unsubscribeFromExpensesGroup(String groupId) async {
+    await _mqttManager.unsubscribeFromExpensesGroup(groupId);
+  }
+
+  /// 重新連接
+  Future<void> reconnect() async {
     await disconnect();
-    
-    // 重新連接
-    final success = await _connectToMqtt();
-    if (success) {
-      await _subscribeToGroups();
-    }
-    
-    return success;
+    await initialize();
   }
 
   /// 斷開連接
   Future<void> disconnect() async {
-    debugPrint('🔌 斷開 MQTT 連接...');
+    debugPrint('🔌 斷開 MQTT App 服務...');
     
-    // 取消所有訂閱
-    for (final subscription in _subscriptions.values) {
-      await subscription.cancel();
-    }
-    _subscriptions.clear();
+    _connectionSubscription?.cancel();
+    _messageSubscription?.cancel();
     
-    // 斷開 MQTT 連接
-    await _mqttService.disconnect();
+    await _mqttManager.disconnect();
     
-    _isConnected = false;
-    _connectionController.add(false);
-    
-    debugPrint('✅ MQTT 連接已斷開');
+    _onlineUsers.clear();
+    _onlineUsersController.add([]);
+    _connectionStatusController.add(false);
   }
 
   /// 清理資源
-  Future<void> dispose() async {
-    await disconnect();
+  void dispose() {
+    _connectionSubscription?.cancel();
+    _messageSubscription?.cancel();
     
-    await _onlineUsersController.close();
-    await _friendMessagesController.close();
-    await _expenseMessagesController.close();
-    await _connectionController.close();
+    _connectionStatusController.close();
+    _friendsMessageController.close();
+    _expensesMessageController.close();
+    _onlineUsersController.close();
     
-    _isInitialized = false;
-    debugPrint('✅ MQTT APP 服務已清理');
+    _mqttManager.dispose();
   }
-} 
+}
