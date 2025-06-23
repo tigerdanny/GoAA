@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/user_id_dialog.dart';
 
 /// 用戶信息顯示組件
 class UserInfoDisplay extends StatelessWidget {
@@ -47,15 +48,8 @@ class UserInfoDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           
-          // 用戶代碼（截斷顯示）
-          _buildInfoRow(
-            context,
-            label: '用戶代碼',
-            value: userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode,
-            fullValue: userCode, // 完整值用於複製
-            isCopiable: true,
-            description: '用於好友邀請和群組加入（點擊可複製完整代碼）',
-          ),
+          // 用戶ID（點擊顯示）
+          _buildUserIdRow(context),
           const SizedBox(height: 12),
           
           // 用戶ID（只顯示前8位）
@@ -67,6 +61,69 @@ class UserInfoDisplay extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// 建構用戶ID行（點擊顯示）
+  Widget _buildUserIdRow(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '用戶ID',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => UserIdDialog.show(context, userCode, userName: userId),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.badge_outlined,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '點擊查看',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.touch_app,
+                      size: 14,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '用於好友邀請和群組加入（點擊查看完整ID）',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 

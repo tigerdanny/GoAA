@@ -47,15 +47,8 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
 
   /// 初始化控制器
   Future<void> _initializeController() async {
-    final success = await _controller.initializeMqtt();
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('連接失敗，請檢查網絡連接'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
+    // 初始化好友列表，根據是否有好友決定是否連接 MQTT
+    await _controller.initializeFriends();
   }
 
   /// 搜索變化處理
@@ -108,7 +101,8 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       body: Column(
         children: [
           _buildSearchBar(),
-          if (_controller.isConnecting) _buildConnectingIndicator(),
+          // 只在有好友且正在連接時顯示連接指示器
+          if (_controller.hasFriends && _controller.isConnecting) _buildConnectingIndicator(),
           Expanded(child: _buildContent()),
         ],
       ),
@@ -121,22 +115,25 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
       title: Row(
         children: [
           const Text('好友'),
-          const SizedBox(width: 8),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: _controller.isConnected ? AppColors.success : AppColors.error,
-              shape: BoxShape.circle,
+          // 只在有好友時顯示在線狀態
+          if (_controller.hasFriends) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _controller.isConnected ? AppColors.success : AppColors.error,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _controller.isConnected ? '在線' : '離線',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: _controller.isConnected ? AppColors.success : AppColors.error,
+            const SizedBox(width: 4),
+            Text(
+              _controller.isConnected ? '在線' : '離線',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: _controller.isConnected ? AppColors.success : AppColors.error,
+              ),
             ),
-          ),
+          ],
         ],
       ),
       actions: [
@@ -234,10 +231,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, child) {
-        if (!_controller.isConnected && !_controller.isConnecting) {
-          return _buildOfflineState();
-        }
-
+        // 如果在搜索模式
         if (_searchController.text.trim().isNotEmpty) {
           return FriendsListView(
             users: _controller.searchResults,
@@ -248,7 +242,17 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
           );
         }
 
-        // 只顯示已加為好友的用戶，不顯示所有在線用戶
+        // 如果沒有好友，顯示空狀態（不嘗試連接）
+        if (!_controller.hasFriends) {
+          return _buildNoFriendsState();
+        }
+
+        // 有好友但離線時，顯示離線狀態
+        if (!_controller.isConnected && !_controller.isConnecting) {
+          return _buildOfflineState();
+        }
+
+        // 顯示好友列表
         return FriendsListView(
           users: _controller.getFriendUsers(),
           friends: _controller.friends,
@@ -259,7 +263,37 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
     );
   }
 
-  /// 構建離線狀態
+  /// 構建無好友狀態
+  Widget _buildNoFriendsState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: AppColors.textSecondary,
+          ),
+          SizedBox(height: 16),
+          Text(
+            '尚無好友',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '使用搜索功能尋找並添加好友',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 構建離線狀態（僅在有好友時顯示）
   Widget _buildOfflineState() {
     return Center(
       child: Column(
@@ -280,13 +314,13 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
           ),
           const SizedBox(height: 8),
           const Text(
-            '無法連接到 MQTT 服務器\n請檢查網絡連接',
+            '無法連接到服務器\n好友上線狀態不可用',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: _controller.initializeMqtt,
+            onPressed: _controller.reconnect,
             icon: const Icon(Icons.refresh),
             label: const Text('重新連接'),
           ),

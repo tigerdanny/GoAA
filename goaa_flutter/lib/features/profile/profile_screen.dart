@@ -70,15 +70,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
 
     bool success;
     if (_controller.currentUser != null) {
-      // 更新現有用戶
-      success = await _controller.updateUserName(name);
+      // 更新現有用戶 - 包含邮箱和手机号码
+      success = await _controller.updateUserInfo(
+        name: name,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
+      );
     } else {
       // 創建新用戶（用戶代碼將自動生成）
       success = await _controller.createUser(
         name: name,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
         avatarType: 'male_01', // 默認頭像
       );
     }

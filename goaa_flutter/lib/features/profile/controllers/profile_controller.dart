@@ -62,6 +62,32 @@ class ProfileController extends ChangeNotifier {
     return false;
   }
 
+  /// 更新用戶信息（包含名稱、邮箱、手机号码等）
+  Future<bool> updateUserInfo({
+    String? name,
+    String? email,
+    String? phone,
+    String? avatarType,
+    String? avatarSource,
+  }) async {
+    if (_currentUser == null) return false;
+    
+    final success = await _userManager.updateUserInfo(_currentUser!, 
+      name: name,
+      email: email,
+      phone: phone,
+      avatarType: avatarType,
+      avatarSource: avatarSource,
+    );
+    
+    if (success) {
+      // 重新獲取更新後的用戶數據
+      await refresh();
+      return true;
+    }
+    return false;
+  }
+
   /// 更新用戶代碼 - 注意：UserRepository 不支持更新 userCode
   Future<bool> updateUserCode(String userCode) async {
     // 由於 UserRepository.updateUser 不支持更新 userCode，
@@ -95,6 +121,8 @@ class ProfileController extends ChangeNotifier {
   Future<bool> createUser({
     required String name,
     String? userCode,
+    String? email,
+    String? phone,
     String avatarType = 'male_01',
     String? avatarSource,
   }) async {
@@ -111,6 +139,8 @@ class ProfileController extends ChangeNotifier {
     final newUser = await _userManager.createUser(
       name: name,
       userCode: userCode,
+      email: email,
+      phone: phone,
       avatarType: finalAvatarType,
       avatarSource: finalAvatarSource,
     );

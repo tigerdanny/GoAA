@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/database/database.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/user_id_dialog.dart';
 
 /// 抽屜用戶代碼行組件
 /// 包含用戶代碼和QR碼操作按鈕
@@ -32,19 +33,54 @@ class DrawerUserCodeRow extends StatelessWidget {
     );
   }
 
-  /// 建構用戶代碼文字（截斷顯示）
+  /// 建構用戶代碼點擊按鈕
   Widget _buildUserCode() {
-    final userCode = currentUser?.userCode ?? 'N/A';
-    final displayCode = userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode;
-    
-    return Text(
-      displayCode,
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        fontFamily: 'monospace',
-      ),
+    return Builder(
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () {
+            if (currentUser?.userCode != null && currentUser!.userCode.isNotEmpty) {
+              UserIdDialog.show(
+                context,
+                currentUser!.userCode,
+                userName: currentUser?.name,
+              );
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.badge_outlined,
+                  size: 12,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  '用戶ID',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: 2),
+                Icon(
+                  Icons.touch_app,
+                  size: 10,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

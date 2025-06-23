@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/database/database.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/user_id_dialog.dart';
 import '../../../l10n/generated/app_localizations.dart';
 
 /// 设置页面用户资料卡片组件
@@ -101,11 +102,46 @@ class SettingsUserProfile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                                '用戶代碼',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontFamily: 'monospace',
+              GestureDetector(
+                onTap: () {
+                  if (currentUser?.userCode != null && currentUser!.userCode.isNotEmpty) {
+                    UserIdDialog.show(
+                      context, 
+                      currentUser!.userCode,
+                      userName: currentUser?.name,
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.badge_outlined,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '用戶ID',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.touch_app,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -149,9 +185,5 @@ class SettingsUserProfile extends StatelessWidget {
     );
   }
 
-  /// 格式化用戶代碼顯示（截斷長代碼）
-  String _formatUserCode(String userCode) {
-    if (userCode == 'N/A') return userCode;
-    return userCode.length > 16 ? '${userCode.substring(0, 16)}...' : userCode;
-  }
+
 } 

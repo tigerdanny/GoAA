@@ -12,12 +12,13 @@ class FriendsController extends ChangeNotifier {
   // 狀態
   List<OnlineUser> _onlineUsers = [];
   List<OnlineUser> _searchResults = [];
-  final List<String> _friends = [];
+  final List<String> _friends = []; // TODO: 從數據庫加載實際好友列表
   final List<GoaaMqttMessage> _friendRequests = [];
   
   bool _isSearching = false;
   bool _isConnecting = false;
   bool _isConnected = false;
+  bool _hasFriends = false;
   
   // 訂閱
   StreamSubscription<List<OnlineUser>>? _onlineUsersSubscription;
@@ -32,14 +33,33 @@ class FriendsController extends ChangeNotifier {
   bool get isSearching => _isSearching;
   bool get isConnecting => _isConnecting;
   bool get isConnected => _isConnected;
+  bool get hasFriends => _hasFriends;
   
+  /// 初始化好友列表（從數據庫加載）
+  Future<void> initializeFriends() async {
+    // TODO: 從數據庫加載實際好友列表
+    // 暫時使用空列表，實際實現時需要從 UserRepository 或 FriendRepository 加載
+    _friends.clear();
+    _hasFriends = _friends.isNotEmpty;
+    
+    // 只有在有好友的情況下才連接 MQTT
+    if (_hasFriends) {
+      await _connectMqttForFriends();
+    }
+    
+    // 無論是否有好友，都需要監聽好友請求
+    await _setupFriendRequestsListener();
+    
+    notifyListeners();
+  }
+
   /// 獲取已成為好友的在線用戶
   List<OnlineUser> getFriendUsers() {
     return _onlineUsers.where((user) => _friends.contains(user.userId)).toList();
   }
   
-  /// 初始化 MQTT 服務
-  Future<bool> initializeMqtt() async {
+  /// 為好友功能連接 MQTT（僅在有好友時調用）
+  Future<void> _connectMqttForFriends() async {
     _isConnecting = true;
     notifyListeners();
 
@@ -49,15 +69,15 @@ class FriendsController extends ChangeNotifier {
       final userName = 'User_${userId.substring(0, 8)}';
       final userCode = await _userIdService.getUserCode();
 
-      // 設置連接超時
+      // 連接 MQTT 服務
       final connected = await _mqttService.connect(
         userId: userId,
         userName: userName,
         userCode: userCode,
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 5),
         onTimeout: () {
-          debugPrint('MQTT 連接超時');
+          debugPrint('MQTT 連接超時 (5秒)');
           return false;
         },
       );
@@ -65,18 +85,28 @@ class FriendsController extends ChangeNotifier {
       if (connected) {
         _setupSubscriptions();
         _isConnected = true;
+        debugPrint('✅ MQTT 已連接，開始監聽好友狀態');
       } else {
         _isConnected = false;
+        debugPrint('❌ MQTT 連接失敗，好友上線狀態不可用');
       }
-      
-      return connected;
     } catch (e) {
-      debugPrint('MQTT 初始化失敗: $e');
+      debugPrint('MQTT 連接失敗: $e');
       _isConnected = false;
-      return false;
     } finally {
       _isConnecting = false;
       notifyListeners();
+    }
+  }
+
+  /// 設置好友請求監聽器（無論是否有好友都需要）
+  Future<void> _setupFriendRequestsListener() async {
+    try {
+      // TODO: 設置只監聽好友請求的輕量級連接
+      // 這裡可以使用不同的連接方式，或者使用推送通知
+      debugPrint('📬 開始監聽好友請求...');
+    } catch (e) {
+      debugPrint('設置好友請求監聽失敗: $e');
     }
   }
   
@@ -181,10 +211,10 @@ class FriendsController extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// 重新連接
+  /// 重新連接（僅在有好友時）
   Future<void> reconnect() async {
-    if (!_isConnected && !_isConnecting) {
-      await initializeMqtt();
+    if (!_isConnected && !_isConnecting && _hasFriends) {
+      await _connectMqttForFriends();
     }
   }
   
