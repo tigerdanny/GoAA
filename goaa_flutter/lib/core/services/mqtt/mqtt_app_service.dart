@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'mqtt_connection_manager.dart';
 import 'mqtt_models.dart';
+import 'mqtt_topics.dart';
 import '../user_id_service.dart';
 
 /// APP 級別的 MQTT 服務
@@ -191,7 +192,8 @@ class MqttAppService {
     final userCode = await _userIdService.getUserCode();
     final userName = 'User_${userId.substring(0, 8)}';
 
-    await _mqttManager.publishMessage('goaa/friends/requests', {
+    // 發送好友請求到目標用戶的個人請求主題
+    await _mqttManager.publishMessage(MqttTopics.friendsUserRequests(toUserId), {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'fromUserId': userId,
       'fromUserName': userName,
@@ -216,7 +218,8 @@ class MqttAppService {
     final userCode = await _userIdService.getUserCode();
     final userName = 'User_${userId.substring(0, 8)}';
 
-    await _mqttManager.publishMessage('goaa/friends/responses', {
+    // 發送好友回應到原請求者的個人回應主題
+    await _mqttManager.publishMessage(MqttTopics.friendsUserResponses(fromUserId), {
       'id': requestId,
       'fromUserId': fromUserId,
       'toUserId': userId,

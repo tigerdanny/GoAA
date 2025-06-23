@@ -62,11 +62,12 @@ class MqttConnectionManager {
       _client!.onSubscribed = _onSubscribed;
       _client!.onUnsubscribed = _onUnsubscribed;
 
-      // 連接消息配置（包含認證信息）
+      // 連接消息配置（包含認證信息和遺囑消息）
       final connMessage = MqttConnectMessage()
           .withClientIdentifier(userId)
-          .withWillTopic(MqttTopics.friendsUserOffline)
+          .withWillTopic(MqttTopics.friendUserStatus(userId))
           .withWillMessage(jsonEncode({
+            'action': 'offline',
             'userId': userId,
             'userName': userName,
             'timestamp': DateTime.now().toIso8601String(),
@@ -176,23 +177,12 @@ class MqttConnectionManager {
     if (!isConnected || _currentUserId == null) return;
     
     try {
-      // 创建好友群组主题（发布一个初始化消息到好友群组）
-      await publishMessage(MqttTopics.friendsUserOnline, {
-        'action': 'group_init',
-        'group': 'friends',
-        'timestamp': DateTime.now().toIso8601String(),
-      });
+      // 發布自己的上線狀態到個人狀態主題
+      await _publishUserOnline();
       
-      // 创建账务群组主题（发布一个初始化消息到账务群组）
-      await publishMessage(MqttTopics.expensesUserNotifications(_currentUserId!), {
-        'action': 'group_init', 
-        'group': 'expenses',
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-      
-      debugPrint('✅ MQTT群組初始化完成');
+      debugPrint('✅ MQTT個人狀態主題初始化完成');
     } catch (e) {
-      debugPrint('⚠️ MQTT群組初始化失敗: $e');
+      debugPrint('⚠️ MQTT個人狀態主題初始化失敗: $e');
     }
   }
 
@@ -219,11 +209,12 @@ class MqttConnectionManager {
     });
   }
 
-  /// 發佈用戶上線（好友功能群組）
+  /// 發佈用戶上線狀態到個人狀態主題
   Future<void> _publishUserOnline() async {
     if (_currentUserId == null) return;
 
-    await publishMessage(MqttTopics.friendsUserOnline, {
+    await publishMessage(MqttTopics.friendUserStatus(_currentUserId!), {
+      'action': 'online',
       'userId': _currentUserId,
       'userName': _currentUserName,
       'userCode': _currentUserCode,
@@ -231,22 +222,24 @@ class MqttConnectionManager {
     });
   }
 
-  /// 發佈用戶離線（好友功能群組）
+  /// 發佈用戶離線狀態到個人狀態主題
   Future<void> _publishUserOffline() async {
     if (_currentUserId == null) return;
 
-    await publishMessage(MqttTopics.friendsUserOffline, {
+    await publishMessage(MqttTopics.friendUserStatus(_currentUserId!), {
+      'action': 'offline',
       'userId': _currentUserId,
       'userName': _currentUserName,
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  /// 發佈心跳（好友功能群組）
+  /// 發佈心跳到個人狀態主題
   Future<void> _publishHeartbeat() async {
     if (_currentUserId == null) return;
 
-    await publishMessage(MqttTopics.friendsUserHeartbeat, {
+    await publishMessage(MqttTopics.friendUserStatus(_currentUserId!), {
+      'action': 'heartbeat',
       'userId': _currentUserId,
       'userName': _currentUserName,
       'timestamp': DateTime.now().toIso8601String(),
@@ -302,29 +295,52 @@ class MqttConnectionManager {
     try {
       GoaaMqttMessageType type;
       String group = MqttTopics.getTopicGroup(topic) ?? 'unknown';
+      String fromUserId = '';
       
       // 根據主題群組和路徑確定消息類型
       if (MqttTopics.isFriendsGroupTopic(topic)) {
         // 好友功能群組消息解析
-        if (topic.contains('/online')) {
-          type = GoaaMqttMessageType.userOnline;
-        } else if (topic.contains('/offline')) {
-          type = GoaaMqttMessageType.userOffline;
-        } else if (topic.contains('/heartbeat')) {
-          type = GoaaMqttMessageType.heartbeat;
-        } else if (topic.contains('/requests')) {
-          type = GoaaMqttMessageType.friendRequest;
-        } else if (topic.contains('/responses')) {
-          if (data['action'] == 'accept') {
-            type = GoaaMqttMessageType.friendAccept;
+        if (MqttTopics.isFriendStatusTopic(topic)) {
+          // 從狀態主題中提取用戶ID
+          fromUserId = MqttTopics.extractUserIdFromFriendStatusTopic(topic) ?? '';
+          
+          // 根據 action 字段確定具體的狀態類型
+          final action = data['action'] as String?;
+          switch (action) {
+            case 'online':
+              type = GoaaMqttMessageType.userOnline;
+              break;
+            case 'offline':
+              type = GoaaMqttMessageType.userOffline;
+              break;
+            case 'heartbeat':
+              type = GoaaMqttMessageType.heartbeat;
+              break;
+            default:
+              debugPrint('⚠️ 未知的狀態動作: $action');
+              return null;
+          }
+        } else if (MqttTopics.isFriendRequestTopic(topic)) {
+          // 從請求主題中提取用戶ID
+          fromUserId = MqttTopics.extractUserIdFromFriendRequestTopic(topic) ?? '';
+          
+          if (topic.endsWith('/requests')) {
+            type = GoaaMqttMessageType.friendRequest;
+          } else if (topic.endsWith('/responses')) {
+            if (data['action'] == 'accept') {
+              type = GoaaMqttMessageType.friendAccept;
+            } else {
+              type = GoaaMqttMessageType.friendReject;
+            }
           } else {
-            type = GoaaMqttMessageType.friendReject;
+            return null;
           }
         } else {
           return null;
         }
       } else if (MqttTopics.isExpensesGroupTopic(topic)) {
         // 帳務功能群組消息解析
+        fromUserId = data['userId'] ?? data['fromUserId'] ?? '';
         if (topic.contains('/shares')) {
           type = GoaaMqttMessageType.expenseShare;
         } else if (topic.contains('/updates')) {
@@ -340,6 +356,7 @@ class MqttConnectionManager {
         }
       } else if (MqttTopics.isSystemGroupTopic(topic)) {
         // 系統功能群組消息解析
+        fromUserId = data['userId'] ?? data['fromUserId'] ?? '';
         if (topic.contains('/announcements')) {
           type = GoaaMqttMessageType.systemAnnouncement;
         } else if (topic.contains('/maintenance')) {
@@ -354,7 +371,7 @@ class MqttConnectionManager {
       return GoaaMqttMessage(
         id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         type: type,
-        fromUserId: data['userId'] ?? data['fromUserId'] ?? '',
+        fromUserId: fromUserId.isNotEmpty ? fromUserId : (data['userId'] ?? data['fromUserId'] ?? ''),
         toUserId: data['toUserId'],
         data: data,
         timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),

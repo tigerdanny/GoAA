@@ -6,15 +6,19 @@ class MqttTopics {
   // ==================== 好友功能群組 ====================
   static const String _friendsGroup = '$_basePrefix/friends';
   
-  /// 好友功能 - 全局主題
-  static const String friendsUserOnline = '$_friendsGroup/users/online';
-  static const String friendsUserOffline = '$_friendsGroup/users/offline';
-  static const String friendsUserHeartbeat = '$_friendsGroup/users/heartbeat';
+  /// 好友功能 - 個人狀態主題（每個用戶發布自己的狀態）
+  static String friendUserStatus(String userId) => '$_friendsGroup/$userId/status';
   
-  /// 好友功能 - 個人主題
-  static String friendsUserRequests(String userId) => '$_friendsGroup/users/$userId/requests';
-  static String friendsUserResponses(String userId) => '$_friendsGroup/users/$userId/responses';
-  static String friendsUserStatus(String userId) => '$_friendsGroup/users/$userId/status';
+  /// 好友功能 - 萬用字元訂閱（監聽所有好友狀態）
+  static const String friendsAllUsersStatus = '$_friendsGroup/+/status';
+  
+  /// 好友功能 - 好友請求主題
+  static String friendsUserRequests(String userId) => '$_friendsGroup/$userId/requests';
+  static String friendsUserResponses(String userId) => '$_friendsGroup/$userId/responses';
+  
+  /// 好友功能 - 萬用字元訂閱（監聽所有好友請求和回應）
+  static const String friendsAllUsersRequests = '$_friendsGroup/+/requests';
+  static const String friendsAllUsersResponses = '$_friendsGroup/+/responses';
   
   // ==================== 帳務功能群組 ====================
   static const String _expensesGroup = '$_basePrefix/expenses';
@@ -64,7 +68,23 @@ class MqttTopics {
     return null;
   }
   
-  /// 從主題中提取用戶ID
+  /// 從好友狀態主題中提取用戶ID
+  static String? extractUserIdFromFriendStatusTopic(String topic) {
+    // 匹配 goaa/friends/{userId}/status 格式
+    final regex = RegExp(r'^goaa/friends/([^/]+)/status$');
+    final match = regex.firstMatch(topic);
+    return match?.group(1);
+  }
+  
+  /// 從好友請求主題中提取用戶ID
+  static String? extractUserIdFromFriendRequestTopic(String topic) {
+    // 匹配 goaa/friends/{userId}/requests 或 goaa/friends/{userId}/responses 格式
+    final regex = RegExp(r'^goaa/friends/([^/]+)/(requests|responses)$');
+    final match = regex.firstMatch(topic);
+    return match?.group(1);
+  }
+  
+  /// 從主題中提取用戶ID（通用方法）
   static String? extractUserIdFromTopic(String topic) {
     final regex = RegExp(r'/users/([^/]+)/');
     final match = regex.firstMatch(topic);
@@ -78,15 +98,32 @@ class MqttTopics {
     return match?.group(1);
   }
   
+  /// 檢查主題是否為好友狀態主題
+  static bool isFriendStatusTopic(String topic) {
+    return topic.startsWith('$_friendsGroup/') && topic.endsWith('/status');
+  }
+  
+  /// 檢查主題是否為好友請求主題
+  static bool isFriendRequestTopic(String topic) {
+    return topic.startsWith('$_friendsGroup/') && 
+           (topic.endsWith('/requests') || topic.endsWith('/responses'));
+  }
+  
   /// 獲取所有需要訂閱的好友功能主題
   static List<String> getFriendsSubscriptionTopics(String userId) {
     return [
-      friendsUserOnline,
-      friendsUserOffline,
-      friendsUserHeartbeat,
+      // 訂閱所有好友的狀態變化（使用萬用字元）
+      friendsAllUsersStatus,
+      
+      // 訂閱發送給自己的好友請求
       friendsUserRequests(userId),
+      
+      // 訂閱發送給自己的好友回應
       friendsUserResponses(userId),
-      friendsUserStatus(userId),
+      
+      // 可選：訂閱所有好友請求和回應（如果需要全局監控）
+      // friendsAllUsersRequests,
+      // friendsAllUsersResponses,
     ];
   }
   
