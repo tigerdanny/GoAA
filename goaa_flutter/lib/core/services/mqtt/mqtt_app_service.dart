@@ -43,11 +43,9 @@ class MqttAppService {
       debugPrint('🚀 初始化 MQTT App 服務...');
       
       // 獲取用戶信息
-      final userInfo = await _userIdService.getCurrentUserInfo();
-      if (userInfo == null) {
-        debugPrint('❌ 無法獲取用戶信息，跳過 MQTT 初始化');
-        return;
-      }
+      final userId = await _userIdService.getUserId();
+      final userCode = await _userIdService.getUserCode();
+      final userName = 'User_${userId.substring(0, 8)}';
 
       // 設置連接監聽
       _setupConnectionListener();
@@ -57,9 +55,9 @@ class MqttAppService {
 
       // 連接到 MQTT
       final connected = await _mqttManager.connect(
-        userId: userInfo['userId']!,
-        userName: userInfo['userName']!,
-        userCode: userInfo['userCode']!,
+        userId: userId,
+        userName: userName,
+        userCode: userCode,
       );
 
       if (connected) {
@@ -189,16 +187,15 @@ class MqttAppService {
       throw Exception('MQTT 未連接');
     }
 
-    final userInfo = await _userIdService.getCurrentUserInfo();
-    if (userInfo == null) {
-      throw Exception('無法獲取用戶信息');
-    }
+    final userId = await _userIdService.getUserId();
+    final userCode = await _userIdService.getUserCode();
+    final userName = 'User_${userId.substring(0, 8)}';
 
     await _mqttManager.publishMessage('goaa/friends/requests', {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'fromUserId': userInfo['userId'],
-      'fromUserName': userInfo['userName'],
-      'fromUserCode': userInfo['userCode'],
+      'fromUserId': userId,
+      'fromUserName': userName,
+      'fromUserCode': userCode,
       'toUserId': toUserId,
       'message': message,
       'timestamp': DateTime.now().toIso8601String(),
@@ -215,17 +212,16 @@ class MqttAppService {
       throw Exception('MQTT 未連接');
     }
 
-    final userInfo = await _userIdService.getCurrentUserInfo();
-    if (userInfo == null) {
-      throw Exception('無法獲取用戶信息');
-    }
+    final userId = await _userIdService.getUserId();
+    final userCode = await _userIdService.getUserCode();
+    final userName = 'User_${userId.substring(0, 8)}';
 
     await _mqttManager.publishMessage('goaa/friends/responses', {
       'id': requestId,
       'fromUserId': fromUserId,
-      'toUserId': userInfo['userId'],
-      'toUserName': userInfo['userName'],
-      'toUserCode': userInfo['userCode'],
+      'toUserId': userId,
+      'toUserName': userName,
+      'toUserCode': userCode,
       'action': accept ? 'accept' : 'reject',
       'timestamp': DateTime.now().toIso8601String(),
     });

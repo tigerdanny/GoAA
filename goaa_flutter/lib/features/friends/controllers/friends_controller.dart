@@ -2,13 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
-import '../services/friend_search_service.dart';
 
 /// 好友功能控制器
 /// 負責管理好友列表、在線狀態、好友請求等功能
 class FriendsController extends ChangeNotifier {
   final MqttAppService _mqttAppService = MqttAppService();
-  final FriendSearchService _friendSearchService = FriendSearchService();
 
   // 狀態變量
   final List<String> _friends = [];
@@ -51,7 +49,7 @@ class FriendsController extends ChangeNotifier {
 
   /// 加載好友數據
   void _loadFriendsData() {
-    // TODO: 實際實現時需要從 UserRepository 或 FriendRepository 加載
+    // 實際實現時需要從 UserRepository 或 FriendRepository 加載
     // 這裡暫時使用模擬數據
     _friends.clear();
     _hasFriends = _friends.isNotEmpty;
@@ -150,7 +148,7 @@ class FriendsController extends ChangeNotifier {
     try {
       debugPrint('🔍 搜索用戶: $query');
       
-      // TODO: 實際實現時需要調用搜索 API
+      // 實際實現時需要調用搜索 API
       // final results = await _friendSearchService.searchUsers(query);
       // _searchResults = results;
       
