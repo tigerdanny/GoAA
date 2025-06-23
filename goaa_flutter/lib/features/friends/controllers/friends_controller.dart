@@ -83,10 +83,9 @@ class FriendsController extends ChangeNotifier {
     // 初始化 MQTT 用戶搜索服務
     await _searchService.initialize();
     
-    // 只有在有好友的情況下才設置 MQTT 監聽
-    if (_hasFriends) {
-      _setupMqttListeners();
-    }
+    // 🔧 修復：無論是否有好友都要設置 MQTT 監聽
+    // 新用戶需要監聽好友請求，已有好友的用戶需要監聽狀態更新
+    _setupMqttListeners();
     
     debugPrint('✅ 好友控制器初始化完成');
   }
@@ -94,6 +93,9 @@ class FriendsController extends ChangeNotifier {
   /// 設置 MQTT 監聽器
   void _setupMqttListeners() {
     debugPrint('🔧 設置 MQTT 監聽器...');
+    
+    // 🔧 確保好友功能群組已訂閱（包括好友請求主題）
+    _mqttAppService.subscribeToFriendsGroup();
     
     // 監聽在線用戶
     _onlineUsersSubscription = _mqttAppService.onlineUsersStream.listen(
