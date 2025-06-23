@@ -32,6 +32,7 @@ part 'database.g.dart';
   ExpenseSplits,
   Settlements,
   Invitations,
+  Friends,
   DailyQuotes,
 ])
 class AppDatabase extends _$AppDatabase {

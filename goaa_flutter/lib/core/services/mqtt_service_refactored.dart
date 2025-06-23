@@ -156,6 +156,7 @@ class MqttService {
       case GoaaMqttMessageType.friendRequest:
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
+      case GoaaMqttMessageType.friendInfoShare:
         return true;
         
       // 帳務功能群組 - 轉發到應用層

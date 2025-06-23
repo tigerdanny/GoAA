@@ -100,6 +100,24 @@ class Invitations extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// 好友表
+class Friends extends Table {
+  IntColumn get userId => integer().references(Users, #id, onDelete: KeyAction.cascade)(); // 本地用戶ID
+  TextColumn get friendUserCode => text().withLength(min: 32, max: 36)(); // 好友的用戶代碼（UUID）
+  TextColumn get friendUserId => text()(); // 好友的用戶ID（來自MQTT）
+  TextColumn get friendName => text().withLength(min: 1, max: 50)(); // 好友姓名
+  TextColumn get friendEmail => text().nullable()(); // 好友Email
+  TextColumn get friendPhone => text().nullable()(); // 好友電話
+  TextColumn get friendAvatar => text().nullable()(); // 好友頭像類型
+  TextColumn get friendAvatarSource => text().nullable()(); // 好友自定義頭像路徑
+  TextColumn get status => text().withDefault(const Constant('active'))(); // 'active', 'blocked', 'deleted'
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  
+  @override
+  Set<Column> get primaryKey => {userId, friendUserCode}; // 複合主鍵，防止重複添加
+}
+
 /// 每日金句表
 class DailyQuotes extends Table {
   IntColumn get id => integer().autoIncrement()();

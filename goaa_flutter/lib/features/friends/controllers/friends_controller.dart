@@ -2,11 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
+import '../../../core/database/repositories/friend_repository.dart';
+import '../../../core/database/repositories/user_repository.dart';
 
 /// 好友功能控制器
 /// 負責管理好友列表、在線狀態、好友請求等功能
 class FriendsController extends ChangeNotifier {
   final MqttAppService _mqttAppService = MqttAppService();
+  final FriendRepository _friendRepository = FriendRepository();
+  final UserRepository _userRepository = UserRepository();
 
   // 狀態變量
   final List<String> _friends = [];
@@ -104,12 +108,20 @@ class FriendsController extends ChangeNotifier {
     
     switch (message.type) {
       case GoaaMqttMessageType.friendRequest:
+        // 第一階段：簡單好友請求通知
         _friendRequests.add(message);
-        debugPrint('📬 收到好友請求: ${message.fromUserId}');
+        debugPrint('📬 收到好友請求: ${message.fromUserId} (${message.data['fromUserName']})');
         notifyListeners();
         break;
         
       case GoaaMqttMessageType.friendAccept:
+        // 第二階段：處理好友接受和完整信息
+        final stage = message.data['stage'] as String?;
+        if (stage == 'info_share') {
+          // 收到完整好友信息，保存到數據庫
+          _saveFriendToDatabase(message);
+        }
+        
         if (!_friends.contains(message.fromUserId)) {
           _friends.add(message.fromUserId);
           _hasFriends = true;
@@ -125,6 +137,47 @@ class FriendsController extends ChangeNotifier {
         
       default:
         debugPrint('⚠️ 未處理的好友消息類型: ${message.type}');
+    }
+  }
+
+  /// 保存好友信息到數據庫
+  Future<void> _saveFriendToDatabase(GoaaMqttMessage message) async {
+    try {
+      final userInfo = message.data['userInfo'] as Map<String, dynamic>?;
+      if (userInfo == null) return;
+
+      debugPrint('💾 保存好友信息到數據庫: ${userInfo['userName']}');
+      debugPrint('   UUID: ${userInfo['userCode']}');
+      debugPrint('   Email: ${userInfo['email']}');
+      debugPrint('   Phone: ${userInfo['phone']}');
+      
+      // 獲取當前用戶ID
+      final currentUser = await _userRepository.getCurrentUser();
+      if (currentUser == null) {
+        debugPrint('❌ 無法獲取當前用戶信息');
+        return;
+      }
+
+      // 保存好友信息到本地數據庫
+      final success = await _friendRepository.saveFriend(
+        currentUserId: currentUser.id,
+        friendUserId: userInfo['userId'] ?? '',
+        friendUserCode: userInfo['userCode'] ?? '',
+        friendName: userInfo['userName'] ?? '',
+        friendEmail: userInfo['email']?.isEmpty == true ? null : userInfo['email'],
+        friendPhone: userInfo['phone']?.isEmpty == true ? null : userInfo['phone'],
+        friendAvatar: userInfo['avatar']?.isEmpty == true ? null : userInfo['avatar'],
+        friendAvatarSource: userInfo['avatarSource']?.isEmpty == true ? null : userInfo['avatarSource'],
+      );
+
+      if (success) {
+        debugPrint('✅ 好友信息保存成功');
+      } else {
+        debugPrint('❌ 好友信息保存失敗');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ 保存好友信息失敗: $e');
     }
   }
 
@@ -257,6 +310,7 @@ class FriendsController extends ChangeNotifier {
     _onlineUsersSubscription?.cancel();
     _friendMessagesSubscription?.cancel();
     _connectionSubscription?.cancel();
+    _friendRepository.dispose();
     
     super.dispose();
   }

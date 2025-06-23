@@ -4,6 +4,7 @@ import 'mqtt_connection_manager.dart';
 import 'mqtt_models.dart';
 import 'mqtt_topics.dart';
 import '../user_id_service.dart';
+import '../../database/repositories/user_repository.dart';
 
 /// APP 級別的 MQTT 服務
 /// 負責管理整個應用的 MQTT 連接和消息分發
@@ -179,7 +180,7 @@ class MqttAppService {
     }
   }
 
-  /// 發送好友請求
+  /// 發送好友請求（第一階段：簡單通知）
   Future<void> sendFriendRequest({
     required String toUserId,
     required String message,
@@ -189,18 +190,17 @@ class MqttAppService {
     }
 
     final userId = await _userIdService.getUserId();
-    final userCode = await _userIdService.getUserCode();
     final userName = 'User_${userId.substring(0, 8)}';
 
-    // 發送好友請求到目標用戶的個人請求主題
+    // 第一階段：只發送基本信息（姓名或UUID）
     await _mqttManager.publishMessage(MqttTopics.friendsUserRequests(toUserId), {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'fromUserId': userId,
       'fromUserName': userName,
-      'fromUserCode': userCode,
       'toUserId': toUserId,
       'message': message,
       'timestamp': DateTime.now().toIso8601String(),
+      'stage': 'request', // 標記為請求階段
     });
   }
 
@@ -215,18 +215,56 @@ class MqttAppService {
     }
 
     final userId = await _userIdService.getUserId();
-    final userCode = await _userIdService.getUserCode();
     final userName = 'User_${userId.substring(0, 8)}';
 
-    // 發送好友回應到原請求者的個人回應主題
+    if (accept) {
+      // 第二階段：同意時發送完整個人信息
+      await _sendCompleteUserInfo(requestId, fromUserId, userId, userName);
+    } else {
+      // 拒絕時只發送簡單回應
+      await _mqttManager.publishMessage(MqttTopics.friendsUserResponses(fromUserId), {
+        'id': requestId,
+        'fromUserId': fromUserId,
+        'toUserId': userId,
+        'toUserName': userName,
+        'action': 'reject',
+        'timestamp': DateTime.now().toIso8601String(),
+        'stage': 'response',
+      });
+    }
+  }
+
+  /// 發送完整用戶信息（第二階段）
+  Future<void> _sendCompleteUserInfo(
+    String requestId,
+    String fromUserId,
+    String userId,
+    String userName,
+  ) async {
+    final userCode = await _userIdService.getUserCode();
+    
+    // 獲取當前用戶的完整信息
+    final userRepository = UserRepository();
+    final currentUser = await userRepository.getCurrentUser();
+    
+    // 發送完整個人信息到原請求者
     await _mqttManager.publishMessage(MqttTopics.friendsUserResponses(fromUserId), {
       'id': requestId,
       'fromUserId': fromUserId,
       'toUserId': userId,
-      'toUserName': userName,
-      'toUserCode': userCode,
-      'action': accept ? 'accept' : 'reject',
+      'action': 'accept',
+      'stage': 'info_share',
       'timestamp': DateTime.now().toIso8601String(),
+      // 完整個人信息
+      'userInfo': {
+        'userId': userId,
+        'userCode': userCode,
+        'userName': currentUser?.name ?? userName,
+        'email': currentUser?.email ?? '',
+        'phone': currentUser?.phone ?? '',
+        'avatar': currentUser?.avatarType ?? '',
+        'avatarSource': currentUser?.avatarSource ?? '',
+      },
     });
   }
 

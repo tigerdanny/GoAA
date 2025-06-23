@@ -3,9 +3,10 @@ enum GoaaMqttMessageType {
   // 好友功能群組
   userOnline,           // 用戶上線
   userOffline,          // 用戶離線
-  friendRequest,        // 好友請求
-  friendAccept,         // 接受好友
+  friendRequest,        // 好友請求（第一階段：簡單通知）
+  friendAccept,         // 接受好友（第二階段：發送完整信息）
   friendReject,         // 拒絕好友
+  friendInfoShare,      // 好友信息分享（第二階段：完整個人信息）
   heartbeat,            // 心跳
   
   // 帳務功能群組
