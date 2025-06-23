@@ -285,7 +285,7 @@ class _SearchProgressDialogState extends State<SearchProgressDialog>
             animation: _rotationAnimation,
             builder: (context, child) {
               final angle = (i * 45 * 3.14159 / 180) + (_rotationAnimation.value * 2 * 3.14159);
-              final radius = 45.0;
+              const radius = 45.0;
               return Positioned(
                 left: 60 + radius * cos(angle) - 3,
                 top: 60 + radius * sin(angle) - 3,
