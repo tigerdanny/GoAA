@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
@@ -103,6 +104,17 @@ class MqttUserSearchService {
     });
     
     try {
+      // 🔧 清理和驗證搜索條件，確保UTF-8編碼安全
+      final cleanName = _cleanString(searchInfo.name.trim());
+      final cleanEmail = _cleanString(searchInfo.email.trim());
+      final cleanPhone = _cleanString(searchInfo.phone.trim());
+      final cleanUserName = _cleanString(currentUser.name);
+      
+      debugPrint('🔍 清理後的搜索條件:');
+      debugPrint('   原始姓名: "${searchInfo.name.trim()}" -> 清理後: "$cleanName"');
+      debugPrint('   原始Email: "${searchInfo.email.trim()}" -> 清理後: "$cleanEmail"');
+      debugPrint('   原始電話: "${searchInfo.phone.trim()}" -> 清理後: "$cleanPhone"');
+      
       // 發送搜索請求到公共搜索主題
       final searchMessage = GoaaMqttMessage(
         id: requestId,
@@ -112,13 +124,13 @@ class MqttUserSearchService {
         data: {
           'requestId': requestId,
           'searchCriteria': {
-            'name': searchInfo.name.trim(),
-            'email': searchInfo.email.trim(),
-            'phone': searchInfo.phone.trim(),
+            'name': cleanName,
+            'email': cleanEmail,
+            'phone': cleanPhone,
           },
           'requesterInfo': {
             'userId': currentUser.userCode,
-            'userName': currentUser.name, // 修正：使用 name 而不是 userName
+            'userName': cleanUserName,
           },
         },
         group: 'friends', // 添加必需的 group 參數
@@ -313,6 +325,35 @@ class MqttUserSearchService {
     
     // 如果至少有一個條件匹配，返回計算的分數
     return score;
+  }
+
+  /// 清理字符串，確保UTF-8編碼安全
+  String _cleanString(String? input) {
+    if (input == null || input.isEmpty) return '';
+    
+    try {
+      // 移除控制字符和無效字符
+      final cleaned = input.replaceAll(RegExp(r'[\x00-\x1F\x7F-\x9F]'), '');
+      
+      // 驗證UTF-8編碼
+      final bytes = cleaned.codeUnits;
+      final validString = String.fromCharCodes(bytes);
+      
+      // 確保字符串可以正確JSON序列化
+      final testJson = '{"test":"$validString"}';
+      // 嘗試解析以驗證
+      jsonDecode(testJson);
+      
+      return validString;
+    } catch (e) {
+      debugPrint('⚠️ 字符串清理失敗: $e, 原始字符串: "$input"');
+      
+      // 如果清理失敗，只保留ASCII字符
+      final asciiOnly = input.replaceAll(RegExp(r'[^\x20-\x7E\u4e00-\u9fff]'), '');
+      debugPrint('   回退到ASCII+中文字符: "$asciiOnly"');
+      
+      return asciiOnly;
+    }
   }
 
   /// 清理資源
