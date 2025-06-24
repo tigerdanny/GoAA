@@ -38,19 +38,22 @@ class MqttConnectionManager {
   String _safeDecodePayload(Uint8List bytes) {
     try {
       // 首先嘗試標準UTF-8解碼
-      return utf8.decode(bytes);
+      String decoded = utf8.decode(bytes);
+      return _cleanDecodedString(decoded);
     } catch (e) {
       debugPrint('⚠️ UTF-8解碼失敗，嘗試其他方法: $e');
       
       try {
         // 嘗試使用allowMalformed標誌
-        return utf8.decode(bytes, allowMalformed: true);
+        String decoded = utf8.decode(bytes, allowMalformed: true);
+        return _cleanDecodedString(decoded);
       } catch (e2) {
         debugPrint('⚠️ 容錯UTF-8解碼失敗，使用字節轉換: $e2');
         
         try {
           // 最後嘗試：直接字節轉字符
-          return String.fromCharCodes(bytes);
+          String decoded = String.fromCharCodes(bytes);
+          return _cleanDecodedString(decoded);
         } catch (e3) {
           debugPrint('⚠️ 字節轉換失敗，使用ASCII過濾: $e3');
           
@@ -59,6 +62,35 @@ class MqttConnectionManager {
           return String.fromCharCodes(asciiBytes);
         }
       }
+    }
+  }
+
+  /// 清理解碼後的字符串，移除損壞的UTF-8字符
+  String _cleanDecodedString(String input) {
+    try {
+      // 移除控制字符和損壞的UTF-8字符
+      String cleaned = input.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]'), '');
+      
+      // 測試是否能正常JSON序列化（這會暴露隱藏的編碼問題）
+      jsonEncode({'test': cleaned});
+      
+      debugPrint('🧹 字符串清理完成，長度: ${input.length} -> ${cleaned.length}');
+      return cleaned;
+    } catch (e) {
+      debugPrint('⚠️ 字符串清理失敗，使用嚴格過濾: $e');
+      
+      // 如果JSON序列化失敗，使用更嚴格的過濾
+      // 只保留ASCII字符、中文字符和常見符號
+      final strictCleaned = input.split('').where((char) {
+        final code = char.codeUnitAt(0);
+        return (code >= 32 && code <= 126) ||  // ASCII可打印字符
+               (code >= 0x4E00 && code <= 0x9FFF) ||  // 中文字符
+               (code >= 0x3400 && code <= 0x4DBF) ||  // 中文擴展A
+               [0x20, 0x22, 0x27, 0x2C, 0x2E, 0x3A, 0x3B, 0x5B, 0x5D, 0x7B, 0x7D].contains(code); // 常見符號
+      }).join('');
+      
+      debugPrint('🧹 嚴格清理完成，長度: ${input.length} -> ${strictCleaned.length}');
+      return strictCleaned;
     }
   }
 
@@ -321,7 +353,7 @@ class MqttConnectionManager {
         final mqttMessage = _parseMessage(topic, data);
         
         if (mqttMessage != null) {
-          debugPrint('✅ 消息解析成功: ${mqttMessage.type}');
+          debugPrint('✅ [${mqttMessage.type.identifier}] ${mqttMessage.type.description} - 來自: ${mqttMessage.fromUserId.substring(0, 8)}');
           _messageController.add(mqttMessage);
         } else {
           debugPrint('⚠️ 消息解析結果為空，主題: $topic');

@@ -97,7 +97,7 @@ class MqttAppService {
 
   /// 處理接收到的消息
   void _handleMessage(GoaaMqttMessage message) {
-    debugPrint('📨 收到消息: ${message.type.name} from ${message.fromUserId}');
+    debugPrint('📨 [${message.type.identifier}] ${message.type.description} - 來自: ${message.fromUserId.substring(0, 8)}');
 
     // 根據消息群組分發到不同的流
     if (message.group == 'friends') {
@@ -121,10 +121,13 @@ class MqttAppService {
       case GoaaMqttMessageType.heartbeat:
         _handleUserHeartbeat(message);
         break;
+      case GoaaMqttMessageType.userSearchRequest:
+        // 🔧 全局處理用戶搜索請求，無需進入好友頁面
+        _handleUserSearchRequest(message);
+        break;
       case GoaaMqttMessageType.friendRequest:
       case GoaaMqttMessageType.friendAccept:
       case GoaaMqttMessageType.friendReject:
-      case GoaaMqttMessageType.userSearchRequest:
       case GoaaMqttMessageType.userSearchResponse:
         // 這些消息直接轉發給好友控制器處理
         break;
@@ -136,7 +139,7 @@ class MqttAppService {
   /// 處理帳務群組消息
   void _handleExpensesMessage(GoaaMqttMessage message) {
     // 帳務消息處理邏輯
-    debugPrint('💰 處理帳務消息: ${message.type.name}');
+    debugPrint('💰 [${message.type.identifier}] ${message.type.description}');
   }
 
   /// 處理用戶上線
@@ -180,6 +183,125 @@ class MqttAppService {
       );
       _onlineUsersController.add(onlineUsers);
     }
+  }
+
+  /// 🔧 全局處理用戶搜索請求（無需進入好友頁面）
+  Future<void> _handleUserSearchRequest(GoaaMqttMessage message) async {
+    try {
+      debugPrint('🔍 [GLOBAL] 收到用戶搜索請求');
+      
+      final userRepository = UserRepository();
+      final currentUser = await userRepository.getCurrentUser();
+      if (currentUser == null) {
+        debugPrint('❌ [GLOBAL] 無法獲取當前用戶信息');
+        return;
+      }
+      
+      final requestId = message.data['requestId'] as String?;
+      final searchCriteria = message.data['searchCriteria'] as Map<String, dynamic>?;
+      final requesterInfo = message.data['requesterInfo'] as Map<String, dynamic>?;
+      
+      if (requestId == null || searchCriteria == null || requesterInfo == null) {
+        debugPrint('❌ [GLOBAL] 搜索請求格式錯誤');
+        return;
+      }
+      
+      final requesterId = requesterInfo['userId'] as String;
+      
+      // 不要回應自己的搜索請求
+      if (requesterId == currentUser.userCode) {
+        debugPrint('⏭️ [GLOBAL] 跳過自己的搜索請求');
+        return;
+      }
+      
+      debugPrint('🔍 [GLOBAL] 處理搜索請求來自: ${requesterInfo['userName']}');
+      
+      // 檢查是否匹配搜索條件
+      final matchScore = _calculateMatchScore(currentUser, searchCriteria);
+      
+      if (matchScore > 0.0) {
+        debugPrint('✅ [GLOBAL] 匹配搜索條件，匹配度: $matchScore');
+        
+        // 發送搜索響應
+        final responseMessage = GoaaMqttMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          type: GoaaMqttMessageType.userSearchResponse,
+          fromUserId: currentUser.userCode,
+          toUserId: requesterId,
+          data: {
+            'requestId': requestId,
+            'userInfo': {
+              'userId': currentUser.userCode,
+              'userName': currentUser.name,
+              'userCode': currentUser.userCode,
+              'email': currentUser.email,
+              'phone': currentUser.phone,
+              'matchScore': matchScore,
+            },
+          },
+          group: 'friends',
+        );
+        
+        // 發布搜索響應到MQTT
+        await _mqttManager.publishMessage(
+          topics.MqttTopics.userSearchResponse(requesterId),
+          responseMessage.toJson(),
+        );
+        
+        debugPrint('📤 [GLOBAL] 已發送搜索響應給: ${requesterInfo['userName']}');
+      } else {
+        debugPrint('❌ [GLOBAL] 不匹配搜索條件');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ [GLOBAL] 處理搜索請求失敗: $e');
+    }
+  }
+
+  /// 🔧 計算匹配度（從搜索服務複製）
+  double _calculateMatchScore(dynamic currentUser, Map<String, dynamic> searchCriteria) {
+    double score = 0.0;
+    int matchCount = 0;
+    
+    final searchName = (searchCriteria['name'] as String? ?? '').toLowerCase().trim();
+    final searchEmail = (searchCriteria['email'] as String? ?? '').toLowerCase().trim();
+    final searchPhone = (searchCriteria['phone'] as String? ?? '').trim();
+    
+    // 姓名匹配 (權重最高)
+    if (searchName.isNotEmpty) {
+      final userName = (currentUser.name ?? '').toLowerCase();
+      if (userName.contains(searchName) || searchName.contains(userName)) {
+        score += 0.6; // 姓名匹配權重60%
+        matchCount++;
+      }
+    }
+    
+    // 信箱匹配
+    if (searchEmail.isNotEmpty) {
+      final userEmail = (currentUser.email ?? '').toLowerCase();
+      if (userEmail == searchEmail) {
+        score += 0.3; // 信箱匹配權重30%
+        matchCount++;
+      }
+    }
+    
+    // 電話匹配
+    if (searchPhone.isNotEmpty) {
+      final userPhone = (currentUser.phone ?? '').replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      final cleanSearchPhone = searchPhone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      if (userPhone == cleanSearchPhone) {
+        score += 0.3; // 電話匹配權重30%
+        matchCount++;
+      }
+    }
+    
+    // 如果沒有任何匹配，返回0
+    if (matchCount == 0) {
+      return 0.0;
+    }
+    
+    // 如果至少有一個條件匹配，返回計算的分數
+    return score;
   }
 
   /// 發送好友請求（第一階段：簡單通知）

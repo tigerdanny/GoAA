@@ -146,7 +146,7 @@ class MqttUserSearchService {
         searchMessage.toJson(),
       );
       
-      debugPrint('📤 已發布搜索請求到 ${MqttTopics.userSearchRequest}');
+      debugPrint('📤 [SREQ] 已發布用戶搜索請求到 ${MqttTopics.userSearchRequest}');
       
       // 等待搜索結果
       final results = await completer.future;
@@ -186,7 +186,7 @@ class MqttUserSearchService {
         return;
       }
       
-      debugPrint('🔍 收到搜索請求來自: ${requesterInfo['userName']}');
+      debugPrint('🔍 [SREQ] 收到搜索請求來自: ${requesterInfo['userName']}');
       
       // 檢查是否匹配搜索條件
       final matchScore = _calculateMatchScore(currentUser, searchCriteria);
@@ -220,9 +220,7 @@ class MqttUserSearchService {
           responseMessage.toJson(),
         );
         
-        debugPrint('📤 已發布搜索響應到 ${MqttTopics.userSearchResponse(requesterId)}');
-        
-        debugPrint('📤 已發送搜索響應給: ${requesterInfo['userName']}');
+        debugPrint('📤 [SRESP] 已發送搜索響應給: ${requesterInfo['userName']}');
       } else {
         debugPrint('❌ 不匹配搜索條件');
       }
@@ -250,7 +248,7 @@ class MqttUserSearchService {
         return;
       }
       
-      debugPrint('📨 收到搜索響應: ${userInfo['userName']}');
+      debugPrint('📨 [SRESP] 收到搜索響應: ${userInfo['userName']}');
       
       // 創建搜索結果並添加到列表
       final result = UserSearchResult.fromJson(userInfo);

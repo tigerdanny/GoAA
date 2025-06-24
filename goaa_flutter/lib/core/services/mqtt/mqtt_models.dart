@@ -36,6 +36,127 @@ enum GoaaMqttMessageType {
   expenseDelete,
 }
 
+/// 消息類型擴展方法
+extension GoaaMqttMessageTypeExtension on GoaaMqttMessageType {
+  /// 獲取消息類型的英文標識符
+  String get identifier {
+    switch (this) {
+      // 好友功能群組
+      case GoaaMqttMessageType.userOnline:
+        return 'ONLINE';
+      case GoaaMqttMessageType.userOffline:
+        return 'OFFLINE';
+      case GoaaMqttMessageType.friendRequest:
+        return 'FREQ';
+      case GoaaMqttMessageType.friendAccept:
+        return 'FACC';
+      case GoaaMqttMessageType.friendReject:
+        return 'FREJ';
+      case GoaaMqttMessageType.friendInfoShare:
+        return 'FINFO';
+      case GoaaMqttMessageType.heartbeat:
+        return 'BEAT';
+      
+      // 帳務功能群組
+      case GoaaMqttMessageType.expenseShare:
+        return 'ESHARE';
+      case GoaaMqttMessageType.expenseUpdate:
+        return 'EUPD';
+      case GoaaMqttMessageType.expenseSettlement:
+        return 'ESETT';
+      case GoaaMqttMessageType.expenseNotification:
+        return 'ENOTIF';
+      case GoaaMqttMessageType.groupInvitation:
+        return 'GINV';
+      
+      // 系統功能群組
+      case GoaaMqttMessageType.systemAnnouncement:
+        return 'SYSANN';
+      case GoaaMqttMessageType.systemMaintenance:
+        return 'SYSMNT';
+      
+      // 用戶搜索
+      case GoaaMqttMessageType.userSearchRequest:
+        return 'SREQ';
+      case GoaaMqttMessageType.userSearchResponse:
+        return 'SRESP';
+      
+      // 群組功能
+      case GoaaMqttMessageType.groupMessage:
+        return 'GMSG';
+      case GoaaMqttMessageType.groupJoin:
+        return 'GJOIN';
+      case GoaaMqttMessageType.groupLeave:
+        return 'GLEAVE';
+      
+      // 記帳功能
+      case GoaaMqttMessageType.expenseCreate:
+        return 'ECREATE';
+      case GoaaMqttMessageType.expenseDelete:
+        return 'EDEL';
+    }
+  }
+
+  /// 獲取消息類型的中文描述
+  String get description {
+    switch (this) {
+      // 好友功能群組
+      case GoaaMqttMessageType.userOnline:
+        return '用戶上線';
+      case GoaaMqttMessageType.userOffline:
+        return '用戶離線';
+      case GoaaMqttMessageType.friendRequest:
+        return '好友請求';
+      case GoaaMqttMessageType.friendAccept:
+        return '接受好友';
+      case GoaaMqttMessageType.friendReject:
+        return '拒絕好友';
+      case GoaaMqttMessageType.friendInfoShare:
+        return '好友信息分享';
+      case GoaaMqttMessageType.heartbeat:
+        return '心跳';
+      
+      // 帳務功能群組
+      case GoaaMqttMessageType.expenseShare:
+        return '分帳分享';
+      case GoaaMqttMessageType.expenseUpdate:
+        return '帳務更新';
+      case GoaaMqttMessageType.expenseSettlement:
+        return '結算通知';
+      case GoaaMqttMessageType.expenseNotification:
+        return '帳務通知';
+      case GoaaMqttMessageType.groupInvitation:
+        return '群組邀請';
+      
+      // 系統功能群組
+      case GoaaMqttMessageType.systemAnnouncement:
+        return '系統公告';
+      case GoaaMqttMessageType.systemMaintenance:
+        return '系統維護';
+      
+      // 用戶搜索
+      case GoaaMqttMessageType.userSearchRequest:
+        return '用戶搜索請求';
+      case GoaaMqttMessageType.userSearchResponse:
+        return '用戶搜索響應';
+      
+      // 群組功能
+      case GoaaMqttMessageType.groupMessage:
+        return '群組消息';
+      case GoaaMqttMessageType.groupJoin:
+        return '加入群組';
+      case GoaaMqttMessageType.groupLeave:
+        return '離開群組';
+      
+      // 記帳功能
+      case GoaaMqttMessageType.expenseCreate:
+        return '創建記帳';
+      case GoaaMqttMessageType.expenseDelete:
+        return '刪除記帳';
+    }
+  }
+}
+
 
 
 /// GOAA MQTT 消息模型
