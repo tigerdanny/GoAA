@@ -68,29 +68,113 @@ class MqttConnectionManager {
   /// 清理解碼後的字符串，移除損壞的UTF-8字符
   String _cleanDecodedString(String input) {
     try {
-      // 移除控制字符和損壞的UTF-8字符
+      // 第一步：移除明顯的控制字符和損壞的UTF-8字符
       String cleaned = input.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]'), '');
       
-      // 測試是否能正常JSON序列化（這會暴露隱藏的編碼問題）
-      jsonEncode({'test': cleaned});
+      // 第二步：嘗試JSON解析測試
+      final testJson = jsonDecode(cleaned) as Map<String, dynamic>;
       
-      debugPrint('🧹 字符串清理完成，長度: ${input.length} -> ${cleaned.length}');
-      return cleaned;
+      // 第三步：檢查JSON中的字符串字段是否包含損壞字符
+      final cleanedJson = _cleanJsonStrings(testJson);
+      final finalResult = jsonEncode(cleanedJson);
+      
+      debugPrint('🧹 字符串清理完成，長度: ${input.length} -> ${finalResult.length}');
+      return finalResult;
     } catch (e) {
-      debugPrint('⚠️ 字符串清理失敗，使用嚴格過濾: $e');
+      debugPrint('⚠️ JSON解析失敗，使用字符級別清理: $e');
       
-      // 如果JSON序列化失敗，使用更嚴格的過濾
-      // 只保留ASCII字符、中文字符和常見符號
-      final strictCleaned = input.split('').where((char) {
-        final code = char.codeUnitAt(0);
-        return (code >= 32 && code <= 126) ||  // ASCII可打印字符
-               (code >= 0x4E00 && code <= 0x9FFF) ||  // 中文字符
-               (code >= 0x3400 && code <= 0x4DBF) ||  // 中文擴展A
-               [0x20, 0x22, 0x27, 0x2C, 0x2E, 0x3A, 0x3B, 0x5B, 0x5D, 0x7B, 0x7D].contains(code); // 常見符號
-      }).join('');
+      try {
+        // 嘗試逐字符清理並重新構建JSON
+        final cleanedChars = <String>[];
+        for (int i = 0; i < input.length; i++) {
+          final char = input[i];
+          final code = char.codeUnitAt(0);
+          
+          // 保留安全字符
+          if ((code >= 32 && code <= 126) ||  // ASCII可打印字符
+              (code >= 0x4E00 && code <= 0x9FFF) ||  // 中文字符
+              (code >= 0x3400 && code <= 0x4DBF) ||  // 中文擴展A
+              (code >= 0x0080 && code <= 0x00FF) ||  // 拉丁擴展
+              [0x20, 0x22, 0x27, 0x2C, 0x2E, 0x3A, 0x3B, 0x5B, 0x5D, 0x7B, 0x7D].contains(code)) {
+            cleanedChars.add(char);
+          } else {
+            // 對於不安全的字符，嘗試替換為安全字符或跳過
+            debugPrint('⚠️ 跳過不安全字符: U+${code.toRadixString(16).padLeft(4, '0')} ($char)');
+          }
+        }
+        
+        final partialClean = cleanedChars.join('');
+        
+        // 嘗試修復JSON結構
+        final repairedJson = _repairJsonString(partialClean);
+        
+        debugPrint('🧹 字符級清理完成，長度: ${input.length} -> ${repairedJson.length}');
+        return repairedJson;
+        
+      } catch (e2) {
+        debugPrint('❌ 字符級清理也失敗，返回錯誤占位符: $e2');
+        
+        // 最後的回退：返回一個有效的錯誤JSON
+        return '{"error":"corrupted_message","original_length":${input.length}}';
+      }
+    }
+  }
+
+  /// 清理JSON對象中的字符串字段
+  Map<String, dynamic> _cleanJsonStrings(Map<String, dynamic> json) {
+    final cleaned = <String, dynamic>{};
+    
+    json.forEach((key, value) {
+      if (value is String) {
+        // 清理字符串值中的損壞字符
+        final cleanValue = value.replaceAll(RegExp(r'[\x00-\x1F\x7F-\x9F\uFFFD\\]'), '');
+        cleaned[key] = cleanValue;
+      } else if (value is Map<String, dynamic>) {
+        // 遞歸清理嵌套對象
+        cleaned[key] = _cleanJsonStrings(value);
+      } else if (value is List) {
+        // 清理數組
+        cleaned[key] = value.map((item) {
+          if (item is String) {
+            return item.replaceAll(RegExp(r'[\x00-\x1F\x7F-\x9F\uFFFD\\]'), '');
+          } else if (item is Map<String, dynamic>) {
+            return _cleanJsonStrings(item);
+          }
+          return item;
+        }).toList();
+      } else {
+        cleaned[key] = value;
+      }
+    });
+    
+    return cleaned;
+  }
+
+  /// 嘗試修復損壞的JSON字符串
+  String _repairJsonString(String input) {
+    try {
+      // 嘗試直接解析
+      jsonDecode(input);
+      return input;
+    } catch (e) {
+      debugPrint('🔧 嘗試修復JSON結構: $e');
       
-      debugPrint('🧹 嚴格清理完成，長度: ${input.length} -> ${strictCleaned.length}');
-      return strictCleaned;
+      // 簡單的JSON修復策略
+      String repaired = input;
+      
+      // 修復常見的JSON問題
+      repaired = repaired.replaceAll(RegExp(r'[^\x20-\x7E\u4e00-\u9fff\u3400-\u4dbf]'), ''); // 移除非打印字符
+      repaired = repaired.replaceAll(RegExp(r'\\+'), ''); // 移除多餘的反斜杠
+      repaired = repaired.replaceAll(RegExp(r'""'), '"'); // 修復雙引號問題
+      
+      try {
+        jsonDecode(repaired);
+        return repaired;
+      } catch (e2) {
+        debugPrint('❌ JSON修復失敗: $e2');
+        // 返回最小有效JSON
+        return '{"error":"json_repair_failed"}';
+      }
     }
   }
 
@@ -221,8 +305,6 @@ class MqttConnectionManager {
     }
   }
 
-
-
   /// 確保服務器上存在必要的群組主題
   Future<void> _ensureGroupsExist() async {
     if (!isConnected || _currentUserId == null) return;
@@ -244,8 +326,6 @@ class MqttConnectionManager {
     // 只設置消息監聽，不自動訂閱群組
     _client!.updates!.listen(_onMessageReceived);
   }
-
-
 
   /// 開始心跳
   void _startHeartbeat() {

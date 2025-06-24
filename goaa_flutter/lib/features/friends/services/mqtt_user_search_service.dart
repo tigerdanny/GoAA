@@ -330,27 +330,62 @@ class MqttUserSearchService {
     if (input == null || input.isEmpty) return '';
     
     try {
-      // 移除控制字符和無效字符
-      final cleaned = input.replaceAll(RegExp(r'[\x00-\x1F\x7F-\x9F]'), '');
+      // 第一步：移除明顯的控制字符和損壞的UTF-8字符
+      String cleaned = input.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]'), '');
       
-      // 驗證UTF-8編碼
-      final bytes = cleaned.codeUnits;
-      final validString = String.fromCharCodes(bytes);
+      // 第二步：移除可能導致JSON解析問題的字符
+      cleaned = cleaned.replaceAll(RegExp(r'[\\"]'), ''); // 移除反斜杠和雙引號
       
-      // 確保字符串可以正確JSON序列化
-      final testJson = '{"test":"$validString"}';
-      // 嘗試解析以驗證
-      jsonDecode(testJson);
+      // 第三步：測試JSON序列化安全性
+      final testJson = jsonEncode({'test': cleaned});
+      jsonDecode(testJson); // 驗證可以正常解析
       
-      return validString;
+      debugPrint('🧹 字符串清理成功: "$input" -> "$cleaned"');
+      return cleaned;
+      
     } catch (e) {
-      debugPrint('⚠️ 字符串清理失敗: $e, 原始字符串: "$input"');
+      debugPrint('⚠️ 字符串清理失敗，使用字符級過濾: $e');
+      debugPrint('   原始字符串: "$input"');
       
-      // 如果清理失敗，只保留ASCII字符
-      final asciiOnly = input.replaceAll(RegExp(r'[^\x20-\x7E\u4e00-\u9fff]'), '');
-      debugPrint('   回退到ASCII+中文字符: "$asciiOnly"');
-      
-      return asciiOnly;
+      try {
+        // 字符級清理：只保留安全字符
+        final cleanedChars = <String>[];
+        for (int i = 0; i < input.length; i++) {
+          final char = input[i];
+          final code = char.codeUnitAt(0);
+          
+          // 保留安全字符
+          if ((code >= 32 && code <= 126) ||  // ASCII可打印字符
+              (code >= 0x4E00 && code <= 0x9FFF) ||  // 中文字符
+              (code >= 0x3400 && code <= 0x4DBF) ||  // 中文擴展A
+              (code >= 0x0080 && code <= 0x00FF)) {  // 拉丁擴展
+            // 跳過可能導致JSON問題的字符
+            if (char != '"' && char != '\\' && char != '\n' && char != '\r' && char != '\t') {
+              cleanedChars.add(char);
+            }
+          } else {
+            debugPrint('   跳過不安全字符: U+${code.toRadixString(16).padLeft(4, '0')} ($char)');
+          }
+        }
+        
+        final result = cleanedChars.join('');
+        debugPrint('   字符級清理結果: "$result"');
+        
+        // 最終驗證
+        final testJson = jsonEncode({'test': result});
+        jsonDecode(testJson);
+        
+        return result;
+        
+      } catch (e2) {
+        debugPrint('❌ 字符級清理也失敗: $e2');
+        
+        // 最後的回退：只保留基本ASCII字符
+        final asciiOnly = input.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+        debugPrint('   回退到純ASCII: "$asciiOnly"');
+        
+        return asciiOnly;
+      }
     }
   }
 
