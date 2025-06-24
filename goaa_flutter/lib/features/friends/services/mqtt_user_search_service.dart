@@ -58,6 +58,26 @@ class MqttUserSearchService {
       await initialize();
     }
     
+    // 🔧 確保MQTT已連接，否則等待連接或嘗試重連
+    if (!_mqttService.isConnected) {
+      debugPrint('⚠️ MQTT未連接，嘗試重新連接...');
+      await _mqttService.reconnect();
+      
+      // 等待連接建立（最多等待5秒）
+      int attempts = 0;
+      while (!_mqttService.isConnected && attempts < 10) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        attempts++;
+      }
+      
+      if (!_mqttService.isConnected) {
+        debugPrint('❌ MQTT連接失敗，無法進行搜索');
+        throw Exception('MQTT 連接失敗，請檢查網絡連接');
+      }
+      
+      debugPrint('✅ MQTT重新連接成功');
+    }
+    
     final currentUser = await _userRepository.getCurrentUser();
     if (currentUser == null) {
       debugPrint('❌ 無法獲取當前用戶信息');

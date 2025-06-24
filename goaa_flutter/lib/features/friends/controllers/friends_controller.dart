@@ -80,6 +80,25 @@ class FriendsController extends ChangeNotifier {
   Future<void> initialize() async {
     debugPrint('🎯 初始化好友控制器...');
     
+    // 🔧 確保MQTT App服務已初始化
+    if (!_mqttAppService.isConnected) {
+      debugPrint('⚠️ MQTT服務未連接，嘗試初始化...');
+      await _mqttAppService.initialize();
+      
+      // 等待連接建立（最多等待3秒）
+      int attempts = 0;
+      while (!_mqttAppService.isConnected && attempts < 6) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        attempts++;
+      }
+      
+      if (_mqttAppService.isConnected) {
+        debugPrint('✅ MQTT服務連接成功');
+      } else {
+        debugPrint('⚠️ MQTT服務連接超時，但繼續初始化');
+      }
+    }
+    
     // 初始化 MQTT 用戶搜索服務
     await _searchService.initialize();
     
@@ -427,6 +446,20 @@ class FriendsController extends ChangeNotifier {
   Future<void> reconnect() async {
     debugPrint('🔄 請求重新連接 MQTT...');
     await _mqttAppService.reconnect();
+    
+    // 等待連接建立
+    int attempts = 0;
+    while (!_mqttAppService.isConnected && attempts < 10) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      attempts++;
+    }
+    
+    if (_mqttAppService.isConnected) {
+      debugPrint('✅ MQTT重新連接成功');
+      notifyListeners(); // 通知UI更新連接狀態
+    } else {
+      debugPrint('❌ MQTT重新連接失敗');
+    }
   }
 
   /// 清理資源
