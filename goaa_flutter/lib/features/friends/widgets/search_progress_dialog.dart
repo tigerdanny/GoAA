@@ -115,10 +115,18 @@ class _SearchProgressDialogState extends State<SearchProgressDialog>
 
     // 執行真正的搜索
     try {
-      await widget.searchFuture;
-    } catch (e) {
-      // 錯誤處理
-      debugPrint('搜索過程發生錯誤: $e');
+      await widget.searchFuture.timeout(
+        const Duration(seconds: 15), // 🔧 添加15秒總超時保護
+        onTimeout: () {
+          debugPrint('⏰ 搜索進度對話框：搜索總超時');
+          // 超時時不拋出異常，讓流程正常完成
+        },
+      );
+    } catch (e, stackTrace) {
+      // 🔧 改進錯誤處理，記錄完整錯誤信息
+      debugPrint('❌ 搜索進度對話框：搜索過程發生錯誤: $e');
+      debugPrint('📚 錯誤堆疊: $stackTrace');
+      // 不重新拋出異常，讓對話框正常關閉
     }
 
     // 搜索完成動畫
@@ -133,19 +141,53 @@ class _SearchProgressDialogState extends State<SearchProgressDialog>
       await _scaleController.forward();
       await Future.delayed(const Duration(milliseconds: 500));
       
+      // 🔧 確保在關閉對話框前停止所有動畫
       if (mounted) {
-        Navigator.of(context).pop();
-        widget.onSearchComplete();
+        try {
+          Navigator.of(context).pop();
+          widget.onSearchComplete();
+        } catch (e) {
+          debugPrint('❌ 關閉搜索進度對話框時發生錯誤: $e');
+          // 即使出錯也要嘗試調用完成回調
+          try {
+            widget.onSearchComplete();
+          } catch (callbackError) {
+            debugPrint('❌ 搜索完成回調執行失敗: $callbackError');
+          }
+        }
       }
     }
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _rotationController.dispose();
-    _fadeController.dispose();
-    _scaleController.dispose();
+    // 🔧 安全釋放動畫控制器，防止異常
+    try {
+      _pulseController.stop();
+      _pulseController.dispose();
+    } catch (e) {
+      debugPrint('⚠️ 釋放脈沖動畫控制器失敗: $e');
+    }
+    
+    try {
+      _rotationController.stop();
+      _rotationController.dispose();
+    } catch (e) {
+      debugPrint('⚠️ 釋放旋轉動畫控制器失敗: $e');
+    }
+    
+    try {
+      _fadeController.dispose();
+    } catch (e) {
+      debugPrint('⚠️ 釋放淡入動畫控制器失敗: $e');
+    }
+    
+    try {
+      _scaleController.dispose();
+    } catch (e) {
+      debugPrint('⚠️ 釋放縮放動畫控制器失敗: $e');
+    }
+    
     super.dispose();
   }
 

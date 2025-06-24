@@ -56,7 +56,6 @@ class MqttUserManager {
       final user = OnlineUser(
         userId: message.data['userId'],
         userName: message.data['userName'],
-        userCode: message.data['userCode'],
         avatar: message.data['avatar'],
         lastSeen: message.timestamp,
       );
@@ -90,7 +89,6 @@ class MqttUserManager {
         _onlineUsers[userId] = OnlineUser(
           userId: existingUser.userId,
           userName: existingUser.userName,
-          userCode: existingUser.userCode,
           avatar: existingUser.avatar,
           lastSeen: message.timestamp,
         );

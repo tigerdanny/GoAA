@@ -156,7 +156,6 @@ class MqttAppService {
     final user = OnlineUser(
       userId: message.fromUserId,
       userName: data['userName'] ?? '',
-      userCode: data['userCode'] ?? '',
       avatar: data['avatar'],
       lastSeen: message.timestamp,
     );
@@ -185,7 +184,6 @@ class MqttAppService {
       _onlineUsers[userId] = OnlineUser(
         userId: existingUser.userId,
         userName: existingUser.userName,
-        userCode: existingUser.userCode,
         avatar: existingUser.avatar,
         lastSeen: message.timestamp,
       );
@@ -197,6 +195,10 @@ class MqttAppService {
   Future<void> _handleUserSearchRequest(GoaaMqttMessage message) async {
     try {
       debugPrint('🔍 [GLOBAL] 收到用戶搜索請求');
+      debugPrint('   消息完整結構: ${message.toJson()}');
+      debugPrint('   消息數據字段: ${message.data}');
+      debugPrint('   消息數據類型: ${message.data.runtimeType}');
+      debugPrint('   消息數據鍵值: ${message.data.keys.toList()}');
       
       final userRepository = UserRepository();
       final currentUser = await userRepository.getCurrentUser();
@@ -205,111 +207,138 @@ class MqttAppService {
         return;
       }
       
+      // 檢查數據結構
+      final dataField = message.data['data'];
+      if (dataField != null) {
+        debugPrint('   檢測到嵌套data字段: $dataField');
+        final nestedData = dataField as Map<String, dynamic>;
+        final requestId = nestedData['requestId'] as String?;
+        final searchType = nestedData['searchType'] as String?;
+        final searchValue = nestedData['searchValue'] as String?;
+        final requesterInfo = nestedData['requesterInfo'] as Map<String, dynamic>?;
+        
+        debugPrint('   嵌套解析 - requestId: $requestId');
+        debugPrint('   嵌套解析 - searchType: $searchType');
+        debugPrint('   嵌套解析 - searchValue: $searchValue');
+        debugPrint('   嵌套解析 - requesterInfo: $requesterInfo');
+        
+        // 如果嵌套數據存在，使用嵌套數據
+        if (requestId != null && searchType != null && searchValue != null && requesterInfo != null) {
+          await _processSearchRequest(currentUser, requestId, searchType, searchValue, requesterInfo);
+          return;
+        }
+      }
+      
+      // 嘗試直接從message.data讀取
       final requestId = message.data['requestId'] as String?;
-      final searchCriteria = message.data['searchCriteria'] as Map<String, dynamic>?;
+      final searchType = message.data['searchType'] as String?;
+      final searchValue = message.data['searchValue'] as String?;
       final requesterInfo = message.data['requesterInfo'] as Map<String, dynamic>?;
       
-      if (requestId == null || searchCriteria == null || requesterInfo == null) {
+      debugPrint('   直接解析 - requestId: $requestId');
+      debugPrint('   直接解析 - searchType: $searchType');
+      debugPrint('   直接解析 - searchValue: $searchValue');
+      debugPrint('   直接解析 - requesterInfo: $requesterInfo');
+      
+      if (requestId == null || searchType == null || searchValue == null || requesterInfo == null) {
         debugPrint('❌ [GLOBAL] 搜索請求格式錯誤');
+        debugPrint('   缺少字段: requestId=${requestId == null}, searchType=${searchType == null}, searchValue=${searchValue == null}, requesterInfo=${requesterInfo == null}');
         return;
       }
       
-      final requesterId = requesterInfo['userId'] as String;
-      
-      // 不要回應自己的搜索請求
-      if (requesterId == currentUser.userCode) {
-        debugPrint('⏭️ [GLOBAL] 跳過自己的搜索請求');
-        return;
-      }
-      
-      debugPrint('🔍 [GLOBAL] 處理搜索請求來自: ${requesterInfo['userName']}');
-      
-      // 檢查是否匹配搜索條件
-      final matchScore = _calculateMatchScore(currentUser, searchCriteria);
-      
-      if (matchScore > 0.0) {
-        debugPrint('✅ [GLOBAL] 匹配搜索條件，匹配度: $matchScore');
-        
-        // 發送搜索響應
-        final responseMessage = GoaaMqttMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: GoaaMqttMessageType.userSearchResponse,
-          fromUserId: currentUser.userCode,
-          toUserId: requesterId,
-          data: {
-            'requestId': requestId,
-            'userInfo': {
-              'userId': currentUser.userCode,
-              'userName': currentUser.name,
-              'userCode': currentUser.userCode,
-              'email': currentUser.email,
-              'phone': currentUser.phone,
-              'matchScore': matchScore,
-            },
-          },
-          group: 'friends',
-        );
-        
-        // 發布搜索響應到MQTT
-        await _mqttManager.publishMessage(
-          topics.MqttTopics.userSearchResponse(requesterId),
-          responseMessage.toJson(),
-        );
-        
-        debugPrint('📤 [GLOBAL] 已發送搜索響應給: ${requesterInfo['userName']}');
-      } else {
-        debugPrint('❌ [GLOBAL] 不匹配搜索條件');
-      }
+      await _processSearchRequest(currentUser, requestId, searchType, searchValue, requesterInfo);
       
     } catch (e) {
       debugPrint('❌ [GLOBAL] 處理搜索請求失敗: $e');
     }
   }
 
-  /// 🔧 計算匹配度（從搜索服務複製）
-  double _calculateMatchScore(dynamic currentUser, Map<String, dynamic> searchCriteria) {
-    double score = 0.0;
-    int matchCount = 0;
+  /// 處理搜索請求的核心邏輯
+  Future<void> _processSearchRequest(
+    dynamic currentUser, 
+    String requestId, 
+    String searchType, 
+    String searchValue, 
+    Map<String, dynamic> requesterInfo
+  ) async {
+    final requesterId = requesterInfo['userId'] as String;
     
-    final searchName = (searchCriteria['name'] as String? ?? '').toLowerCase().trim();
-    final searchEmail = (searchCriteria['email'] as String? ?? '').toLowerCase().trim();
-    final searchPhone = (searchCriteria['phone'] as String? ?? '').trim();
-    
-    // 姓名匹配 (權重最高)
-    if (searchName.isNotEmpty) {
-      final userName = (currentUser.name ?? '').toLowerCase();
-      if (userName.contains(searchName) || searchName.contains(userName)) {
-        score += 0.6; // 姓名匹配權重60%
-        matchCount++;
-      }
+    // 不要回應自己的搜索請求
+    if (requesterId == currentUser.userCode) {
+      debugPrint('⏭️ [GLOBAL] 跳過自己的搜索請求');
+      return;
     }
     
-    // 信箱匹配
-    if (searchEmail.isNotEmpty) {
-      final userEmail = (currentUser.email ?? '').toLowerCase();
-      if (userEmail == searchEmail) {
-        score += 0.3; // 信箱匹配權重30%
-        matchCount++;
-      }
-    }
+    debugPrint('🔍 [GLOBAL] 處理搜索請求來自: ${requesterInfo['userName']}');
+    debugPrint('   搜索條件: -search,$searchType,"$searchValue"');
     
-    // 電話匹配
-    if (searchPhone.isNotEmpty) {
-      final userPhone = (currentUser.phone ?? '').replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      final cleanSearchPhone = searchPhone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      if (userPhone == cleanSearchPhone) {
-        score += 0.3; // 電話匹配權重30%
-        matchCount++;
-      }
-    }
+    // 檢查是否匹配搜索條件
+    final isMatch = _checkSearchMatch(currentUser, searchType, searchValue);
     
-    // 如果沒有任何匹配，返回0
-    if (matchCount == 0) {
-      return 0.0;
+    if (isMatch) {
+      debugPrint('✅ [GLOBAL] 匹配搜索條件');
+      
+      // 發布搜索響應到MQTT - 最簡化格式
+      await _mqttManager.publishMessage(
+        topics.MqttTopics.userSearchResponse(requesterId),
+        {
+          'type': 'userSearchResponse',
+          'requestId': requestId,
+          'userId': currentUser.userCode,
+          'userName': currentUser.name,
+          'email': currentUser.email,
+          'phone': currentUser.phone,
+        },
+      );
+      
+      debugPrint('📤 [GLOBAL] 已發送搜索響應給: $requesterId，用戶: ${currentUser.name}');
+    } else {
+      debugPrint('❌ [GLOBAL] 不匹配搜索條件');
     }
+  }
+
+  /// 檢查搜索匹配
+  bool _checkSearchMatch(dynamic currentUser, String searchType, String searchValue) {
+    final searchValueLower = searchValue.toLowerCase().trim();
     
-    // 如果至少有一個條件匹配，返回計算的分數
-    return score;
+    debugPrint('🔍 [MATCH] 開始匹配檢查');
+    debugPrint('   當前用戶名: "${currentUser.name}"');
+    debugPrint('   搜索類型: $searchType');
+    debugPrint('   搜索值: "$searchValue"');
+    debugPrint('   搜索值(小寫): "$searchValueLower"');
+    
+    switch (searchType) {
+      case 'name':
+        final userName = (currentUser.name ?? '').toLowerCase();
+        debugPrint('   用戶名(小寫): "$userName"');
+        final contains1 = userName.contains(searchValueLower);
+        final contains2 = searchValueLower.contains(userName);
+        debugPrint('   用戶名包含搜索值: $contains1');
+        debugPrint('   搜索值包含用戶名: $contains2');
+        final result = contains1 || contains2;
+        debugPrint('   最終匹配結果: $result');
+        return result;
+      
+      case 'email':
+        final userEmail = (currentUser.email ?? '').toLowerCase();
+        debugPrint('   用戶郵箱(小寫): "$userEmail"');
+        final result = userEmail == searchValueLower;
+        debugPrint('   最終匹配結果: $result');
+        return result;
+      
+      case 'phone':
+        final userPhone = (currentUser.phone ?? '').replaceAll(RegExp(r'[\s\-\(\)]'), '');
+        final cleanSearchPhone = searchValue.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+        debugPrint('   用戶電話(清理後): "$userPhone"');
+        debugPrint('   搜索電話(清理後): "$cleanSearchPhone"');
+        final result = userPhone == cleanSearchPhone;
+        debugPrint('   最終匹配結果: $result');
+        return result;
+      
+      default:
+        debugPrint('   未知搜索類型，返回false');
+        return false;
+    }
   }
 
   /// 發送好友請求（第一階段：簡單通知）

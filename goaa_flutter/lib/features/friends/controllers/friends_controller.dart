@@ -190,6 +190,16 @@ class FriendsController extends ChangeNotifier {
         debugPrint('❌ 好友請求被拒絕: ${message.fromUserId}');
         break;
         
+      case GoaaMqttMessageType.userSearchRequest:
+        // 搜索請求已由全局MQTT服務處理，無需在此重複處理
+        debugPrint('🔍 搜索請求已由全局服務處理');
+        break;
+        
+      case GoaaMqttMessageType.userSearchResponse:
+        // 搜索響應已由搜索服務處理，無需在此重複處理
+        debugPrint('📨 搜索響應已由搜索服務處理');
+        break;
+        
       default:
         debugPrint('⚠️ 未處理的好友消息類型: ${message.type}');
     }
@@ -254,12 +264,18 @@ class FriendsController extends ChangeNotifier {
 
   /// 搜索用戶（通過姓名、信箱、電話）
   Future<void> searchUsers(FriendSearchInfo searchInfo) async {
-    if (searchInfo.name.trim().isEmpty && 
-        searchInfo.email.trim().isEmpty && 
-        searchInfo.phone.trim().isEmpty) {
+    // 🔧 修復：使用新的搜索值檢查
+    if (searchInfo.searchValue.trim().isEmpty) {
+      debugPrint('⚠️ 搜索值為空，清空結果');
       _searchResults.clear();
       _isSearching = false;
       notifyListeners();
+      return;
+    }
+
+    // 🔧 防止重複搜索
+    if (_isSearching) {
+      debugPrint('⚠️ 搜索已在進行中，忽略重複請求');
       return;
     }
 
@@ -267,23 +283,33 @@ class FriendsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('🔍 開始MQTT用戶搜索: ${searchInfo.name}');
-      debugPrint('   Email: ${searchInfo.email}');
-      debugPrint('   Phone: ${searchInfo.phone}');
+      debugPrint('🔍 開始MQTT用戶搜索');
+      debugPrint('   搜索類型: ${searchInfo.searchType.displayName}');
+      debugPrint('   搜索值: ${searchInfo.searchValue}');
       
-      // 使用 MQTT 搜索服務
-      final results = await _searchService.searchUsers(searchInfo);
+      // 🔧 添加錯誤處理和超時保護
+      final results = await _searchService.searchUsers(searchInfo).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          debugPrint('⏰ 搜索超時，返回空結果');
+          return <UserSearchResult>[];
+        },
+      );
+      
       _searchResults.clear();
       _searchResults.addAll(results);
       
       debugPrint('📊 MQTT搜索結果: ${_searchResults.length} 個用戶');
       for (final result in _searchResults) {
-        debugPrint('   - ${result.userName} (${result.userCode}) 匹配度: ${result.matchScore}');
+        debugPrint('   - ${result.userName} (${result.userCode})');
       }
       
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ MQTT搜索用戶失敗: $e');
+      debugPrint('📚 錯誤堆疊: $stackTrace');
       _searchResults.clear();
+      
+      // 🔧 不要重新拋出異常，讓UI能正常處理
     } finally {
       _isSearching = false;
       notifyListeners();

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../core/services/mqtt/mqtt_app_service.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
@@ -31,11 +30,13 @@ class MqttUserSearchService {
     
     debugPrint('🔍 初始化MQTT用戶搜索服務...');
     
-    // 監聽搜索請求（回應其他用戶的搜索）
+    // 🔧 搜索請求現在由全局MqttAppService處理，此處不再重複處理
+    // 監聽搜索請求（已由全局服務處理）
     _searchRequestSubscription = _mqttService.friendsMessageStream.listen(
       (message) {
         if (message.type == GoaaMqttMessageType.userSearchRequest) {
-          _handleSearchRequest(message);
+          debugPrint('🔍 [SEARCH_SERVICE] 搜索請求已由全局MqttAppService處理，跳過本地處理');
+          // 搜索請求處理已完全移至全局服務，確保全應用響應能力
         }
       },
     );
@@ -72,8 +73,8 @@ class MqttUserSearchService {
       }
       
       if (!_mqttService.isConnected) {
-        debugPrint('❌ MQTT連接失敗，無法進行搜索');
-        throw Exception('MQTT 連接失敗，請檢查網絡連接');
+        debugPrint('❌ MQTT連接失敗，返回空搜索結果');
+        return []; // 🔧 返回空結果而不是拋出異常，避免APP崩潰
       }
       
       debugPrint('✅ MQTT重新連接成功');
@@ -104,46 +105,39 @@ class MqttUserSearchService {
     });
     
     try {
-      // 🔧 清理和驗證搜索條件，確保UTF-8編碼安全
-      final cleanName = _cleanString(searchInfo.name.trim());
-      final cleanEmail = _cleanString(searchInfo.email.trim());
-      final cleanPhone = _cleanString(searchInfo.phone.trim());
-      final cleanUserName = _cleanString(currentUser.name);
+      // 🔧 根據搜索類型構建搜索條件
+      String searchType = '';
+      String searchValue = '';
       
-      debugPrint('🔍 清理後的搜索條件:');
-      debugPrint('   原始姓名: "${searchInfo.name.trim()}" -> 清理後: "$cleanName"');
-      debugPrint('   原始Email: "${searchInfo.email.trim()}" -> 清理後: "$cleanEmail"');
-      debugPrint('   原始電話: "${searchInfo.phone.trim()}" -> 清理後: "$cleanPhone"');
+      switch (searchInfo.searchType) {
+        case SearchType.name:
+          searchType = 'name';
+          searchValue = searchInfo.searchValue.trim();
+          break;
+        case SearchType.email:
+          searchType = 'email';
+          searchValue = searchInfo.searchValue.trim();
+          break;
+        case SearchType.phone:
+          searchType = 'phone';
+          searchValue = searchInfo.searchValue.trim();
+          break;
+      }
       
-      // 發送搜索請求到公共搜索主題
-      final searchMessage = GoaaMqttMessage(
-        id: requestId,
-        type: GoaaMqttMessageType.userSearchRequest,
-        fromUserId: currentUser.userCode,
-        toUserId: 'all', // 廣播給所有用戶
-        data: {
-          'requestId': requestId,
-          'searchCriteria': {
-            'name': cleanName,
-            'email': cleanEmail,
-            'phone': cleanPhone,
-          },
-          'requesterInfo': {
-            'userId': currentUser.userCode,
-            'userName': cleanUserName,
-          },
-        },
-        group: 'friends', // 添加必需的 group 參數
-      );
+      debugPrint('🔍 搜索請求格式: -search,$searchType,"$searchValue"');
       
-      debugPrint('🔍 發送用戶搜索請求: ${searchInfo.name}');
-      debugPrint('   Email: ${searchInfo.email}');
-      debugPrint('   Phone: ${searchInfo.phone}');
+      debugPrint('🔍 發送用戶搜索請求: -search,$searchType,"$searchValue"');
       
-      // 發布搜索請求到MQTT
+      // 發布搜索請求到MQTT - 最簡化格式
       await _mqttService.publishMessage(
         MqttTopics.userSearchRequest,
-        searchMessage.toJson(),
+        {
+          'type': 'userSearchRequest',
+          'requestId': requestId,
+          'searchType': searchType,
+          'searchValue': searchValue,
+          'fromUserId': currentUser.userCode,
+        },
       );
       
       debugPrint('📤 [SREQ] 已發布用戶搜索請求到 ${MqttTopics.userSearchRequest}');
@@ -164,79 +158,16 @@ class MqttUserSearchService {
     }
   }
 
-  /// 處理搜索請求（其他用戶發來的搜索）
-  Future<void> _handleSearchRequest(GoaaMqttMessage message) async {
-    try {
-      final currentUser = await _userRepository.getCurrentUser();
-      if (currentUser == null) return;
-      
-      final requestId = message.data['requestId'] as String?;
-      final searchCriteria = message.data['searchCriteria'] as Map<String, dynamic>?;
-      final requesterInfo = message.data['requesterInfo'] as Map<String, dynamic>?;
-      
-      if (requestId == null || searchCriteria == null || requesterInfo == null) {
-        debugPrint('❌ 搜索請求格式錯誤');
-        return;
-      }
-      
-      final requesterId = requesterInfo['userId'] as String;
-      
-      // 不要回應自己的搜索請求
-      if (requesterId == currentUser.userCode) {
-        return;
-      }
-      
-      debugPrint('🔍 [SREQ] 收到搜索請求來自: ${requesterInfo['userName']}');
-      
-      // 檢查是否匹配搜索條件
-      final matchScore = _calculateMatchScore(currentUser, searchCriteria);
-      
-      if (matchScore > 0.0) {
-        debugPrint('✅ 匹配搜索條件，匹配度: $matchScore');
-        
-        // 發送搜索響應
-        final responseMessage = GoaaMqttMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          type: GoaaMqttMessageType.userSearchResponse,
-          fromUserId: currentUser.userCode,
-          toUserId: requesterId,
-          data: {
-            'requestId': requestId,
-            'userInfo': {
-              'userId': currentUser.userCode,
-              'userName': currentUser.name, // 修正：使用 name 而不是 userName
-              'userCode': currentUser.userCode,
-              'email': currentUser.email,
-              'phone': currentUser.phone,
-              'matchScore': matchScore,
-            },
-          },
-          group: 'friends', // 添加必需的 group 參數
-        );
-        
-        // 發布搜索響應到MQTT
-        await _mqttService.publishMessage(
-          MqttTopics.userSearchResponse(requesterId),
-          responseMessage.toJson(),
-        );
-        
-        debugPrint('📤 [SRESP] 已發送搜索響應給: ${requesterInfo['userName']}');
-      } else {
-        debugPrint('❌ 不匹配搜索條件');
-      }
-      
-    } catch (e) {
-      debugPrint('❌ 處理搜索請求失敗: $e');
-    }
-  }
+
 
   /// 處理搜索響應（收到的搜索結果）
   void _handleSearchResponse(GoaaMqttMessage message) {
     try {
       final requestId = message.data['requestId'] as String?;
-      final userInfo = message.data['userInfo'] as Map<String, dynamic>?;
+      final userId = message.data['userId'] as String?;
+      final userName = message.data['userName'] as String?;
       
-      if (requestId == null || userInfo == null) {
+      if (requestId == null || userId == null || userName == null) {
         debugPrint('❌ 搜索響應格式錯誤');
         return;
       }
@@ -248,10 +179,10 @@ class MqttUserSearchService {
         return;
       }
       
-      debugPrint('📨 [SRESP] 收到搜索響應: ${userInfo['userName']}');
+      debugPrint('📨 [SRESP] 收到搜索響應: $userName');
       
       // 創建搜索結果並添加到列表
-      final result = UserSearchResult.fromJson(userInfo);
+      final result = UserSearchResult.fromJson(message.data);
       resultsList.add(result);
       
       // 延遲完成，等待更多結果
@@ -279,115 +210,7 @@ class MqttUserSearchService {
     }
   }
 
-  /// 計算匹配度
-  double _calculateMatchScore(dynamic currentUser, Map<String, dynamic> searchCriteria) {
-    double score = 0.0;
-    int matchCount = 0;
-    
-    final searchName = (searchCriteria['name'] as String? ?? '').toLowerCase().trim();
-    final searchEmail = (searchCriteria['email'] as String? ?? '').toLowerCase().trim();
-    final searchPhone = (searchCriteria['phone'] as String? ?? '').trim();
-    
-    // 姓名匹配 (權重最高)
-    if (searchName.isNotEmpty) {
-      final userName = (currentUser.name ?? '').toLowerCase(); // 修正：使用 name
-      if (userName.contains(searchName) || searchName.contains(userName)) {
-        score += 0.6; // 姓名匹配權重60%
-        matchCount++;
-      }
-    }
-    
-    // 信箱匹配
-    if (searchEmail.isNotEmpty) {
-      final userEmail = (currentUser.email ?? '').toLowerCase();
-      if (userEmail == searchEmail) {
-        score += 0.3; // 信箱匹配權重30%
-        matchCount++;
-      }
-    }
-    
-    // 電話匹配
-    if (searchPhone.isNotEmpty) {
-      final userPhone = (currentUser.phone ?? '').replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      final cleanSearchPhone = searchPhone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-      if (userPhone == cleanSearchPhone) {
-        score += 0.3; // 電話匹配權重30%
-        matchCount++;
-      }
-    }
-    
-    // 如果沒有任何匹配，返回0
-    if (matchCount == 0) {
-      return 0.0;
-    }
-    
-    // 如果至少有一個條件匹配，返回計算的分數
-    return score;
-  }
 
-  /// 清理字符串，確保UTF-8編碼安全
-  String _cleanString(String? input) {
-    if (input == null || input.isEmpty) return '';
-    
-    try {
-      // 第一步：移除明顯的控制字符和損壞的UTF-8字符
-      String cleaned = input.replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]'), '');
-      
-      // 第二步：移除可能導致JSON解析問題的字符
-      cleaned = cleaned.replaceAll(RegExp(r'[\\"]'), ''); // 移除反斜杠和雙引號
-      
-      // 第三步：測試JSON序列化安全性
-      final testJson = jsonEncode({'test': cleaned});
-      jsonDecode(testJson); // 驗證可以正常解析
-      
-      debugPrint('🧹 字符串清理成功: "$input" -> "$cleaned"');
-      return cleaned;
-      
-    } catch (e) {
-      debugPrint('⚠️ 字符串清理失敗，使用字符級過濾: $e');
-      debugPrint('   原始字符串: "$input"');
-      
-      try {
-        // 字符級清理：只保留安全字符
-        final cleanedChars = <String>[];
-        for (int i = 0; i < input.length; i++) {
-          final char = input[i];
-          final code = char.codeUnitAt(0);
-          
-          // 保留安全字符
-          if ((code >= 32 && code <= 126) ||  // ASCII可打印字符
-              (code >= 0x4E00 && code <= 0x9FFF) ||  // 中文字符
-              (code >= 0x3400 && code <= 0x4DBF) ||  // 中文擴展A
-              (code >= 0x0080 && code <= 0x00FF)) {  // 拉丁擴展
-            // 跳過可能導致JSON問題的字符
-            if (char != '"' && char != '\\' && char != '\n' && char != '\r' && char != '\t') {
-              cleanedChars.add(char);
-            }
-          } else {
-            debugPrint('   跳過不安全字符: U+${code.toRadixString(16).padLeft(4, '0')} ($char)');
-          }
-        }
-        
-        final result = cleanedChars.join('');
-        debugPrint('   字符級清理結果: "$result"');
-        
-        // 最終驗證
-        final testJson = jsonEncode({'test': result});
-        jsonDecode(testJson);
-        
-        return result;
-        
-      } catch (e2) {
-        debugPrint('❌ 字符級清理也失敗: $e2');
-        
-        // 最後的回退：只保留基本ASCII字符
-        final asciiOnly = input.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-        debugPrint('   回退到純ASCII: "$asciiOnly"');
-        
-        return asciiOnly;
-      }
-    }
-  }
 
   /// 清理資源
   void dispose() {

@@ -218,9 +218,8 @@ class GoaaMqttMessage {
 
 /// 在線用戶信息
 class OnlineUser {
-  final String userId;
+  final String userId; // 統一使用UUID
   final String userName;
-  final String userCode;
   final String? avatar;
   final DateTime lastSeen;
   final String status; // 'online', 'offline', 'away'
@@ -228,17 +227,18 @@ class OnlineUser {
   OnlineUser({
     required this.userId,
     required this.userName,
-    required this.userCode,
     this.avatar,
     required this.lastSeen,
     this.status = 'online',
   });
 
+  /// 獲取用戶代碼（與userId相同，用於向後兼容）
+  String get userCode => userId;
+
   factory OnlineUser.fromJson(Map<String, dynamic> json) {
     return OnlineUser(
       userId: json['userId'] ?? '',
       userName: json['userName'] ?? '',
-      userCode: json['userCode'] ?? '',
       avatar: json['avatar'],
       lastSeen: DateTime.tryParse(json['lastSeen'] ?? '') ?? DateTime.now(),
       status: json['status'] ?? 'online',
@@ -249,7 +249,6 @@ class OnlineUser {
     return {
       'userId': userId,
       'userName': userName,
-      'userCode': userCode,
       'avatar': avatar,
       'lastSeen': lastSeen.toIso8601String(),
       'status': status,
@@ -268,9 +267,8 @@ class OnlineUser {
 
 /// 用戶搜索結果
 class UserSearchResult {
-  final String userId;
+  final String userId; // 統一使用UUID
   final String userName;
-  final String userCode;
   final String? email;
   final String? phone;
   final double matchScore; // 匹配度 0.0-1.0
@@ -278,17 +276,18 @@ class UserSearchResult {
   UserSearchResult({
     required this.userId,
     required this.userName,
-    required this.userCode,
     this.email,
     this.phone,
     this.matchScore = 1.0,
   });
 
+  /// 獲取用戶代碼（與userId相同，用於向後兼容）
+  String get userCode => userId;
+
   factory UserSearchResult.fromJson(Map<String, dynamic> json) {
     return UserSearchResult(
       userId: json['userId'] ?? '',
       userName: json['userName'] ?? '',
-      userCode: json['userCode'] ?? '',
       email: json['email']?.isEmpty == true ? null : json['email'],
       phone: json['phone']?.isEmpty == true ? null : json['phone'],
       matchScore: (json['matchScore'] ?? 1.0).toDouble(),
@@ -299,7 +298,6 @@ class UserSearchResult {
     return {
       'userId': userId,
       'userName': userName,
-      'userCode': userCode,
       'email': email,
       'phone': phone,
       'matchScore': matchScore,
