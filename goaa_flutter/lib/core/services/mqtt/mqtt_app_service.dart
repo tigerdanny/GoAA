@@ -39,6 +39,14 @@ class MqttAppService {
   bool get isConnected => _mqttManager.isConnected;
   List<OnlineUser> get onlineUsers => _onlineUsers.values.toList();
 
+  /// 安全截取字符串，避免RangeError
+  String _safeSubstring(String input, int start, int end) {
+    if (input.isEmpty) return '';
+    final actualEnd = end > input.length ? input.length : end;
+    final actualStart = start > actualEnd ? actualEnd : start;
+    return input.substring(actualStart, actualEnd);
+  }
+
   /// 初始化 MQTT 服務
   Future<void> initialize() async {
     try {
@@ -97,7 +105,7 @@ class MqttAppService {
 
   /// 處理接收到的消息
   void _handleMessage(GoaaMqttMessage message) {
-    debugPrint('📨 [${message.type.identifier}] ${message.type.description} - 來自: ${message.fromUserId.substring(0, 8)}');
+    debugPrint('📨 [${message.type.identifier}] ${message.type.description} - 來自: ${_safeSubstring(message.fromUserId, 0, 8)}');
 
     // 根據消息群組分發到不同的流
     if (message.group == 'friends') {
