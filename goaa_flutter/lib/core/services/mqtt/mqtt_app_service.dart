@@ -215,16 +215,16 @@ class MqttAppService {
         final requestId = nestedData['requestId'] as String?;
         final searchType = nestedData['searchType'] as String?;
         final searchValue = nestedData['searchValue'] as String?;
-        final requesterInfo = nestedData['requesterInfo'] as Map<String, dynamic>?;
+        final fromUserId = nestedData['fromUserId'] as String?;
         
         debugPrint('   嵌套解析 - requestId: $requestId');
         debugPrint('   嵌套解析 - searchType: $searchType');
         debugPrint('   嵌套解析 - searchValue: $searchValue');
-        debugPrint('   嵌套解析 - requesterInfo: $requesterInfo');
+        debugPrint('   嵌套解析 - fromUserId: $fromUserId');
         
         // 如果嵌套數據存在，使用嵌套數據
-        if (requestId != null && searchType != null && searchValue != null && requesterInfo != null) {
-          await _processSearchRequest(currentUser, requestId, searchType, searchValue, requesterInfo);
+        if (requestId != null && searchType != null && searchValue != null && fromUserId != null) {
+          await _processSearchRequest(currentUser, requestId, searchType, searchValue, fromUserId);
           return;
         }
       }
@@ -233,20 +233,20 @@ class MqttAppService {
       final requestId = message.data['requestId'] as String?;
       final searchType = message.data['searchType'] as String?;
       final searchValue = message.data['searchValue'] as String?;
-      final requesterInfo = message.data['requesterInfo'] as Map<String, dynamic>?;
+      final fromUserId = message.data['fromUserId'] as String?;
       
       debugPrint('   直接解析 - requestId: $requestId');
       debugPrint('   直接解析 - searchType: $searchType');
       debugPrint('   直接解析 - searchValue: $searchValue');
-      debugPrint('   直接解析 - requesterInfo: $requesterInfo');
+      debugPrint('   直接解析 - fromUserId: $fromUserId');
       
-      if (requestId == null || searchType == null || searchValue == null || requesterInfo == null) {
+      if (requestId == null || searchType == null || searchValue == null || fromUserId == null) {
         debugPrint('❌ [GLOBAL] 搜索請求格式錯誤');
-        debugPrint('   缺少字段: requestId=${requestId == null}, searchType=${searchType == null}, searchValue=${searchValue == null}, requesterInfo=${requesterInfo == null}');
+        debugPrint('   缺少字段: requestId=${requestId == null}, searchType=${searchType == null}, searchValue=${searchValue == null}, fromUserId=${fromUserId == null}');
         return;
       }
       
-      await _processSearchRequest(currentUser, requestId, searchType, searchValue, requesterInfo);
+      await _processSearchRequest(currentUser, requestId, searchType, searchValue, fromUserId);
       
     } catch (e) {
       debugPrint('❌ [GLOBAL] 處理搜索請求失敗: $e');
@@ -259,17 +259,15 @@ class MqttAppService {
     String requestId, 
     String searchType, 
     String searchValue, 
-    Map<String, dynamic> requesterInfo
+    String fromUserId
   ) async {
-    final requesterId = requesterInfo['userId'] as String;
-    
     // 不要回應自己的搜索請求
-    if (requesterId == currentUser.userCode) {
+    if (fromUserId == currentUser.userCode) {
       debugPrint('⏭️ [GLOBAL] 跳過自己的搜索請求');
       return;
     }
     
-    debugPrint('🔍 [GLOBAL] 處理搜索請求來自: ${requesterInfo['userName']}');
+    debugPrint('🔍 [GLOBAL] 處理搜索請求來自: $fromUserId');
     debugPrint('   搜索條件: -search,$searchType,"$searchValue"');
     
     // 檢查是否匹配搜索條件
@@ -280,7 +278,7 @@ class MqttAppService {
       
       // 發布搜索響應到MQTT - 最簡化格式
       await _mqttManager.publishMessage(
-        topics.MqttTopics.userSearchResponse(requesterId),
+        topics.MqttTopics.userSearchResponse(fromUserId),
         {
           'type': 'userSearchResponse',
           'requestId': requestId,
@@ -291,7 +289,7 @@ class MqttAppService {
         },
       );
       
-      debugPrint('📤 [GLOBAL] 已發送搜索響應給: $requesterId，用戶: ${currentUser.name}');
+      debugPrint('📤 [GLOBAL] 已發送搜索響應給: $fromUserId，用戶: ${currentUser.name}');
     } else {
       debugPrint('❌ [GLOBAL] 不匹配搜索條件');
     }
