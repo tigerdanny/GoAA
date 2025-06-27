@@ -39,7 +39,7 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      _controller.reconnect();
+      _controller.reconnect?.call();
     }
   }
 
@@ -163,7 +163,9 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
         ),
         IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: _controller.reconnect,
+          onPressed: () {
+            _controller.reconnect?.call();
+          },
         ),
       ],
     );

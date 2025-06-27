@@ -330,8 +330,8 @@ class FriendsListView extends StatelessWidget {
   }
 
   /// 建構好友請求項目
-  Widget _buildFriendRequestItem(BuildContext context, GoaaMqttMessage request) {
-    final fromUserName = request.data['fromUserName'] as String? ?? '未知用戶';
+  Widget _buildFriendRequestItem(BuildContext context, FriendRequest request) {
+    final fromUserName = request.fromUserName;
     final fromUserId = request.fromUserId;
     
     return Container(
@@ -430,7 +430,9 @@ class FriendsListView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
-                  onPressed: () => controller.acceptFriendRequest(request),
+                  onPressed: () {
+                    controller.acceptFriendRequest(request);
+                  },
                   icon: const Icon(Icons.check, size: 18),
                   color: AppColors.success,
                   constraints: const BoxConstraints(
@@ -450,7 +452,9 @@ class FriendsListView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: IconButton(
-                  onPressed: () => controller.rejectFriendRequest(request),
+                  onPressed: () {
+                    controller.rejectFriendRequest(request);
+                  },
                   icon: const Icon(Icons.close, size: 18),
                   color: AppColors.error,
                   constraints: const BoxConstraints(

@@ -9,7 +9,7 @@ import 'core/services/language_service.dart';
 import 'core/services/daily_quote/daily_quote_repository.dart';
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
-import 'core/services/mqtt/mqtt_app_service.dart';
+
 import 'l10n/generated/app_localizations.dart';
 import 'dart:io';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
@@ -39,12 +39,17 @@ void main() async {
     // 2. 設置基本UI樣式（同步，快速）
     _setupBasicUI();
     
+    // 🔧 3. 已移除MQTT服務
+    debugPrint('🚀 MQTT服務已移除');
+    
     PerformanceMonitor.recordTimestamp('基本初始化完成');
     
     // 🚀 立即啟動應用，重型初始化移到後台
-    runApp(GoAAApp(languageService: languageService));
+    runApp(GoAAApp(
+      languageService: languageService,
+    ));
     
-    // 3. 在後台進行重型初始化（不阻塞UI顯示）
+    // 4. 在後台進行其他重型初始化（不阻塞UI顯示）
     _backgroundInitialization();
     
   } catch (e, stackTrace) {
@@ -109,10 +114,9 @@ Future<void> _backgroundInitialization() async {
     debugPrint('✅ 資料庫初始化完成');
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 3. 啟動 MQTT APP 服務（統一管理 friends 和 expenses 群組）
-    final mqttAppService = MqttAppService();
-    await mqttAppService.initialize();
-    PerformanceMonitor.recordTimestamp('MQTT APP 服務啟動完成');
+    // 3. MQTT服務已移除
+    debugPrint('✅ MQTT服務已移除');
+    PerformanceMonitor.recordTimestamp('服務檢查完成');
     
     // 4. 每日金句服務（可選，失敗不影響）
     final quoteRepository = DailyQuoteRepository();

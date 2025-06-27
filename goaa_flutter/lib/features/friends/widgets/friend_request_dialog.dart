@@ -88,14 +88,14 @@ class FriendRequestDialogs {
                   children: [
                     TextButton(
                       onPressed: () {
-                        onReject(request.fromUserId);
+                        onReject(request.fromUserId ?? '');
                         Navigator.pop(context);
                       },
                       child: const Text('拒絕'),
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        onAccept(request.fromUserId);
+                        onAccept(request.fromUserId ?? '');
                         Navigator.pop(context);
                       },
                       child: const Text('接受'),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../controllers/friends_controller.dart';
 
 /// 搜索類型枚舉
 enum SearchType {
@@ -9,22 +10,6 @@ enum SearchType {
   
   const SearchType(this.displayName);
   final String displayName;
-}
-
-/// 好友搜索信息
-class FriendSearchInfo {
-  final SearchType searchType;
-  final String searchValue;
-  
-  FriendSearchInfo({
-    required this.searchType,
-    required this.searchValue,
-  });
-  
-  // 為了兼容性，提供舊的屬性
-  String get name => searchType == SearchType.name ? searchValue : '';
-  String get email => searchType == SearchType.email ? searchValue : '';
-  String get phone => searchType == SearchType.phone ? searchValue : '';
 }
 
 /// 添加好友对话框组件
@@ -66,8 +51,8 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
       }
       
       final searchInfo = FriendSearchInfo(
-        searchType: _selectedSearchType,
-        searchValue: searchValue,
+        query: searchValue,
+        searchTime: DateTime.now(),
       );
       Navigator.pop(context);
       widget.onConfirm(searchInfo);

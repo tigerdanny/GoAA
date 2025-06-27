@@ -1,347 +1,293 @@
+/// MQTT模型類定義
 
+/// 在線用戶模型
+class OnlineUser {
+  final String id;
+  final String userId;
+  final String userCode;
+  final String userName;
+  final String name;
+  final String email;
+  final String phone;
+  final DateTime lastSeen;
+  final bool isOnline;
 
-/// GOAA MQTT 消息類型
-enum GoaaMqttMessageType {
-  // 好友功能群組
-  userOnline,           // 用戶上線
-  userOffline,          // 用戶離線
-  friendRequest,        // 好友請求（第一階段：簡單通知）
-  friendAccept,         // 接受好友（第二階段：發送完整信息）
-  friendReject,         // 拒絕好友
-  friendInfoShare,      // 好友信息分享（第二階段：完整個人信息）
-  heartbeat,            // 心跳
-  
-  // 帳務功能群組
-  expenseShare,         // 分帳分享
-  expenseUpdate,        // 帳務更新
-  expenseSettlement,    // 結算通知
-  expenseNotification,  // 帳務通知
-  groupInvitation,      // 群組邀請
-  
-  // 系統功能群組
-  systemAnnouncement,   // 系統公告
-  systemMaintenance,    // 系統維護
-  
-  // 用戶搜索
-  userSearchRequest,
-  userSearchResponse,
-  
-  // 群組功能
-  groupMessage,
-  groupJoin,
-  groupLeave,
-  
-  // 記帳功能
-  expenseCreate,
-  expenseDelete,
-}
+  OnlineUser({
+    required this.id,
+    required this.userId,
+    required this.userCode,
+    required this.userName,
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.lastSeen,
+    this.isOnline = false,
+  });
 
-/// 消息類型擴展方法
-extension GoaaMqttMessageTypeExtension on GoaaMqttMessageType {
-  /// 獲取消息類型的英文標識符
-  String get identifier {
-    switch (this) {
-      // 好友功能群組
-      case GoaaMqttMessageType.userOnline:
-        return 'ONLINE';
-      case GoaaMqttMessageType.userOffline:
-        return 'OFFLINE';
-      case GoaaMqttMessageType.friendRequest:
-        return 'FREQ';
-      case GoaaMqttMessageType.friendAccept:
-        return 'FACC';
-      case GoaaMqttMessageType.friendReject:
-        return 'FREJ';
-      case GoaaMqttMessageType.friendInfoShare:
-        return 'FINFO';
-      case GoaaMqttMessageType.heartbeat:
-        return 'BEAT';
-      
-      // 帳務功能群組
-      case GoaaMqttMessageType.expenseShare:
-        return 'ESHARE';
-      case GoaaMqttMessageType.expenseUpdate:
-        return 'EUPD';
-      case GoaaMqttMessageType.expenseSettlement:
-        return 'ESETT';
-      case GoaaMqttMessageType.expenseNotification:
-        return 'ENOTIF';
-      case GoaaMqttMessageType.groupInvitation:
-        return 'GINV';
-      
-      // 系統功能群組
-      case GoaaMqttMessageType.systemAnnouncement:
-        return 'SYSANN';
-      case GoaaMqttMessageType.systemMaintenance:
-        return 'SYSMNT';
-      
-      // 用戶搜索
-      case GoaaMqttMessageType.userSearchRequest:
-        return 'SREQ';
-      case GoaaMqttMessageType.userSearchResponse:
-        return 'SRESP';
-      
-      // 群組功能
-      case GoaaMqttMessageType.groupMessage:
-        return 'GMSG';
-      case GoaaMqttMessageType.groupJoin:
-        return 'GJOIN';
-      case GoaaMqttMessageType.groupLeave:
-        return 'GLEAVE';
-      
-      // 記帳功能
-      case GoaaMqttMessageType.expenseCreate:
-        return 'ECREATE';
-      case GoaaMqttMessageType.expenseDelete:
-        return 'EDEL';
-    }
+  OnlineUser copyWith({
+    String? id,
+    String? userId,
+    String? userCode,
+    String? userName,
+    String? name,
+    String? email,
+    String? phone,
+    DateTime? lastSeen,
+    bool? isOnline,
+  }) {
+    return OnlineUser(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      userCode: userCode ?? this.userCode,
+      userName: userName ?? this.userName,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      lastSeen: lastSeen ?? this.lastSeen,
+      isOnline: isOnline ?? this.isOnline,
+    );
   }
 
-  /// 獲取消息類型的中文描述
-  String get description {
-    switch (this) {
-      // 好友功能群組
-      case GoaaMqttMessageType.userOnline:
-        return '用戶上線';
-      case GoaaMqttMessageType.userOffline:
-        return '用戶離線';
-      case GoaaMqttMessageType.friendRequest:
-        return '好友請求';
-      case GoaaMqttMessageType.friendAccept:
-        return '接受好友';
-      case GoaaMqttMessageType.friendReject:
-        return '拒絕好友';
-      case GoaaMqttMessageType.friendInfoShare:
-        return '好友信息分享';
-      case GoaaMqttMessageType.heartbeat:
-        return '心跳';
-      
-      // 帳務功能群組
-      case GoaaMqttMessageType.expenseShare:
-        return '分帳分享';
-      case GoaaMqttMessageType.expenseUpdate:
-        return '帳務更新';
-      case GoaaMqttMessageType.expenseSettlement:
-        return '結算通知';
-      case GoaaMqttMessageType.expenseNotification:
-        return '帳務通知';
-      case GoaaMqttMessageType.groupInvitation:
-        return '群組邀請';
-      
-      // 系統功能群組
-      case GoaaMqttMessageType.systemAnnouncement:
-        return '系統公告';
-      case GoaaMqttMessageType.systemMaintenance:
-        return '系統維護';
-      
-      // 用戶搜索
-      case GoaaMqttMessageType.userSearchRequest:
-        return '用戶搜索請求';
-      case GoaaMqttMessageType.userSearchResponse:
-        return '用戶搜索響應';
-      
-      // 群組功能
-      case GoaaMqttMessageType.groupMessage:
-        return '群組消息';
-      case GoaaMqttMessageType.groupJoin:
-        return '加入群組';
-      case GoaaMqttMessageType.groupLeave:
-        return '離開群組';
-      
-      // 記帳功能
-      case GoaaMqttMessageType.expenseCreate:
-        return '創建記帳';
-      case GoaaMqttMessageType.expenseDelete:
-        return '刪除記帳';
-    }
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'userCode': userCode,
+    'userName': userName,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'lastSeen': lastSeen.toIso8601String(),
+    'isOnline': isOnline,
+  };
+
+  factory OnlineUser.fromJson(Map<String, dynamic> json) => OnlineUser(
+    id: json['id'] as String,
+    userId: json['userId'] as String? ?? json['id'] as String,
+    userCode: json['userCode'] as String? ?? json['id'] as String,
+    userName: json['userName'] as String? ?? json['name'] as String,
+    name: json['name'] as String,
+    email: json['email'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    lastSeen: DateTime.parse(json['lastSeen'] as String),
+    isOnline: json['isOnline'] as bool? ?? false,
+  );
 }
 
-
-
-/// GOAA MQTT 消息模型
+/// GOAA MQTT消息模型
 class GoaaMqttMessage {
   final String id;
-  final GoaaMqttMessageType type;
-  final String fromUserId;
-  final String toUserId;
+  final String type;
+  final String topic;
   final Map<String, dynamic> data;
   final DateTime timestamp;
-  final String group; // 消息所屬群組
+  final String? fromUserId;
+  final String? toUserId;
 
   GoaaMqttMessage({
     required this.id,
     required this.type,
-    required this.fromUserId,
-    required this.toUserId,
+    required this.topic,
     required this.data,
-    DateTime? timestamp,
-    required this.group,
-  }) : timestamp = timestamp ?? DateTime.now();
-
-  factory GoaaMqttMessage.fromJson(Map<String, dynamic> json) {
-    return GoaaMqttMessage(
-      id: json['id'] ?? '',
-      type: GoaaMqttMessageType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type'],
-        orElse: () => GoaaMqttMessageType.heartbeat,
-      ),
-      fromUserId: json['fromUserId'] ?? '',
-      toUserId: json['toUserId'] ?? '',
-      data: Map<String, dynamic>.from(json['data'] ?? {}),
-      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
-      group: json['group'] ?? 'unknown',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'type': type.toString().split('.').last,
-      'fromUserId': fromUserId,
-      'toUserId': toUserId,
-      'data': data,
-      'timestamp': timestamp.toIso8601String(),
-      'group': group,
-    };
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is GoaaMqttMessage && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
-}
-
-/// 在線用戶信息
-class OnlineUser {
-  final String userId; // 統一使用UUID
-  final String userName;
-  final String? avatar;
-  final DateTime lastSeen;
-  final String status; // 'online', 'offline', 'away'
-
-  OnlineUser({
-    required this.userId,
-    required this.userName,
-    this.avatar,
-    required this.lastSeen,
-    this.status = 'online',
+    required this.timestamp,
+    this.fromUserId,
+    this.toUserId,
   });
 
-  /// 獲取用戶代碼（與userId相同，用於向後兼容）
-  String get userCode => userId;
-
-  factory OnlineUser.fromJson(Map<String, dynamic> json) {
-    return OnlineUser(
-      userId: json['userId'] ?? '',
-      userName: json['userName'] ?? '',
-      avatar: json['avatar'],
-      lastSeen: DateTime.tryParse(json['lastSeen'] ?? '') ?? DateTime.now(),
-      status: json['status'] ?? 'online',
+  GoaaMqttMessage copyWith({
+    String? id,
+    String? type,
+    String? topic,
+    Map<String, dynamic>? data,
+    DateTime? timestamp,
+    String? fromUserId,
+    String? toUserId,
+  }) {
+    return GoaaMqttMessage(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      topic: topic ?? this.topic,
+      data: data ?? this.data,
+      timestamp: timestamp ?? this.timestamp,
+      fromUserId: fromUserId ?? this.fromUserId,
+      toUserId: toUserId ?? this.toUserId,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'userName': userName,
-      'avatar': avatar,
-      'lastSeen': lastSeen.toIso8601String(),
-      'status': status,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type,
+    'topic': topic,
+    'data': data,
+    'timestamp': timestamp.toIso8601String(),
+    'fromUserId': fromUserId,
+    'toUserId': toUserId,
+  };
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is OnlineUser && other.userId == userId;
-  }
-
-  @override
-  int get hashCode => userId.hashCode;
+  factory GoaaMqttMessage.fromJson(Map<String, dynamic> json) => GoaaMqttMessage(
+    id: json['id'] as String,
+    type: json['type'] as String,
+    topic: json['topic'] as String,
+    data: json['data'] as Map<String, dynamic>,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+    fromUserId: json['fromUserId'] as String?,
+    toUserId: json['toUserId'] as String?,
+  );
 }
 
-/// 用戶搜索結果
+/// 用戶搜索結果模型
 class UserSearchResult {
-  final String userId; // 統一使用UUID
+  final String id;
+  final String userId;
+  final String userCode;
   final String userName;
-  final String? email;
-  final String? phone;
-  final double matchScore; // 匹配度 0.0-1.0
+  final String name;
+  final String email;
+  final String phone;
+  final double matchScore;
+  final bool isOnline;
 
   UserSearchResult({
+    required this.id,
     required this.userId,
+    required this.userCode,
     required this.userName,
-    this.email,
-    this.phone,
+    required this.name,
+    required this.email,
+    required this.phone,
     this.matchScore = 1.0,
+    this.isOnline = false,
   });
 
-  /// 獲取用戶代碼（與userId相同，用於向後兼容）
-  String get userCode => userId;
-
-  factory UserSearchResult.fromJson(Map<String, dynamic> json) {
+  UserSearchResult copyWith({
+    String? id,
+    String? userId,
+    String? userCode,
+    String? userName,
+    String? name,
+    String? email,
+    String? phone,
+    double? matchScore,
+    bool? isOnline,
+  }) {
     return UserSearchResult(
-      userId: json['userId'] ?? '',
-      userName: json['userName'] ?? '',
-      email: json['email']?.isEmpty == true ? null : json['email'],
-      phone: json['phone']?.isEmpty == true ? null : json['phone'],
-      matchScore: (json['matchScore'] ?? 1.0).toDouble(),
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      userCode: userCode ?? this.userCode,
+      userName: userName ?? this.userName,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      matchScore: matchScore ?? this.matchScore,
+      isOnline: isOnline ?? this.isOnline,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'userName': userName,
-      'email': email,
-      'phone': phone,
-      'matchScore': matchScore,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'userId': userId,
+    'userCode': userCode,
+    'userName': userName,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'matchScore': matchScore,
+    'isOnline': isOnline,
+  };
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is UserSearchResult && other.userId == userId;
-  }
-
-  @override
-  int get hashCode => userId.hashCode;
+  factory UserSearchResult.fromJson(Map<String, dynamic> json) => UserSearchResult(
+    id: json['id'] as String,
+    userId: json['userId'] as String? ?? json['id'] as String,
+    userCode: json['userCode'] as String? ?? json['id'] as String,
+    userName: json['userName'] as String? ?? json['name'] as String,
+    name: json['name'] as String,
+    email: json['email'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    matchScore: json['matchScore'] as double? ?? 1.0,
+    isOnline: json['isOnline'] as bool? ?? false,
+  );
 }
 
-/// MQTT 連接狀態
-enum MqttConnectionState {
-  disconnected,
-  connecting,
-  connected,
-  disconnecting,
-  error,
-}
+/// 待處理的好友請求模型
+class PendingFriendRequest {
+  final String id;
+  final String fromUserId;
+  final String fromUserName;
+  final String fromUserEmail;
+  final String fromUserPhone;
+  final String targetName;
+  final String targetEmail;
+  final String targetPhone;
+  final DateTime requestTime;
+  final String status;
+  final String? message;
 
-/// MQTT 連接配置
-class MqttConfig {
-  final String host;
-  final int port;
-  final String clientId;
-  final String? username;
-  final String? password;
-  final bool useSSL;
-  final int keepAliveSeconds;
-  final int connectionTimeoutSeconds;
-
-  const MqttConfig({
-    required this.host,
-    this.port = 1883,
-    required this.clientId,
-    this.username,
-    this.password,
-    this.useSSL = false,
-    this.keepAliveSeconds = 60,
-    this.connectionTimeoutSeconds = 30,
+  PendingFriendRequest({
+    required this.id,
+    required this.fromUserId,
+    required this.fromUserName,
+    required this.fromUserEmail,
+    required this.fromUserPhone,
+    required this.targetName,
+    required this.targetEmail,
+    required this.targetPhone,
+    required this.requestTime,
+    this.status = 'pending',
+    this.message,
   });
+
+  PendingFriendRequest copyWith({
+    String? id,
+    String? fromUserId,
+    String? fromUserName,
+    String? fromUserEmail,
+    String? fromUserPhone,
+    String? targetName,
+    String? targetEmail,
+    String? targetPhone,
+    DateTime? requestTime,
+    String? status,
+    String? message,
+  }) {
+    return PendingFriendRequest(
+      id: id ?? this.id,
+      fromUserId: fromUserId ?? this.fromUserId,
+      fromUserName: fromUserName ?? this.fromUserName,
+      fromUserEmail: fromUserEmail ?? this.fromUserEmail,
+      fromUserPhone: fromUserPhone ?? this.fromUserPhone,
+      targetName: targetName ?? this.targetName,
+      targetEmail: targetEmail ?? this.targetEmail,
+      targetPhone: targetPhone ?? this.targetPhone,
+      requestTime: requestTime ?? this.requestTime,
+      status: status ?? this.status,
+      message: message ?? this.message,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fromUserId': fromUserId,
+    'fromUserName': fromUserName,
+    'fromUserEmail': fromUserEmail,
+    'fromUserPhone': fromUserPhone,
+    'targetName': targetName,
+    'targetEmail': targetEmail,
+    'targetPhone': targetPhone,
+    'requestTime': requestTime.toIso8601String(),
+    'status': status,
+    'message': message,
+  };
+
+  factory PendingFriendRequest.fromJson(Map<String, dynamic> json) => PendingFriendRequest(
+    id: json['id'] as String,
+    fromUserId: json['fromUserId'] as String,
+    fromUserName: json['fromUserName'] as String,
+    fromUserEmail: json['fromUserEmail'] as String? ?? '',
+    fromUserPhone: json['fromUserPhone'] as String? ?? '',
+    targetName: json['targetName'] as String? ?? '',
+    targetEmail: json['targetEmail'] as String? ?? '',
+    targetPhone: json['targetPhone'] as String? ?? '',
+    requestTime: DateTime.parse(json['requestTime'] as String),
+    status: json['status'] as String? ?? 'pending',
+    message: json['message'] as String?,
+  );
 } 

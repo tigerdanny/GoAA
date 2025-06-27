@@ -280,7 +280,7 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
                       color: isSelected ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
-                  if (user.email?.isNotEmpty == true) ...[
+                  if (user.email.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -288,7 +288,7 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            user.email!,
+                            user.email,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -298,14 +298,14 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
                       ],
                     ),
                   ],
-                  if (user.phone?.isNotEmpty == true) ...[
+                  if (user.phone.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         const Icon(Icons.phone, size: 14, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
                         Text(
-                          user.phone!,
+                          user.phone,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),

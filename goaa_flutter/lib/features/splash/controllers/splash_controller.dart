@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:goaa_flutter/core/services/user_id_service.dart';
 import 'package:goaa_flutter/core/database/database_service.dart';
 import 'package:goaa_flutter/core/database/repositories/user_repository.dart';
+import 'package:goaa_flutter/core/services/mqtt_simple.dart';
+import '../../friends/controllers/friends_controller.dart';
 
 /// 啟動頁狀態
 enum SplashState {
@@ -22,6 +24,8 @@ enum NavigationTarget {
 class SplashController extends ChangeNotifier {
   final UserIdService _userIdService = UserIdService();
   final UserRepository _userRepository = UserRepository();
+  final FriendsController _friendsController = FriendsController();
+  final MqttSimple _mqttService = MqttSimple();
 
   SplashState _state = SplashState.initializing;
   String _message = '正在初始化...';
@@ -44,7 +48,7 @@ class SplashController extends ChangeNotifier {
 
       // 步驟1: 初始化用戶ID服務
       _updateMessage('正在設置用戶身份...');
-      await _userIdService.getUserId();
+      final userId = await _userIdService.getUserId();
       await _delay(500);
 
       // 步驟2: 初始化數據庫
@@ -62,7 +66,17 @@ class SplashController extends ChangeNotifier {
       await _checkUserProfile();
       await _delay(500);
 
-      // 步驟5: 預加載必要資源
+      // 步驟5: 初始化MQTT服務
+      _updateMessage('正在初始化通信服務...');
+      await _initializeMqttService(userId);
+      await _delay(500);
+
+      // 步驟6: 初始化好友控制器
+      _updateMessage('正在初始化好友系統...');
+      await _initializeFriendsController();
+      await _delay(500);
+
+      // 步驟7: 預加載必要資源
       _updateMessage('正在加載資源...');
       await _preloadResources();
       await _delay(500);
@@ -104,6 +118,35 @@ class SplashController extends ChangeNotifier {
       await Future.delayed(const Duration(milliseconds: 300));
     } catch (e) {
       debugPrint('數據庫維護失敗: $e');
+      // 非關鍵錯誤，繼續執行
+    }
+  }
+
+  /// 初始化MQTT服務
+  Future<void> _initializeMqttService(String userId) async {
+    try {
+      debugPrint('🚀 開始初始化MQTT服務...');
+      debugPrint('🌐 MQTT服務器: e5ad947c783545e480cd17a9a59672c0.s1.eu.hivemq.cloud:8883');
+      debugPrint('👤 用戶ID: $userId');
+      debugPrint('🔐 使用TLS加密連接');
+      
+      // 實際初始化MQTT服務
+      await _mqttService.initialize(userId: userId);
+      
+      debugPrint('✅ MQTT服務配置完成');
+    } catch (e) {
+      debugPrint('❌ MQTT服務初始化失敗: $e');
+      // 非關鍵錯誤，繼續執行應用
+    }
+  }
+
+  /// 初始化好友控制器
+  Future<void> _initializeFriendsController() async {
+    try {
+      await _friendsController.initialize();
+      debugPrint('好友控制器初始化完成');
+    } catch (e) {
+      debugPrint('好友控制器初始化失敗: $e');
       // 非關鍵錯誤，繼續執行
     }
   }
