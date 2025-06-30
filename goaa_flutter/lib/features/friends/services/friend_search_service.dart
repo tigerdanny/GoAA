@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/services/mqtt/mqtt_service.dart';
@@ -38,7 +37,6 @@ class FriendSearchService {
   
   // MQTT主題定義
   static const String _searchRequestTopic = 'goaa/friend/search/request';
-  static const String _searchResponseTopic = 'goaa/friend/search/response';
   
   // 搜索結果流控制器
   final StreamController<List<FriendSearchResultItem>> _searchResultsController = 
@@ -62,11 +60,8 @@ class FriendSearchService {
       await _waitForMqttConnection();
     }
     
-    // 訂閱搜索相關主題
-    await _subscribeToSearchTopics();
-    
-    // 監聽MQTT消息
-    _mqttService.messageStream.listen(_handleMqttMessage);
+    // 監聽MQTT服務的搜索回復流（不需要手動訂閱主題，MQTT服務已自動訂閱）
+    _mqttService.searchResponseStream.listen(_handleSearchResponseFromMqtt);
     
     debugPrint('✅ MQTT好友搜索服務初始化完成');
   }
@@ -95,155 +90,37 @@ class FriendSearchService {
     await completer.future;
   }
   
-  /// 訂閱搜索相關主題
-  Future<void> _subscribeToSearchTopics() async {
+  /// 處理來自MQTT服務的搜索回復
+  void _handleSearchResponseFromMqtt(Map<String, dynamic> payload) {
     try {
-      await _mqttService.subscribeToTopic(_searchRequestTopic);
-      await _mqttService.subscribeToTopic(_searchResponseTopic);
-      debugPrint('✅ 已訂閱好友搜索主題');
-    } catch (e) {
-      debugPrint('❌ 訂閱好友搜索主題失敗: $e');
-    }
-  }
-  
-  /// 處理MQTT消息
-  void _handleMqttMessage(dynamic message) {
-    try {
-      if (message is! Map<String, dynamic>) return;
+      debugPrint('📥 從MQTT服務收到搜索回復');
       
-      final topic = message['topic'] as String?;
-      final payload = message['payload'] as String?;
-      
-      if (topic == null || payload == null) return;
-      
-      if (topic == _searchRequestTopic) {
-        _handleSearchRequest(payload);
-      } else if (topic == _searchResponseTopic) {
-        _handleSearchResponse(payload);
-      }
-    } catch (e) {
-      debugPrint('❌ 處理MQTT消息失敗: $e');
-    }
-  }
-  
-  /// 處理搜索請求
-  void _handleSearchRequest(String payload) async {
-    try {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
-      final request = FriendSearchRequest.fromJson(data);
-      
-      debugPrint('📥 收到好友搜索請求: ${request.searchType} = ${request.searchValue}');
-      
-      // 取得當前用戶資料
-      final currentUser = await _userRepository.getCurrentUser();
-      if (currentUser == null) {
-        debugPrint('⚠️ 無法取得當前用戶資料');
+      // 只處理當前搜索會話的回復
+      final requestId = payload['requestId'] as String?;
+      if (requestId != _currentSearchId) {
+        debugPrint('⚠️ 不是當前搜索會話的回復，忽略');
         return;
       }
       
-      // 跳過自己發布的搜索請求
-      if (request.publisherUuid == currentUser.userCode) {
-        debugPrint('⏭️ 跳過自己的搜索請求');
-        return;
-      }
-      
-      // 比對搜索條件
-      bool isMatch = false;
-      switch (request.searchType) {
-        case 'name':
-          isMatch = currentUser.name.toLowerCase().contains(request.searchValue.toLowerCase());
-          break;
-        case 'email':
-          isMatch = (currentUser.email ?? '').toLowerCase().contains(request.searchValue.toLowerCase());
-          break;
-        case 'phone':
-          isMatch = (currentUser.phone ?? '').contains(request.searchValue);
-          break;
-        default:
-          debugPrint('⚠️ 未知的搜索類型: ${request.searchType}');
-          return;
-      }
-      
-      if (isMatch) {
-        debugPrint('✅ 搜索條件匹配，發送回復');
-        await _sendSearchResponse(request, currentUser);
-      } else {
-        debugPrint('❌ 搜索條件不匹配');
-      }
-      
-    } catch (e) {
-      debugPrint('❌ 處理搜索請求失敗: $e');
-    }
-  }
-  
-  /// 發送搜索回復
-  Future<void> _sendSearchResponse(FriendSearchRequest request, dynamic currentUser) async {
-    try {
-      final response = FriendSearchResponse(
-        requestId: request.requestId,
-        responderUuid: currentUser.userCode,
-        searcherUuid: request.publisherUuid,
-        responderName: currentUser.name,
-        responderUserCode: currentUser.userCode,
-        timestamp: DateTime.now(),
-      );
-      
-      final payload = response.toJson();
-      await _mqttService.publishMessage(
-        topic: _searchResponseTopic,
-        payload: payload,
-      );
-      
-      debugPrint('📤 已發送搜索回復給: ${request.publisherUuid}');
-    } catch (e) {
-      debugPrint('❌ 發送搜索回復失敗: $e');
-    }
-  }
-  
-  /// 處理搜索回復
-  void _handleSearchResponse(String payload) async {
-    try {
-      final data = jsonDecode(payload) as Map<String, dynamic>;
-      final response = FriendSearchResponse.fromJson(data);
-      
-      // 取得當前用戶資料
-      final currentUser = await _userRepository.getCurrentUser();
-      if (currentUser == null) return;
-      
-      // 只處理給自己的回復
-      if (response.searcherUuid != currentUser.userCode) {
-        return;
-      }
-      
-      // 檢查是否為當前搜索會話
-      if (response.requestId != _currentSearchId) {
-        debugPrint('⚠️ 收到非當前搜索會話的回復，忽略');
-        return;
-      }
-      
-      debugPrint('📥 收到搜索回復: ${response.responderName}');
-      
-      // 添加到搜索結果
+      // 創建搜索結果項目
       final resultItem = FriendSearchResultItem(
-        uuid: response.responderUuid,
-        name: response.responderName,
-        userCode: response.responderUserCode,
-        responseTime: response.timestamp,
+        uuid: payload['responderUuid'] as String,
+        name: payload['responderName'] as String,
+        userCode: payload['responderUserCode'] as String,
+        responseTime: DateTime.parse(payload['timestamp'] as String),
       );
       
       // 檢查是否已存在（避免重複）
-      final existingIndex = _currentResults.indexWhere((item) => item.uuid == resultItem.uuid);
-      if (existingIndex == -1) {
+      if (!_currentResults.any((item) => item.uuid == resultItem.uuid)) {
         _currentResults.add(resultItem);
-        // 按回復時間排序
-        _currentResults.sort((a, b) => a.responseTime.compareTo(b.responseTime));
+        debugPrint('✅ 添加搜索結果: ${resultItem.name} (${resultItem.userCode})');
         
-        // 通知搜索結果更新
+        // 通知監聽者
         _searchResultsController.add(List.from(_currentResults));
       }
       
     } catch (e) {
-      debugPrint('❌ 處理搜索回復失敗: $e');
+      debugPrint('❌ 處理MQTT搜索回復失敗: $e');
     }
   }
   

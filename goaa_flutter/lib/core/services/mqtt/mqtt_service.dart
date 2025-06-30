@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:uuid/uuid.dart';
+import '../../database/repositories/user_repository.dart';
 
 /// MQTT連接狀態
 enum GoaaMqttConnectionState {
@@ -83,6 +84,10 @@ class MqttService extends ChangeNotifier {
   
   // 心跳機制
   Timer? _heartbeatTimer;
+  
+  // 搜索回復事件流
+  final StreamController<Map<String, dynamic>> _searchResponseController = 
+      StreamController<Map<String, dynamic>>.broadcast();
   
   // Getters
   GoaaMqttConnectionState get connectionState => _connectionState;
@@ -291,6 +296,8 @@ class MqttService extends ChangeNotifier {
       'goaa/users/$_userId/notifications', // 通知
       'goaa/friends/requests',             // 好友請求
       'goaa/friends/responses',            // 好友響應
+      'goaa/friend/search/request',        // 好友搜索請求（全局）
+      'goaa/friend/search/response',       // 好友搜索回復（全局）
       'goaa/groups/+/messages',            // 群組消息（萬用字符）
       'goaa/system/announcements',         // 系統公告
     ];
@@ -462,8 +469,149 @@ class MqttService extends ChangeNotifier {
   /// 處理好友相關消息
   void _processFriendsMessage(String topic, Map<String, dynamic> payload, GoaaMqttMessage message) {
     debugPrint('👥 處理好友消息: $topic');
-    // 通知好友控制器處理
+    
+    // 處理好友搜索請求
+    if (topic == 'goaa/friend/search/request') {
+      _handleFriendSearchRequest(payload);
+    }
+    // 處理好友搜索回復
+    else if (topic == 'goaa/friend/search/response') {
+      _handleFriendSearchResponse(payload);
+    }
+    // 其他好友相關消息
+    else {
+      // 通知好友控制器處理其他消息
+      debugPrint('📧 其他好友消息: $topic');
+    }
   }
+
+  /// 處理好友搜索請求（背景自動處理）
+  Future<void> _handleFriendSearchRequest(Map<String, dynamic> payload) async {
+    try {
+      debugPrint('🔍 收到好友搜索請求');
+      
+      // 解析搜索請求
+      final requestId = payload['requestId'] as String?;
+      final publisherUuid = payload['publisherUuid'] as String?;
+      final searchType = payload['searchType'] as String?;
+      final searchValue = payload['searchValue'] as String?;
+      
+      if (requestId == null || publisherUuid == null || searchType == null || searchValue == null) {
+        debugPrint('❌ 搜索請求數據不完整');
+        return;
+      }
+      
+      // 跳過自己發出的搜索請求
+      if (publisherUuid == _userId) {
+        debugPrint('🔄 跳過自己的搜索請求');
+        return;
+      }
+      
+      debugPrint('🔍 處理搜索請求: $searchType = $searchValue (來自: $publisherUuid)');
+      
+      // 獲取當前用戶信息進行匹配
+      final currentUserResult = await _checkLocalUserMatch(searchType, searchValue);
+      
+      if (currentUserResult != null) {
+        debugPrint('✅ 本地用戶匹配成功，發送回復');
+        
+        // 發送搜索回復
+        await publishMessage(
+          topic: 'goaa/friend/search/response',
+          payload: {
+            'requestId': requestId,
+            'responderUuid': _userId,
+            'searcherUuid': publisherUuid,
+            'responderName': currentUserResult['name'],
+            'responderUserCode': currentUserResult['userCode'],
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        );
+        
+        debugPrint('📤 已發送搜索回復給: $publisherUuid');
+      } else {
+        debugPrint('❌ 本地用戶不匹配搜索條件');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ 處理好友搜索請求失敗: $e');
+    }
+  }
+
+  /// 處理好友搜索回復（轉發給搜索服務）
+  void _handleFriendSearchResponse(Map<String, dynamic> payload) {
+    try {
+      debugPrint('📥 收到好友搜索回復');
+      
+      final searcherUuid = payload['searcherUuid'] as String?;
+      
+      // 只處理發給自己的回復
+      if (searcherUuid == _userId) {
+        debugPrint('📨 這是發給我的搜索回復');
+        // 這裡可以通過全局事件或單例服務轉發給搜索服務
+        _forwardSearchResponseToService(payload);
+      } else {
+        debugPrint('📤 這不是發給我的搜索回復，忽略');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ 處理好友搜索回復失敗: $e');
+    }
+  }
+
+  /// 檢查本地用戶是否匹配搜索條件
+  Future<Map<String, dynamic>?> _checkLocalUserMatch(String searchType, String searchValue) async {
+    try {
+      // 導入數據庫服務和用戶倉庫
+      final userRepository = UserRepository();
+      final currentUser = await userRepository.getCurrentUser();
+      
+      if (currentUser == null) {
+        debugPrint('❌ 沒有當前用戶數據');
+        return null;
+      }
+      
+      bool isMatch = false;
+      
+      switch (searchType) {
+        case 'name':
+          isMatch = currentUser.name.toLowerCase().contains(searchValue.toLowerCase());
+          break;
+        case 'email':
+          isMatch = currentUser.email?.toLowerCase() == searchValue.toLowerCase();
+          break;
+        case 'phone':
+          isMatch = currentUser.phone == searchValue;
+          break;
+        default:
+          debugPrint('❌ 不支援的搜索類型: $searchType');
+          return null;
+      }
+      
+      if (isMatch) {
+        return {
+          'name': currentUser.name,
+          'userCode': currentUser.userCode,
+          'email': currentUser.email,
+          'phone': currentUser.phone,
+        };
+      }
+      
+      return null;
+    } catch (e) {
+      debugPrint('❌ 檢查用戶匹配失敗: $e');
+      return null;
+    }
+  }
+
+  /// 轉發搜索回復給搜索服務（通過全局事件）
+  void _forwardSearchResponseToService(Map<String, dynamic> payload) {
+    // 創建一個專門的搜索回復事件流
+    _searchResponseController.add(payload);
+  }
+
+  /// 搜索回復流（供搜索服務監聽）
+  Stream<Map<String, dynamic>> get searchResponseStream => _searchResponseController.stream;
 
   /// 處理群組相關消息
   void _processGroupsMessage(String topic, Map<String, dynamic> payload, GoaaMqttMessage message) {
@@ -491,6 +639,7 @@ class MqttService extends ChangeNotifier {
     _heartbeatTimer?.cancel();
     _messageStreamController.close();
     _connectionStateController.close();
+    _searchResponseController.close();
     _client?.disconnect();
     super.dispose();
   }
