@@ -7,6 +7,8 @@ import 'core/theme/app_theme.dart';
 import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/daily_quote/daily_quote_repository.dart';
+import 'core/services/mqtt/mqtt_service.dart';
+import 'core/services/user_id_service.dart';
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -38,9 +40,6 @@ void main() async {
     
     // 2. 設置基本UI樣式（同步，快速）
     _setupBasicUI();
-    
-    // 🔧 3. 已移除MQTT服務
-    debugPrint('🚀 MQTT服務已移除');
     
     PerformanceMonitor.recordTimestamp('基本初始化完成');
     
@@ -114,9 +113,25 @@ Future<void> _backgroundInitialization() async {
     debugPrint('✅ 資料庫初始化完成');
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 3. MQTT服務已移除
-    debugPrint('✅ MQTT服務已移除');
-    PerformanceMonitor.recordTimestamp('服務檢查完成');
+    // 3. MQTT服務初始化（在後台執行）
+    try {
+      final MqttService mqttService = MqttService();
+      final UserIdService userIdService = UserIdService();
+      
+      // 獲取用戶ID
+      final userId = await userIdService.getUserId();
+      debugPrint('📋 獲取用戶ID: $userId');
+      
+      // 初始化MQTT服務（非阻塞式）
+      unawaited(mqttService.initialize(userId: userId).catchError((e) {
+        debugPrint('⚠️ MQTT服務初始化失敗（非關鍵）: $e');
+      }));
+      
+      debugPrint('✅ MQTT服務已啟動初始化');
+    } catch (e) {
+      debugPrint('⚠️ MQTT服務設置失敗（非關鍵）: $e');
+    }
+    PerformanceMonitor.recordTimestamp('服務初始化完成');
     
     // 4. 每日金句服務（可選，失敗不影響）
     final quoteRepository = DailyQuoteRepository();
