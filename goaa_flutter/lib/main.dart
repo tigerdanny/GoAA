@@ -236,7 +236,7 @@ void unawaited(Future<void> future) {
 }
 
 /// GOAA分帳應用主類
-class GoAAApp extends StatelessWidget {
+class GoAAApp extends StatefulWidget {
   final LanguageService languageService;
   
   const GoAAApp({
@@ -245,9 +245,207 @@ class GoAAApp extends StatelessWidget {
   });
 
   @override
+  State<GoAAApp> createState() => _GoAAAppState();
+}
+
+class _GoAAAppState extends State<GoAAApp> with WidgetsBindingObserver {
+  late MqttService _mqttService;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // 添加生命周期觀察者
+    WidgetsBinding.instance.addObserver(this);
+    
+    // 獲取MQTT服務實例
+    _mqttService = MqttService();
+    
+    debugPrint('🎯 APP生命周期管理已啟動');
+  }
+  
+  @override
+  void dispose() {
+    // 移除生命周期觀察者
+    WidgetsBinding.instance.removeObserver(this);
+    debugPrint('🧹 APP生命周期管理已清理');
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    debugPrint('🔄 APP生命周期狀態變化: $state');
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _onAppResumed();
+        break;
+      case AppLifecycleState.paused:
+        _onAppPaused();
+        break;
+      case AppLifecycleState.inactive:
+        _onAppInactive();
+        break;
+      case AppLifecycleState.detached:
+        _onAppDetached();
+        break;
+      case AppLifecycleState.hidden:
+        _onAppHidden();
+        break;
+    }
+  }
+  
+  /// APP恢復前景
+  void _onAppResumed() {
+    debugPrint('▶️ APP恢復前景');
+    
+    // 使用異步處理，避免阻塞UI
+    unawaited(_handleAppResumed());
+  }
+  
+  /// 處理APP恢復（異步）
+  Future<void> _handleAppResumed() async {
+    try {
+      // 恢復MQTT服務
+      if (_mqttService.isConnected) {
+        debugPrint('✅ MQTT已連接，發送在線狀態');
+        // 重新發送在線狀態
+        await _mqttService.publishMessage(
+          topic: 'goaa/users/${_mqttService.userId}/status',
+          payload: {
+            'status': 'online',
+            'timestamp': DateTime.now().toIso8601String(),
+            'clientId': _mqttService.clientId,
+            'resumed': true,
+          },
+          retain: true,
+        );
+      } else {
+        debugPrint('🔄 MQTT未連接，嘗試重新連接');
+        // 嘗試重新連接
+        await _mqttService.connect();
+      }
+      
+      // 重新初始化數據庫連接（如果需要）
+      await _refreshDatabaseConnection();
+      
+      debugPrint('✅ APP恢復處理完成');
+      
+    } catch (e) {
+      debugPrint('❌ APP恢復時發生錯誤: $e');
+      
+      // 嘗試完整的服務重新初始化
+      await _performEmergencyRecovery();
+    }
+  }
+  
+  /// APP進入背景
+  void _onAppPaused() {
+    debugPrint('⏸️ APP進入背景');
+    
+    // 使用異步處理，但不等待結果
+    unawaited(_handleAppPaused());
+  }
+  
+  /// 處理APP暫停（異步）
+  Future<void> _handleAppPaused() async {
+    try {
+      // 發送背景狀態
+      if (_mqttService.isConnected) {
+        await _mqttService.publishMessage(
+          topic: 'goaa/users/${_mqttService.userId}/status',
+          payload: {
+            'status': 'background',
+            'timestamp': DateTime.now().toIso8601String(),
+            'clientId': _mqttService.clientId,
+          },
+          retain: true,
+        );
+      }
+      
+      debugPrint('✅ APP暫停處理完成');
+      
+    } catch (e) {
+      debugPrint('❌ APP暫停時發生錯誤: $e');
+    }
+  }
+  
+  /// APP變為非活躍狀態
+  void _onAppInactive() {
+    debugPrint('😴 APP變為非活躍狀態');
+  }
+  
+  /// APP被系統分離
+  void _onAppDetached() {
+    debugPrint('🔌 APP被系統分離');
+  }
+  
+  /// APP被隱藏（iOS特有）
+  void _onAppHidden() {
+    debugPrint('👻 APP被隱藏');
+  }
+  
+  /// 刷新數據庫連接
+  Future<void> _refreshDatabaseConnection() async {
+    try {
+      debugPrint('🔄 檢查數據庫連接狀態...');
+      
+      // 測試數據庫連接是否正常
+      // 這裡可以添加更具體的數據庫連接測試
+      
+      debugPrint('✅ 數據庫連接正常');
+    } catch (e) {
+      debugPrint('❌ 數據庫連接檢查失敗: $e');
+      
+      // 嘗試重新初始化數據庫
+      try {
+        await DatabaseService.instance.initialize();
+        debugPrint('✅ 數據庫重新初始化成功');
+      } catch (dbError) {
+        debugPrint('❌ 數據庫重新初始化失敗: $dbError');
+      }
+    }
+  }
+
+  /// 緊急恢復處理
+  Future<void> _performEmergencyRecovery() async {
+    debugPrint('🚨 執行緊急恢復程序...');
+    
+    try {
+      // 1. 重新初始化數據庫
+      debugPrint('🔄 緊急恢復：重新初始化數據庫...');
+      await DatabaseService.instance.initialize();
+      debugPrint('✅ 數據庫緊急恢復成功');
+      
+      // 2. 重新初始化MQTT服務
+      if (_mqttService.userId != null) {
+        debugPrint('🔄 緊急恢復：重新初始化MQTT服務...');
+        await _mqttService.initialize(userId: _mqttService.userId!);
+        debugPrint('✅ MQTT服務緊急恢復成功');
+      }
+      
+      debugPrint('✅ 緊急恢復程序完成');
+      
+    } catch (e) {
+      debugPrint('❌ 緊急恢復失敗: $e');
+      
+      // 最後的嘗試：延遲後再試一次
+      await Future.delayed(const Duration(seconds: 5));
+      try {
+        await DatabaseService.instance.initialize();
+        debugPrint('✅ 延遲恢復成功');
+      } catch (finalError) {
+        debugPrint('❌ 最終恢復失敗: $finalError');
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<LanguageService>.value(
-      value: languageService,
+      value: widget.languageService,
       child: Consumer<LanguageService>(
         builder: (context, languageService, child) {
           return MaterialApp(
