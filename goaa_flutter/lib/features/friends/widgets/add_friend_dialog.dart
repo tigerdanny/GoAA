@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../controllers/friends_controller.dart';
 
 /// 搜索類型枚舉
 enum SearchType {
-  name('姓名'),
-  email('信箱'),
-  phone('電話');
+  name('姓名', 'name'),
+  email('信箱', 'email'),
+  phone('電話', 'phone');
   
-  const SearchType(this.displayName);
+  const SearchType(this.displayName, this.mqttType);
   final String displayName;
+  final String mqttType; // MQTT使用的類型名稱
+}
+
+/// 好友搜索信息（更新版本）
+class FriendSearchInfo {
+  final String searchType; // MQTT搜索類型：'name', 'email', 'phone'
+  final String searchValue; // 搜索值
+  final DateTime searchTime;
+
+  FriendSearchInfo({
+    required this.searchType,
+    required this.searchValue,
+    required this.searchTime,
+  });
+
+  // 保持舊的query getter以兼容現有代碼
+  String get query => searchValue;
+
+  @override
+  String toString() => '$searchType: $searchValue';
 }
 
 /// 添加好友对话框组件
@@ -51,7 +70,8 @@ class _AddFriendDialogState extends State<AddFriendDialog> {
       }
       
       final searchInfo = FriendSearchInfo(
-        query: searchValue,
+        searchType: _selectedSearchType.mqttType,
+        searchValue: searchValue,
         searchTime: DateTime.now(),
       );
       Navigator.pop(context);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
 
-/// 用戶搜索結果對話框
+/// MQTT好友搜索結果對話框
 class SearchResultsDialog extends StatefulWidget {
   final List<UserSearchResult> searchResults;
   final Function(UserSearchResult) onSendRequest;
@@ -25,9 +25,6 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
   late AnimationController _fadeController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
-  
-  // 選中的用戶
-  UserSearchResult? _selectedUser;
 
   @override
   void initState() {
@@ -74,21 +71,6 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
     super.dispose();
   }
 
-  /// 處理發送好友請求
-  void _handleSendRequest() {
-    if (_selectedUser != null) {
-      Navigator.pop(context);
-      widget.onSendRequest(_selectedUser!);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('請選擇一個用戶發送好友請求'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
@@ -121,23 +103,8 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text('關閉', style: TextStyle(color: AppColors.textSecondary)),
             ),
-            if (widget.searchResults.isNotEmpty && !widget.isLoading)
-              ElevatedButton(
-                onPressed: _selectedUser != null ? _handleSendRequest : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  '發送好友請求',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
           ],
         ),
       ),
@@ -205,7 +172,7 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '找到 ${widget.searchResults.length} 個匹配的用戶，請選擇一個發送好友請求：',
+                  '找到 ${widget.searchResults.length} 個匹配的用戶：',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
@@ -225,7 +192,7 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
             ),
             itemBuilder: (context, index) {
               final user = widget.searchResults[index];
-              return _buildUserRadioItem(context, user);
+              return _buildUserItem(context, user);
             },
           ),
         ),
@@ -233,100 +200,113 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
     );
   }
 
-  Widget _buildUserRadioItem(BuildContext context, UserSearchResult user) {
-    final isSelected = _selectedUser?.userId == user.userId;
-    
+  Widget _buildUserItem(BuildContext context, UserSearchResult user) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+        color: AppColors.surface,
       ),
-      child: RadioListTile<UserSearchResult>(
-        value: user,
-        groupValue: _selectedUser,
-        onChanged: (UserSearchResult? value) {
-          setState(() {
-            _selectedUser = value;
-          });
-        },
-        activeColor: AppColors.primary,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+      child: Row(
+        children: [
+          // 用戶頭像
+          Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.primary,
+            ),
+            child: Center(
               child: Text(
                 user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
                 style: const TextStyle(
-                  color: AppColors.primary,
+                  color: Colors.white,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.userName,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                    ),
+          ),
+          const SizedBox(width: 12),
+          
+          // 用戶信息
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.userName,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  if (user.email.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.email, size: 14, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            user.email,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (user.phone.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, size: 14, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(
-                          user.phone,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  // UUID 隱藏，但顯示提示
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '代碼: ${user.userCode}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (user.isOnline) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    '用戶代碼: ${user.userCode.substring(0, 8)}...',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary.withValues(alpha: 0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.success,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '在線',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.success,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          
+          // 添加好友按鈕
+          ElevatedButton.icon(
+            onPressed: () => _handleSendRequest(user),
+            icon: const Icon(Icons.person_add, size: 16),
+            label: const Text('添加'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 處理發送好友請求
+  void _handleSendRequest(UserSearchResult user) {
+    widget.onSendRequest(user);
+    // 顯示發送中提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('正在向 ${user.userName} 發送好友請求...'),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

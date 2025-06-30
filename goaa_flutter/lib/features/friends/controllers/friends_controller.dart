@@ -3,6 +3,8 @@ import 'dart:async';
 import '../../../core/database/repositories/friend_repository.dart';
 import '../../../core/database/repositories/user_repository.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
+import '../services/friend_search_service.dart';
+import '../widgets/add_friend_dialog.dart'; // 為了使用FriendSearchInfo
 
 /// 好友信息模型
 class Friend {
@@ -82,22 +84,6 @@ class FriendRequest {
   }
 }
 
-
-
-/// 好友搜索信息
-class FriendSearchInfo {
-  final String query;
-  final DateTime searchTime;
-
-  FriendSearchInfo({
-    required this.query,
-    required this.searchTime,
-  });
-
-  @override
-  String toString() => query;
-}
-
 /// 好友功能控制器（無MQTT版本）
 /// 負責管理好友列表、好友請求等功能
 class FriendsController extends ChangeNotifier {
@@ -114,6 +100,9 @@ class FriendsController extends ChangeNotifier {
   bool _isSearching = false;
   bool _isInitialized = false;
   bool _isConnected = false;
+  
+  // 搜索結果訂閱
+  StreamSubscription<List<FriendSearchResultItem>>? _searchResultsSubscription;
 
   // Getters
   List<Friend> get friends => List.unmodifiable(_friends);
@@ -269,75 +258,62 @@ class FriendsController extends ChangeNotifier {
     }
   }
 
-  /// 搜索用戶（修復版本）
-  Future<List<UserSearchResult>> searchUsers(FriendSearchInfo searchInfo) async {
-    debugPrint('🔍 搜索用戶: ${searchInfo.query}');
+  /// 通過MQTT搜索用戶
+  Future<void> searchUsers(FriendSearchInfo searchInfo) async {
+    debugPrint('🔍 開始MQTT搜索用戶: ${searchInfo.searchValue} (類型: ${searchInfo.searchType})');
     _isSearching = true;
+    _searchResults.clear();
     notifyListeners();
     
     try {
-      // 實現用戶搜索邏輯
-      await Future.delayed(const Duration(milliseconds: 500));
+      final searchService = FriendSearchService();
       
-      // 基於搜索條件進行模擬搜索
-      final searchResults = <UserSearchResult>[];
+      // 確保搜索服務已初始化
+      await searchService.initialize();
       
-      // 模擬數據庫搜索邏輯
-      final mockUsers = [
-        UserSearchResult(
-          id: 'user_001',
-          userId: 'user_001',
-          userCode: 'USR001',
-          userName: '張三',
-          name: '張三',
-          email: 'zhangsan@example.com',
-          phone: '138123456789',
-          matchScore: 0.95,
-        ),
-        UserSearchResult(
-          id: 'user_002',
-          userId: 'user_002',
-          userCode: 'USR002',
-          userName: '李四',
-          name: '李四',
-          email: 'lisi@example.com',
-          phone: '139876543210',
-          matchScore: 0.85,
-        ),
-        UserSearchResult(
-          id: 'user_003',
-          userId: 'user_003',
-          userCode: 'USR003',
-          userName: '王五',
-          name: '王五',
-          email: 'wangwu@example.com',
-          phone: '136987654321',
-          matchScore: 0.75,
-        ),
-      ];
+      debugPrint('🔍 搜索類型: ${searchInfo.searchType}, 搜索值: ${searchInfo.searchValue}');
       
-      // 過濾搜索結果
-      final query = searchInfo.query.toLowerCase();
-      for (final user in mockUsers) {
-        if (user.userName.toLowerCase().contains(query) ||
-            user.email.toLowerCase().contains(query) ||
-            user.phone.contains(query) ||
-            user.userCode.toLowerCase().contains(query)) {
-          searchResults.add(user);
+      // 開始MQTT搜索
+      await searchService.searchFriends(
+        searchType: searchInfo.searchType,
+        searchValue: searchInfo.searchValue,
+        timeout: const Duration(seconds: 10),
+      );
+      
+      // 監聽搜索結果
+      _searchResultsSubscription?.cancel();
+      _searchResultsSubscription = searchService.searchResultsStream.listen((results) {
+        debugPrint('📥 收到搜索結果更新: ${results.length} 個結果');
+        
+        // 轉換為UserSearchResult格式
+        _searchResults.clear();
+        for (final result in results) {
+          final userResult = UserSearchResult(
+            id: result.uuid,
+            userId: result.uuid,
+            userCode: result.userCode,
+            userName: result.name,
+            name: result.name,
+            email: '', // MQTT回復中沒有email信息
+            phone: '', // MQTT回復中沒有phone信息
+            matchScore: 1.0,
+            isOnline: true, // 能回復搜索的用戶都是在線的
+          );
+          _searchResults.add(userResult);
         }
-      }
+        
+        notifyListeners();
+      });
       
-      // 按匹配分數排序
-      searchResults.sort((a, b) => b.matchScore.compareTo(a.matchScore));
-      
-      debugPrint('🔍 搜索 "${searchInfo.query}" 找到 ${searchResults.length} 個結果');
-      
-      return searchResults;
+      // 10秒後自動完成搜索
+      Timer(const Duration(seconds: 10), () {
+        _isSearching = false;
+        notifyListeners();
+        debugPrint('✅ MQTT搜索完成，共找到 ${_searchResults.length} 個結果');
+      });
       
     } catch (e) {
-      debugPrint('❌ 搜索用戶失敗: $e');
-      return [];
-    } finally {
+      debugPrint('❌ MQTT搜索用戶失敗: $e');
       _isSearching = false;
       notifyListeners();
     }
@@ -575,6 +551,7 @@ class FriendsController extends ChangeNotifier {
   @override
   void dispose() {
     debugPrint('🧹 清理好友控制器資源...');
+    _searchResultsSubscription?.cancel();
     super.dispose();
   }
 }

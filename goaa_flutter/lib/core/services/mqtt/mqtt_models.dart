@@ -290,4 +290,103 @@ class PendingFriendRequest {
     status: json['status'] as String? ?? 'pending',
     message: json['message'] as String?,
   );
+}
+
+/// 好友搜索請求消息模型
+class FriendSearchRequest {
+  final String requestId;
+  final String publisherUuid;
+  final String searchType; // 'name', 'email', 'phone'
+  final String searchValue;
+  final DateTime timestamp;
+
+  FriendSearchRequest({
+    required this.requestId,
+    required this.publisherUuid,
+    required this.searchType,
+    required this.searchValue,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'requestId': requestId,
+    'publisherUuid': publisherUuid,
+    'searchType': searchType,
+    'searchValue': searchValue,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory FriendSearchRequest.fromJson(Map<String, dynamic> json) => FriendSearchRequest(
+    requestId: json['requestId'] as String,
+    publisherUuid: json['publisherUuid'] as String,
+    searchType: json['searchType'] as String,
+    searchValue: json['searchValue'] as String,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+  );
+}
+
+/// 好友搜索回復消息模型
+class FriendSearchResponse {
+  final String requestId;
+  final String responderUuid;
+  final String searcherUuid;
+  final String responderName;
+  final String responderUserCode;
+  final DateTime timestamp;
+
+  FriendSearchResponse({
+    required this.requestId,
+    required this.responderUuid,
+    required this.searcherUuid,
+    required this.responderName,
+    required this.responderUserCode,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'requestId': requestId,
+    'responderUuid': responderUuid,
+    'searcherUuid': searcherUuid,
+    'responderName': responderName,
+    'responderUserCode': responderUserCode,
+    'timestamp': timestamp.toIso8601String(),
+  };
+
+  factory FriendSearchResponse.fromJson(Map<String, dynamic> json) => FriendSearchResponse(
+    requestId: json['requestId'] as String,
+    responderUuid: json['responderUuid'] as String,
+    searcherUuid: json['searcherUuid'] as String,
+    responderName: json['responderName'] as String,
+    responderUserCode: json['responderUserCode'] as String,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+  );
+}
+
+/// 搜索結果項目模型
+class FriendSearchResultItem {
+  final String uuid;
+  final String name;
+  final String userCode;
+  final DateTime responseTime;
+
+  FriendSearchResultItem({
+    required this.uuid,
+    required this.name,
+    required this.userCode,
+    required this.responseTime,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'uuid': uuid,
+    'name': name,
+    'userCode': userCode,
+    'responseTime': responseTime.toIso8601String(),
+  };
+
+  factory FriendSearchResultItem.fromJson(Map<String, dynamic> json) => FriendSearchResultItem(
+    uuid: json['uuid'] as String,
+    name: json['name'] as String,
+    userCode: json['userCode'] as String,
+    responseTime: DateTime.parse(json['responseTime'] as String),
+  );
 } 
