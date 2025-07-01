@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/database/repositories/friend_repository.dart';
 import '../../../core/database/repositories/user_repository.dart';
 import '../../../core/services/mqtt/mqtt_models.dart';
+import '../../../core/services/mqtt/mqtt_service.dart';
 import '../services/friend_search_service.dart';
 import '../widgets/add_friend_dialog.dart'; // 為了使用FriendSearchInfo
 
@@ -90,6 +93,9 @@ class FriendsController extends ChangeNotifier {
   final FriendRepository _friendRepository = FriendRepository();
   final UserRepository _userRepository = UserRepository();
 
+  // SharedPreferences 鍵值常量
+  static const String _pendingRequestsKey = 'pending_friend_requests';
+
   // 狀態變量
   final List<Friend> _friends = [];
   final List<FriendRequest> _friendRequests = [];
@@ -123,6 +129,46 @@ class FriendsController extends ChangeNotifier {
   }
   
   String? _currentUserName;
+
+  /// 保存待處理的好友請求到SharedPreferences
+  Future<void> _savePendingRequestsToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final requestsJson = _pendingRequests.map((request) => request.toJson()).toList();
+      final jsonString = jsonEncode(requestsJson);
+      await prefs.setString(_pendingRequestsKey, jsonString);
+      debugPrint('💾 已保存 ${_pendingRequests.length} 個待處理好友請求到本地存儲');
+    } catch (e) {
+      debugPrint('❌ 保存待處理好友請求失敗: $e');
+    }
+  }
+
+  /// 從SharedPreferences加載待處理的好友請求
+  Future<void> _loadPendingRequestsFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_pendingRequestsKey);
+      
+      if (jsonString != null && jsonString.isNotEmpty) {
+        final List<dynamic> requestsJson = jsonDecode(jsonString);
+        _pendingRequests.clear();
+        
+        for (final requestJson in requestsJson) {
+          if (requestJson is Map<String, dynamic>) {
+            final request = PendingFriendRequest.fromJson(requestJson);
+            _pendingRequests.add(request);
+          }
+        }
+        
+        debugPrint('📱 從本地存儲加載了 ${_pendingRequests.length} 個待處理好友請求');
+      } else {
+        debugPrint('📱 本地存儲中沒有待處理好友請求');
+      }
+    } catch (e) {
+      debugPrint('❌ 從本地存儲加載待處理好友請求失敗: $e');
+      _pendingRequests.clear();
+    }
+  }
 
   /// 初始化好友控制器
   Future<void> initialize() async {
@@ -217,12 +263,14 @@ class FriendsController extends ChangeNotifier {
         return;
       }
       
-      // 實現加載好友請求邏輯
-      // 目前暫時使用模擬數據，後續可以連接真實的數據源
+      // 清空現有數據
       _friendRequests.clear();
       _pendingRequests.clear();
       
-      // 模擬一些好友請求數據
+      // 從本地存儲加載待處理的好友請求
+      await _loadPendingRequestsFromStorage();
+      
+      // 模擬一些收到的好友請求數據（實際應用中應從服務器或數據庫加載）
       if (currentUser.id == 1) {
         _friendRequests.add(FriendRequest(
           id: 'req_001',
@@ -233,19 +281,6 @@ class FriendsController extends ChangeNotifier {
           requestTime: DateTime.now().subtract(const Duration(hours: 2)),
           status: 'pending',
         ));
-        
-                 _pendingRequests.add(PendingFriendRequest(
-           id: 'pending_001',
-           fromUserId: currentUser.id.toString(),
-           fromUserName: currentUser.name,
-           fromUserEmail: 'current@example.com',
-           fromUserPhone: '123456789',
-           targetName: '王小紅',
-           targetEmail: 'wangxiaohong@example.com',
-           targetPhone: '139876543210',
-           status: 'pending',
-           requestTime: DateTime.now().subtract(const Duration(hours: 1)),
-         ));
       }
       
       debugPrint('📚 加載了 ${_friendRequests.length} 個待處理好友請求');
@@ -385,7 +420,6 @@ class FriendsController extends ChangeNotifier {
         return false;
       }
       
-      // 實現發送好友請求邏輯
       // 檢查是否已經是好友
       final isAlreadyFriend = _friends.any((friend) => friend.id == user.userId);
       if (isAlreadyFriend) {
@@ -401,11 +435,30 @@ class FriendsController extends ChangeNotifier {
         debugPrint('⚠️ 已經發送過好友請求了');
         return false;
       }
+
+      // 獲取MQTT服務實例
+      final mqttService = MqttService();
       
-      // 模擬網絡請求延遲
-      await Future.delayed(const Duration(milliseconds: 500));
+      // 1. 訂閱該用戶的私人消息主題
+      final subscriptionSuccess = await mqttService.subscribeToUserPrivateMessages(user.userCode);
+      if (!subscriptionSuccess) {
+        debugPrint('⚠️ 訂閱私人消息主題失敗，但繼續發送請求');
+      }
       
-      // 創建新的待處理請求
+      // 2. 向該用戶發送好友請求私人消息
+      final messageSuccess = await mqttService.sendFriendRequestMessage(
+        targetUserCode: user.userCode,
+        myName: currentUser.name,
+        myEmail: currentUser.email ?? '',
+        myPhone: currentUser.phone ?? '',
+      );
+      
+      if (!messageSuccess) {
+        debugPrint('❌ 發送好友請求消息失敗');
+        return false;
+      }
+      
+      // 3. 創建新的待處理請求並加入本地資料庫
       final pendingRequest = PendingFriendRequest(
         id: 'pending_${DateTime.now().millisecondsSinceEpoch}',
         fromUserId: currentUser.id.toString(),
@@ -417,13 +470,18 @@ class FriendsController extends ChangeNotifier {
         targetPhone: user.phone,
         status: 'pending',
         requestTime: DateTime.now(),
+        message: 'Hello! I would like to add you as a friend. Please accept my friend request.',
       );
       
       // 添加到待處理列表
       _pendingRequests.add(pendingRequest);
+      
+      // 保存到本地資料庫
+      await _savePendingRequestsToStorage();
+      
       notifyListeners();
       
-      debugPrint('✅ 好友請求已發送');
+      debugPrint('✅ 好友請求已發送 - 已訂閱私人消息，已發送請求消息，已加入等待名單');
       return true;
     } catch (e) {
       debugPrint('❌ 發送好友請求失敗: $e');
@@ -463,6 +521,8 @@ class FriendsController extends ChangeNotifier {
     debugPrint('🗑️ 移除待處理請求: $requestId');
     try {
       _pendingRequests.removeWhere((r) => r.id == requestId);
+      // 保存更改到本地存儲
+      _savePendingRequestsToStorage();
       notifyListeners();
     } catch (e) {
       debugPrint('❌ 移除待處理請求失敗: $e');

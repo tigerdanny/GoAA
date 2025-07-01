@@ -94,16 +94,18 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('已向 ${user.userName} 發送好友請求'),
+                      content: Text('✅ 好友請求已發送給 ${user.userName}\n📩 已訂閱私人消息\n📝 已加入等待添加好友名單'),
                       backgroundColor: AppColors.success,
+                      duration: const Duration(seconds: 4),
                     ),
                   );
                   HapticFeedback.lightImpact();
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('發送好友請求失敗，請重試'),
+                      content: Text('❌ 發送好友請求失敗，請檢查網絡連接後重試'),
                       backgroundColor: AppColors.error,
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 }
