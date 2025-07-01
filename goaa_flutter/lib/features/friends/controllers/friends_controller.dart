@@ -9,6 +9,15 @@ import '../../../core/services/mqtt/mqtt_service.dart';
 import '../services/friend_search_service.dart';
 import '../widgets/add_friend_dialog.dart'; // 為了使用FriendSearchInfo
 
+/// 發送好友請求的結果狀態
+enum FriendRequestResult {
+  success,           // 成功發送
+  alreadyFriend,     // 已經是好友
+  alreadySent,       // 已經發送過請求
+  inWaitingList,     // 該人已在等待添加好友名單中
+  failed,            // 發送失敗
+}
+
 /// 好友信息模型
 class Friend {
   final String id;
@@ -85,6 +94,28 @@ class FriendRequest {
       status: status ?? this.status,
     );
   }
+
+  /// 轉換為JSON
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'fromUserId': fromUserId,
+    'fromUserName': fromUserName,
+    'fromUserEmail': fromUserEmail,
+    'fromUserPhone': fromUserPhone,
+    'requestTime': requestTime.toIso8601String(),
+    'status': status,
+  };
+
+  /// 從JSON創建實例
+  factory FriendRequest.fromJson(Map<String, dynamic> json) => FriendRequest(
+    id: json['id'] as String,
+    fromUserId: json['fromUserId'] as String,
+    fromUserName: json['fromUserName'] as String,
+    fromUserEmail: json['fromUserEmail'] as String? ?? '',
+    fromUserPhone: json['fromUserPhone'] as String? ?? '',
+    requestTime: DateTime.parse(json['requestTime'] as String),
+    status: json['status'] as String? ?? 'pending',
+  );
 }
 
 /// 好友功能控制器（無MQTT版本）
@@ -95,6 +126,7 @@ class FriendsController extends ChangeNotifier {
 
   // SharedPreferences 鍵值常量
   static const String _pendingRequestsKey = 'pending_friend_requests';
+  static const String _friendRequestsKey = 'received_friend_requests';
 
   // 狀態變量
   final List<Friend> _friends = [];
@@ -167,6 +199,102 @@ class FriendsController extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ 從本地存儲加載待處理好友請求失敗: $e');
       _pendingRequests.clear();
+    }
+  }
+
+  /// 保存收到的好友請求到SharedPreferences
+  Future<void> _saveFriendRequestsToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final requestsJson = _friendRequests.map((request) => request.toJson()).toList();
+      final jsonString = jsonEncode(requestsJson);
+      await prefs.setString(_friendRequestsKey, jsonString);
+      debugPrint('💾 已保存 ${_friendRequests.length} 個收到的好友請求到本地存儲');
+    } catch (e) {
+      debugPrint('❌ 保存收到的好友請求失敗: $e');
+    }
+  }
+
+  /// 從SharedPreferences加載收到的好友請求
+  Future<void> _loadFriendRequestsFromStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(_friendRequestsKey);
+      
+      if (jsonString != null && jsonString.isNotEmpty) {
+        final List<dynamic> requestsJson = jsonDecode(jsonString);
+        _friendRequests.clear();
+        
+        for (final requestJson in requestsJson) {
+          if (requestJson is Map<String, dynamic>) {
+            final request = FriendRequest.fromJson(requestJson);
+            _friendRequests.add(request);
+          }
+        }
+        
+        debugPrint('📱 從本地存儲加載了 ${_friendRequests.length} 個收到的好友請求');
+      } else {
+        debugPrint('📱 本地存儲中沒有收到的好友請求');
+      }
+    } catch (e) {
+      debugPrint('❌ 從本地存儲加載收到的好友請求失敗: $e');
+      _friendRequests.clear();
+    }
+  }
+
+  /// 處理收到的好友請求（來自MQTT私人消息）
+  Future<bool> handleReceivedFriendRequest({
+    required String fromUserId,
+    required String fromUserName,
+    required String fromUserEmail,
+    required String fromUserPhone,
+    String? message,
+  }) async {
+    debugPrint('📨 收到好友請求: $fromUserName ($fromUserId)');
+    
+    try {
+      // 檢查是否已經是好友
+      final isAlreadyFriend = _friends.any((friend) => friend.id == fromUserId);
+      if (isAlreadyFriend) {
+        debugPrint('⚠️ 用戶 $fromUserName 已經是好友，忽略請求');
+        return false;
+      }
+      
+      // 檢查是否已經有相同的待處理請求
+      final hasExistingRequest = _friendRequests.any((request) => 
+          request.fromUserId == fromUserId && request.status == 'pending');
+      if (hasExistingRequest) {
+        debugPrint('⚠️ 已經有來自 $fromUserName 的待處理好友請求，忽略重複請求');
+        return false;
+      }
+      
+      // 創建新的好友請求
+      final friendRequest = FriendRequest(
+        id: 'req_${DateTime.now().millisecondsSinceEpoch}',
+        fromUserId: fromUserId,
+        fromUserName: fromUserName,
+        fromUserEmail: fromUserEmail,
+        fromUserPhone: fromUserPhone,
+        requestTime: DateTime.now(),
+        status: 'pending',
+      );
+      
+      // 添加到好友請求列表
+      _friendRequests.add(friendRequest);
+      
+      // 保存到本地存儲
+      await _saveFriendRequestsToStorage();
+      
+      // 通知UI更新
+      notifyListeners();
+      
+      debugPrint('✅ 好友請求已添加到要求添加好友名單: $fromUserName');
+      debugPrint('📋 當前共有 ${_friendRequests.length} 個待處理的好友請求');
+      
+      return true;
+    } catch (e) {
+      debugPrint('❌ 處理收到的好友請求失敗: $e');
+      return false;
     }
   }
 
@@ -270,18 +398,8 @@ class FriendsController extends ChangeNotifier {
       // 從本地存儲加載待處理的好友請求
       await _loadPendingRequestsFromStorage();
       
-      // 模擬一些收到的好友請求數據（實際應用中應從服務器或數據庫加載）
-      if (currentUser.id == 1) {
-        _friendRequests.add(FriendRequest(
-          id: 'req_001',
-          fromUserId: 'user2',
-          fromUserName: '李明',
-          fromUserEmail: 'liming@example.com',
-          fromUserPhone: '138123456789',
-          requestTime: DateTime.now().subtract(const Duration(hours: 2)),
-          status: 'pending',
-        ));
-      }
+      // 從本地存儲加載收到的好友請求
+      await _loadFriendRequestsFromStorage();
       
       debugPrint('📚 加載了 ${_friendRequests.length} 個待處理好友請求');
       debugPrint('📚 加載了 ${_pendingRequests.length} 個已發送請求');
@@ -410,21 +528,29 @@ class FriendsController extends ChangeNotifier {
   }
 
   /// 發送好友請求
-  Future<bool> sendFriendRequestToUser(UserSearchResult user) async {
+  Future<String> sendFriendRequestToUser(UserSearchResult user) async {
     debugPrint('📤 發送好友請求給: ${user.name}');
     try {
       // 獲取當前用戶
       final currentUser = await _userRepository.getCurrentUser();
       if (currentUser == null) {
         debugPrint('❌ 沒有當前用戶，無法發送好友請求');
-        return false;
+        return 'failed';
       }
       
       // 檢查是否已經是好友
       final isAlreadyFriend = _friends.any((friend) => friend.id == user.userId);
       if (isAlreadyFriend) {
         debugPrint('⚠️ 用戶已經是好友了');
-        return false;
+        return 'alreadyFriend';
+      }
+      
+      // 檢查該人是否已在等待添加好友名單中（根據UUID檢查）
+      final isInWaitingList = _friendRequests.any((request) => 
+          request.fromUserId == user.userId || request.fromUserId == user.id);
+      if (isInWaitingList) {
+        debugPrint('⚠️ 該人已在等待添加好友名單中');
+        return 'inWaitingList';
       }
       
       // 檢查是否已經發送過請求
@@ -433,7 +559,7 @@ class FriendsController extends ChangeNotifier {
           request.targetName == user.name);
       if (hasExistingRequest) {
         debugPrint('⚠️ 已經發送過好友請求了');
-        return false;
+        return 'alreadySent';
       }
 
       // 獲取MQTT服務實例
@@ -455,7 +581,7 @@ class FriendsController extends ChangeNotifier {
       
       if (!messageSuccess) {
         debugPrint('❌ 發送好友請求消息失敗');
-        return false;
+        return 'failed';
       }
       
       // 3. 創建新的待處理請求並加入本地資料庫
@@ -482,10 +608,10 @@ class FriendsController extends ChangeNotifier {
       notifyListeners();
       
       debugPrint('✅ 好友請求已發送 - 已訂閱私人消息，已發送請求消息，已加入等待名單');
-      return true;
+      return 'success';
     } catch (e) {
       debugPrint('❌ 發送好友請求失敗: $e');
-      return false;
+      return 'failed';
     }
   }
 
@@ -589,6 +715,9 @@ class FriendsController extends ChangeNotifier {
       // 從請求列表中移除
       _friendRequests.removeWhere((r) => r.id == request.id);
       
+      // 保存更改到本地存儲
+      await _saveFriendRequestsToStorage();
+      
       notifyListeners();
       
       debugPrint('✅ 好友請求已接受，已添加到好友列表');
@@ -612,6 +741,9 @@ class FriendsController extends ChangeNotifier {
       
       // 從請求列表中移除
       _friendRequests.removeWhere((r) => r.id == request.id);
+      
+      // 保存更改到本地存儲
+      await _saveFriendRequestsToStorage();
       
       notifyListeners();
       
@@ -660,6 +792,46 @@ class FriendsController extends ChangeNotifier {
     await _loadFriends();
     await _loadFriendRequests();
     notifyListeners();
+  }
+
+  /// 示例：處理來自MQTT私人消息的好友請求
+  /// 這個方法可以在MQTT消息處理器中調用
+  Future<void> handleMqttFriendRequestMessage({
+    required Map<String, dynamic> messageData,
+  }) async {
+    debugPrint('📨 處理MQTT好友請求消息: $messageData');
+    
+    try {
+      // 從MQTT消息中提取必要信息
+      final fromUserId = messageData['fromUserId'] as String?;
+      final fromUserName = messageData['fromUserName'] as String?;
+      final fromUserEmail = messageData['fromUserEmail'] as String? ?? '';
+      final fromUserPhone = messageData['fromUserPhone'] as String? ?? '';
+      final message = messageData['message'] as String?;
+      
+      // 驗證必需字段
+      if (fromUserId == null || fromUserName == null) {
+        debugPrint('⚠️ MQTT好友請求消息缺少必需字段');
+        return;
+      }
+      
+      // 處理好友請求
+      final success = await handleReceivedFriendRequest(
+        fromUserId: fromUserId,
+        fromUserName: fromUserName,
+        fromUserEmail: fromUserEmail,
+        fromUserPhone: fromUserPhone,
+        message: message,
+      );
+      
+      if (success) {
+        debugPrint('✅ MQTT好友請求處理成功');
+      } else {
+        debugPrint('⚠️ MQTT好友請求處理失敗或被忽略');
+      }
+    } catch (e) {
+      debugPrint('❌ 處理MQTT好友請求消息失敗: $e');
+    }
   }
 
   /// 釋放資源

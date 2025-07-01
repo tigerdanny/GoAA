@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:goaa_flutter/core/services/user_id_service.dart';
 import 'package:goaa_flutter/core/database/database_service.dart';
 import 'package:goaa_flutter/core/database/repositories/user_repository.dart';
-import 'package:goaa_flutter/core/services/mqtt_simple.dart';
+import 'package:goaa_flutter/core/services/mqtt/mqtt_service.dart';
 import '../../friends/controllers/friends_controller.dart';
 
 /// 啟動頁狀態
@@ -25,7 +25,7 @@ class SplashController extends ChangeNotifier {
   final UserIdService _userIdService = UserIdService();
   final UserRepository _userRepository = UserRepository();
   final FriendsController _friendsController = FriendsController();
-  final MqttSimple _mqttService = MqttSimple();
+  final MqttService _mqttService = MqttService();
 
   SplashState _state = SplashState.initializing;
   String _message = '正在初始化...';
@@ -126,12 +126,11 @@ class SplashController extends ChangeNotifier {
   Future<void> _initializeMqttService(String userId) async {
     try {
       debugPrint('🚀 開始初始化MQTT服務...');
-      debugPrint('🌐 MQTT服務器: e5ad947c783545e480cd17a9a59672c0.s1.eu.hivemq.cloud:8883');
+      debugPrint('🌐 MQTT服務器: broker.hivemq.com');
       debugPrint('👤 用戶ID: $userId');
-      debugPrint('🔐 使用TLS加密連接');
       
-      // 實際初始化MQTT服務
-      await _mqttService.initialize(userId: userId);
+      // 實際初始化MQTT服務 - 自動從數據庫獲取用戶代碼
+      await _mqttService.initialize();
       
       debugPrint('✅ MQTT服務配置完成');
     } catch (e) {

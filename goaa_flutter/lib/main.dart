@@ -8,7 +8,7 @@ import 'core/database/database_service.dart';
 import 'core/services/language_service.dart';
 import 'core/services/daily_quote/daily_quote_repository.dart';
 import 'core/services/mqtt/mqtt_service.dart';
-import 'core/services/user_id_service.dart';
+
 import 'core/utils/performance_monitor.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -113,24 +113,8 @@ Future<void> _backgroundInitialization() async {
     debugPrint('✅ 資料庫初始化完成');
     PerformanceMonitor.recordTimestamp('資料庫初始化完成');
     
-    // 3. MQTT服務初始化（在後台執行）
-    try {
-      final MqttService mqttService = MqttService();
-      final UserIdService userIdService = UserIdService();
-      
-      // 獲取用戶ID
-      final userId = await userIdService.getUserId();
-      debugPrint('📋 獲取用戶ID: $userId');
-      
-      // 初始化MQTT服務（非阻塞式）
-      unawaited(mqttService.initialize(userId: userId).catchError((e) {
-        debugPrint('⚠️ MQTT服務初始化失敗（非關鍵）: $e');
-      }));
-      
-      debugPrint('✅ MQTT服務已啟動初始化');
-    } catch (e) {
-      debugPrint('⚠️ MQTT服務設置失敗（非關鍵）: $e');
-    }
+    // 3. MQTT服務初始化將由SplashController處理，避免重複初始化
+    debugPrint('✅ MQTT服務將由啟動控制器初始化');
     PerformanceMonitor.recordTimestamp('服務初始化完成');
     
     // 4. 每日金句服務（可選，失敗不影響）
@@ -313,7 +297,7 @@ class _GoAAAppState extends State<GoAAApp> with WidgetsBindingObserver {
         debugPrint('✅ MQTT已連接，發送在線狀態');
         // 重新發送在線狀態
         await _mqttService.publishMessage(
-          topic: 'goaa/users/${_mqttService.userId}/status',
+          topic: 'goaa/users/${_mqttService.userCode}/status',
           payload: {
             'status': 'online',
             'timestamp': DateTime.now().toIso8601String(),
@@ -355,7 +339,7 @@ class _GoAAAppState extends State<GoAAApp> with WidgetsBindingObserver {
       // 發送背景狀態
       if (_mqttService.isConnected) {
         await _mqttService.publishMessage(
-          topic: 'goaa/users/${_mqttService.userId}/status',
+          topic: 'goaa/users/${_mqttService.userCode}/status',
           payload: {
             'status': 'background',
             'timestamp': DateTime.now().toIso8601String(),
@@ -419,10 +403,10 @@ class _GoAAAppState extends State<GoAAApp> with WidgetsBindingObserver {
       await DatabaseService.instance.initialize();
       debugPrint('✅ 數據庫緊急恢復成功');
       
-      // 2. 重新初始化MQTT服務
-      if (_mqttService.userId != null) {
-        debugPrint('🔄 緊急恢復：重新初始化MQTT服務...');
-        await _mqttService.initialize(userId: _mqttService.userId!);
+      // 2. 檢查MQTT服務連接狀態
+      if (_mqttService.userCode != null && !_mqttService.isConnected) {
+        debugPrint('🔄 緊急恢復：重新連接MQTT服務...');
+        await _mqttService.connect();
         debugPrint('✅ MQTT服務緊急恢復成功');
       }
       

@@ -89,16 +89,12 @@ class MqttService extends ChangeNotifier {
   final StreamController<Map<String, dynamic>> _searchResponseController = 
       StreamController<Map<String, dynamic>>.broadcast();
   
-  // 消息監聽器訂閱
+  // 消息監聽器訂閱管理
   StreamSubscription? _messageSubscription;
   
-  // 已處理的消息ID集合（用於消息去重）
-  final Set<String> _processedMessageIds = <String>{};
+  // 已處理的消息去重機制
+  final Set<String> _processedMessageHashes = <String>{};
   Timer? _messageCleanupTimer;
-  
-  // 初始化狀態標誌
-  bool _isInitialized = false;
-  bool _isInitializing = false;
   
   // Getters
   GoaaMqttConnectionState get connectionState => _connectionState;
@@ -114,22 +110,6 @@ class MqttService extends ChangeNotifier {
 
   /// 初始化MQTT服務 - 自動從數據庫獲取用戶代碼
   Future<void> initialize({String? customClientId}) async {
-    // ✅ 防止重複初始化
-    if (_isInitialized) {
-      debugPrint('⚠️ MQTT服務已經初始化，跳過重複初始化');
-      return;
-    }
-    
-    if (_isInitializing) {
-      debugPrint('⚠️ MQTT服務正在初始化中，等待完成...');
-      // 等待當前初始化完成
-      while (_isInitializing) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-      return;
-    }
-    
-    _isInitializing = true;
     debugPrint('🚀 初始化MQTT服務...');
     
     try {
@@ -152,14 +132,9 @@ class MqttService extends ChangeNotifier {
       
       // 啟動消息清理定時器
       _startMessageCleanupTimer();
-      
-      _isInitialized = true;
-      debugPrint('✅ MQTT服務初始化完成');
     } catch (e) {
       debugPrint('❌ MQTT服務初始化失敗: $e');
       rethrow;
-    } finally {
-      _isInitializing = false;
     }
   }
 
@@ -408,78 +383,15 @@ class MqttService extends ChangeNotifier {
   void _startMessageCleanupTimer() {
     _messageCleanupTimer?.cancel();
     _messageCleanupTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
-      final now = DateTime.now();
-      final cutoffTime = now.subtract(const Duration(minutes: 30));
-      
-      // 清理30分鐘前的消息記錄，避免內存洩漏
-      _processedMessageIds.removeWhere((messageId) {
-        try {
-          // 假設messageId包含時間戳（可以根據實際格式調整）
-          return messageId.contains(cutoffTime.millisecondsSinceEpoch.toString().substring(0, 8));
-        } catch (e) {
-          // 如果解析失敗，移除該記錄
-          return true;
-        }
-      });
-      
-      debugPrint('🧹 清理消息記錄，當前記錄數: ${_processedMessageIds.length}');
+      // 清理超過1000條的消息記錄，避免內存洩漏
+      if (_processedMessageHashes.length > 1000) {
+        final hashList = _processedMessageHashes.toList();
+        _processedMessageHashes.clear();
+        // 保留最近的500條記錄
+        _processedMessageHashes.addAll(hashList.take(500));
+        debugPrint('🧹 清理消息記錄，當前記錄數: ${_processedMessageHashes.length}');
+      }
     });
-  }
-
-  /// 訂閱用戶的私人消息主題
-  Future<bool> subscribeToUserPrivateMessages(String userCode) async {
-    final privateTopic = 'goaa/users/$userCode/messages';
-    debugPrint('📩 訂閱用戶私人消息主題: $privateTopic');
-    return await subscribeToTopic(privateTopic);
-  }
-
-  /// 發送私人消息
-  Future<bool> sendPrivateMessage({
-    required String targetUserCode,
-    required String messageType,
-    required Map<String, dynamic> messageData,
-  }) async {
-    final privateTopic = 'goaa/users/$targetUserCode/messages';
-    
-    final payload = {
-      'id': const Uuid().v4(),
-      'type': messageType,
-      'fromUserCode': _userCode,
-      'toUserCode': targetUserCode,
-      'data': messageData,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-
-    debugPrint('📤 發送私人消息到 $privateTopic (類型: $messageType)');
-    return await publishMessage(
-      topic: privateTopic,
-      payload: payload,
-      qos: MqttQos.atLeastOnce,
-    );
-  }
-
-  /// 發送好友請求私人消息
-  Future<bool> sendFriendRequestMessage({
-    required String targetUserCode,
-    required String myName,
-    required String myEmail,
-    required String myPhone,
-  }) async {
-    final messageData = {
-      'requestType': 'friend_request',
-      'message': 'Hello! I would like to add you as a friend. Please accept my friend request.',
-      'fromUserCode': _userCode,
-      'fromUserName': myName,
-      'fromUserEmail': myEmail,
-      'fromUserPhone': myPhone,
-      'requestTime': DateTime.now().toIso8601String(),
-    };
-
-    return await sendPrivateMessage(
-      targetUserCode: targetUserCode,
-      messageType: 'friend_request',
-      messageData: messageData,
-    );
   }
 
   /// 安排重連
@@ -519,7 +431,7 @@ class MqttService extends ChangeNotifier {
     debugPrint('🎉 MQTT連接建立');
     _updateConnectionState(GoaaMqttConnectionState.connected);
     
-    // 取消之前的消息監聽器（防止重複）
+    // ✅ 修復：取消之前的消息監聽器（防止重複監聽）
     _messageSubscription?.cancel();
     
     // 設置新的消息監聽器
@@ -529,7 +441,7 @@ class MqttService extends ChangeNotifier {
       }
     });
     
-    debugPrint('✅ 消息監聽器已設置');
+    debugPrint('✅ 消息監聽器已重新設置');
   }
 
   void _onDisconnected() {
@@ -537,7 +449,7 @@ class MqttService extends ChangeNotifier {
     _updateConnectionState(GoaaMqttConnectionState.disconnected);
     _heartbeatTimer?.cancel();
     
-    // 取消消息監聽器
+    // ✅ 修復：斷開時取消消息監聽器
     _messageSubscription?.cancel();
     _messageSubscription = null;
     
@@ -568,15 +480,16 @@ class MqttService extends ChangeNotifier {
     final payload = MqttPublishPayload.bytesToStringAsString(
         (receivedMessage.payload as MqttPublishMessage).payload.message);
     
-    // 檢查是否已處理過相同的消息內容（基於topic和payload的hash）
-    final contentHash = '${topic}_${payload.hashCode}';
-    if (_processedMessageIds.contains(contentHash)) {
-      debugPrint('🔄 跳過重複消息: $topic');
+    // ✅ 修復：使用消息內容的hash值來檢測重複消息
+    final messageHash = '${topic}_${payload.hashCode}';
+    
+    if (_processedMessageHashes.contains(messageHash)) {
+      debugPrint('🔄 跳過重複消息: $topic (hash: ${messageHash.substring(0, 20)}...)');
       return;
     }
     
-    // 記錄消息已處理
-    _processedMessageIds.add(contentHash);
+    // 記錄消息hash以防重複處理
+    _processedMessageHashes.add(messageHash);
     
     debugPrint('📨 收到MQTT消息 - 主題: $topic, 內容長度: ${payload.length}');
     
@@ -672,7 +585,7 @@ class MqttService extends ChangeNotifier {
         return;
       }
       
-      debugPrint('🔍 處理搜索請求: $searchType = "$searchValue" (來自: $publisherUuid)');
+      debugPrint('🔍 處理其他用戶的搜索請求: $searchType = "$searchValue" (來自: $publisherUuid)');
       
       // 獲取當前用戶信息進行匹配
       final currentUserResult = await _checkLocalUserMatch(searchType, searchValue);
@@ -694,16 +607,6 @@ class MqttService extends ChangeNotifier {
         );
         
         debugPrint('📤 已發送搜索回復給: $publisherUuid');
-        
-        // 🔗 訂閱發布者的私人消息主題，建立雙向通信
-        final publisherPrivateTopic = 'goaa/users/$publisherUuid/messages';
-        if (!_subscribedTopics.contains(publisherPrivateTopic)) {
-          await subscribeToTopic(publisherPrivateTopic);
-          debugPrint('🔔 已訂閱發布者的私人消息主題: $publisherPrivateTopic');
-        } else {
-          debugPrint('🔔 已經訂閱過發布者的私人消息主題: $publisherPrivateTopic');
-        }
-        
       } else {
         debugPrint('❌ 本地用戶不匹配搜索條件');
       }

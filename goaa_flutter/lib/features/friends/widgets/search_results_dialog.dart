@@ -211,70 +211,14 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
       ),
       child: Row(
         children: [
-          // 用戶頭像
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary,
-            ),
-            child: Center(
-              child: Text(
-                user.userName.isNotEmpty ? user.userName[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // 用戶信息
+          // 用戶名稱
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.userName,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '代碼: ${user.userCode}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (user.isOnline) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.success,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '在線',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.success,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+            child: Text(
+              user.userName,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
           
@@ -299,8 +243,7 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
   }
 
   /// 處理發送好友請求
-  void _handleSendRequest(UserSearchResult user) {
-    widget.onSendRequest(user);
+  void _handleSendRequest(UserSearchResult user) async {
     // 顯示發送中提示
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -309,5 +252,10 @@ class _SearchResultsDialogState extends State<SearchResultsDialog>
         duration: const Duration(seconds: 2),
       ),
     );
+
+    // 調用好友控制器發送請求（已包含完整的處理邏輯）
+    await widget.onSendRequest(user);
+    
+    // 不再自動關閉搜索結果視窗，由上層根據結果決定
   }
 } 

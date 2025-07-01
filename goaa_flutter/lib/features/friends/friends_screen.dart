@@ -89,25 +89,72 @@ class _FriendsScreenState extends State<FriendsScreen> with WidgetsBindingObserv
             searchResults: _controller.searchResults,
             isLoading: _controller.isSearching,
             onSendRequest: (user) async {
-              final success = await _controller.sendFriendRequestToUser(user);
+              final result = await _controller.sendFriendRequestToUser(user);
               if (mounted && context.mounted) {
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ 好友請求已發送給 ${user.userName}\n📩 已訂閱私人消息\n📝 已加入等待添加好友名單'),
-                      backgroundColor: AppColors.success,
-                      duration: const Duration(seconds: 4),
-                    ),
-                  );
-                  HapticFeedback.lightImpact();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('❌ 發送好友請求失敗，請檢查網絡連接後重試'),
-                      backgroundColor: AppColors.error,
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
+                switch (result) {
+                  case 'success':
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ 好友請求已發送給 ${user.userName}\n📩 已訂閱私人消息\n📝 已加入等待添加好友名單'),
+                        backgroundColor: AppColors.success,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                    HapticFeedback.lightImpact();
+                    // 關閉搜索結果視窗
+                    Navigator.of(context).pop();
+                    break;
+                  case 'inWaitingList':
+                    // 顯示告知該人已在等待名單中的訊息窗
+                    showDialog(
+                      context: context,
+                      builder: (dialogContext) => AlertDialog(
+                        title: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: AppColors.warning),
+                            SizedBox(width: 8),
+                            Text('提示'),
+                          ],
+                        ),
+                        content: Text('${user.userName} 已在等待添加好友名單中，請查看收到的好友請求。'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            child: const Text('確定'),
+                          ),
+                        ],
+                      ),
+                    );
+                    // 關閉搜索結果視窗
+                    Navigator.of(context).pop();
+                    break;
+                  case 'alreadyFriend':
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('ℹ️ ${user.userName} 已經是您的好友'),
+                        backgroundColor: AppColors.warning,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    break;
+                  case 'alreadySent':
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('ℹ️ 已經向 ${user.userName} 發送過好友請求'),
+                        backgroundColor: AppColors.warning,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    break;
+                  default: // 'failed'
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('❌ 發送好友請求失敗，請檢查網絡連接後重試'),
+                        backgroundColor: AppColors.error,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                    break;
                 }
               }
             },
